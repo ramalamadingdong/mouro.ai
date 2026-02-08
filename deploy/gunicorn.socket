@@ -1,0 +1,12 @@
+[Unit]
+Description=gunicorn socket
+
+[Socket]
+ListenStream=/run/gunicorn/mouro.sock
+SocketUser=rami
+SocketGroup=www-data
+SocketMode=0660
+RuntimeDirectory=gunicorn
+
+[Install]
+WantedBy=sockets.target

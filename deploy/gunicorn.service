@@ -1,0 +1,18 @@
+[Unit]
+Description=gunicorn daemon
+Requires=gunicorn.socket
+After=network.target
+
+[Service]
+User=rami
+Group=www-data
+WorkingDirectory=/home/rami/mouro.ai
+EnvironmentFile=/home/rami/mouro.ai/.env
+ExecStart=/home/rami/mouro.ai/.venv/bin/gunicorn \
+    --access-logfile - \
+    --workers 3 \
+    --bind unix:/run/gunicorn/mouro.sock \
+    config.wsgi:application
+
+[Install]
+WantedBy=multi-user.target
