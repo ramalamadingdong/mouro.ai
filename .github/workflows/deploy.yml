@@ -3,7 +3,7 @@ name: Deploy
 on:
   push:
     branches:
-      - main
+      - master
 
 jobs:
   deploy:
@@ -19,7 +19,7 @@ jobs:
           script: |
             set -e
             cd /home/rami/mouro.ai
-            git checkout main
-            git pull --ff-only origin main
+            git checkout master
+            git pull --ff-only origin master
             sudo systemctl restart gunicorn
             sudo systemctl restart nginx
