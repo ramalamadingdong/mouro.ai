@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Rami Mouro — Senior Software Engineer, Qualcomm{% endblock %}
 
@@ -20,7 +21,7 @@
         </div>
     </div>
     <div class="hero-card">
-        <img class="hero-photo" src="https://media.licdn.com/dms/image/v2/D5603AQFXzp3myLeOzw/profile-displayphoto-shrink_400_400/B56ZXYadr9GoAg-/0/1743092571461?e=1772064000&v=beta&t=KyvoY0d8CofSKS0amWCd0GAskS5ZC4jASt1Pq8waJ9I" alt="Rami Mouro" loading="eager">
+        <img class="hero-photo" src="{% static 'img/Rami_Pic.jpg' %}" alt="Rami Mouro" loading="eager">
         <p class="card-label">Current Focus</p>
         <ul>
             <li>Edge AI developer relations</li>
