@@ -1,0 +1,316 @@
+{% extends "base.html" %}
+
+{% block title %}Projects — Rami Mouro{% endblock %}
+
+{% block content %}
+<section class="section" data-reveal>
+    <div class="section-heading">
+        <p class="eyebrow">Projects</p>
+        <h1 class="title">Deep dives on flagship work.</h1>
+    </div>
+    <div class="two-col">
+        <div>
+            <p class="subtitle">
+                Detailed write-ups on flagship builds, field automation, and applied research.
+            </p>
+            <p>
+                Use the index to jump to any project. Each section is built for longer, narrative writeups.
+            </p>
+        </div>
+        <div class="list-card project-index-card">
+            <h3>Project Index</h3>
+            <ul class="project-index-list">
+                <li class="project-index-item">
+                    <a class="link" href="#agentic-csa">FIRST Agentic CSA</a>
+                    <span class="project-index-meta">AI documentation search</span>
+                </li>
+                <li class="project-index-item">
+                    <a class="link" href="#shooter-selector">FRC Shooter Selector</a>
+                    <span class="project-index-meta">Ballistics optimization</span>
+                </li>
+                <li class="project-index-item">
+                    <a class="link" href="#rubik-tflite">Rubik TFLite</a>
+                    <span class="project-index-meta">TFLite + libQnn demo</span>
+                </li>
+                <li class="project-index-item">
+                    <a class="link" href="#military-service">Military Service Leadership</a>
+                    <span class="project-index-meta">Maintenance and logistics</span>
+                </li>
+                <li class="project-index-item">
+                    <a class="link" href="#auto-xo">Auto XO</a>
+                    <span class="project-index-meta">Signal-driven TOC automation</span>
+                </li>
+                <li class="project-index-item">
+                    <a class="link" href="#dd-1750">DD Form 1750 Automation</a>
+                    <span class="project-index-meta">Excel macro for packing lists</span>
+                </li>
+                <li class="project-index-item">
+                    <a class="link" href="#qualcomm-youtube">Content Creation</a>
+                    <span class="project-index-meta">Talks and demos</span>
+                </li>
+            </ul>
+        </div>
+    </div>
+</section>
+
+<section class="section" id="agentic-csa" data-reveal>
+    <article class="project-card project-detail">
+        <div class="project-header">
+            <h2>FIRST Agentic CSA</h2>
+            <p class="project-subtitle">AI-powered FRC documentation search</p>
+        </div>
+        <p>
+            FIRST Agentic CSA is an MCP server that gives FRC teams a single, trustworthy place to search across the
+            entire documentation ecosystem. Instead of hopping between WPILib, REV, CTRE, Redux Robotics, and
+            PhotonVision, students can ask plain English questions and get documentation-grounded answers that respect
+            the authoritative sources teams rely on during build season.
+        </p>
+        <p>
+            The project is designed to integrate directly with VS Code and AI coding assistants so that documentation
+            lookups happen where teams already work. It supports filtering by programming language and documentation
+            year, and ships with a ready-to-drop copilot instructions file that nudges assistants to search docs before
+            answering. The result is faster onboarding, fewer wrong answers, and a shared resource for 3,600+ FRC teams
+            under intense time pressure.
+        </p>
+        <div class="project-meta">
+            <span>Stars: 9</span>
+            <span>Forks: 1</span>
+            <span>Releases: 16 (v0.3.12)</span>
+            <span>License: BSD-3-Clause</span>
+            <span>Language: Python</span>
+            <span>PulseMCP listing: 464+ visitors</span>
+            <span>Install: uvx first-agentic-csa</span>
+        </div>
+        <div class="badge-row">
+            <span class="badge">Python</span>
+            <span class="badge">MCP Protocol</span>
+            <span class="badge">UV Package Manager</span>
+            <span class="badge">PyPI</span>
+            <span class="badge">VS Code Integration</span>
+        </div>
+        <a class="link" href="https://github.com/ramalamadingdong/agentic-csa" target="_blank" rel="noreferrer">View on GitHub</a>
+    </article>
+</section>
+
+<section class="section" id="shooter-selector" data-reveal>
+    <article class="project-card project-detail">
+        <div class="project-header">
+            <h2>FRC Shooter Selector</h2>
+            <p class="project-subtitle">Ballistics analysis and optimization tool</p>
+        </div>
+        <p>
+            FRC Shooter Selector is a physics-first simulation toolkit for the 2026 REBUILT game that helps teams
+            design shooter mechanisms before building expensive prototypes. It models full ballistics with quadratic
+            drag on foam game pieces, then translates the physics into practical motor, gearing, and flywheel
+            recommendations teams can implement quickly.
+        </p>
+        <p>
+            The tool provides conservative torque calculations that avoid overheating, sensitivity analysis for
+            angle and velocity errors, spin-up time comparisons across gear ratios, and flywheel mass tradeoff
+            studies. Teams can use the browser-based app, a Django web interface, or the CLI for batch analysis.
+            Outputs include Plotly charts, ready-to-copy RPM lookup tables, and PNG plots for design reviews.
+        </p>
+        <div class="project-meta">
+            <span>Stars: 1</span>
+            <span>License: BSD-3-Clause</span>
+            <span>Languages: Python, HTML</span>
+            <span>Interfaces: Web, Django, CLI</span>
+        </div>
+        <div class="badge-row">
+            <span class="badge">Python</span>
+            <span class="badge">Django</span>
+            <span class="badge">JavaScript</span>
+            <span class="badge">Plotly</span>
+            <span class="badge">Physics Simulation</span>
+            <span class="badge">GitHub Pages</span>
+        </div>
+        <a class="link" href="https://github.com/ramalamadingdong/frc-shooter-selector" target="_blank" rel="noreferrer">View on GitHub</a>
+    </article>
+</section>
+
+<section class="section" id="rubik-tflite" data-reveal>
+    <article class="project-card project-detail">
+        <div class="project-header">
+            <h2>Rubik TFLite</h2>
+            <p class="project-subtitle">TFLite + libQnn on Qualcomm NPU</p>
+        </div>
+        <p>
+            Rubik TFLite is a hands-on demo that calls TensorFlow Lite using the libQnn delegate as an external
+            delegate, defaulting to the HTP backend for QNN. I worked with a student to package the workflow so teams
+            and developers can run on-device image transformation models without the usual setup friction.
+        </p>
+        <p>
+            The project ships with C and Python demos that load input images from disk, run TFLite inference through
+            QNN, and write outputs back to the filesystem. It targets image transformation models and highlights how
+            to wire TFLite to Qualcomm hardware in a reproducible, student-friendly flow.
+        </p>
+        <p>
+            Example runs use the Real-ESRGAN x4+ model from Qualcomm AI Hub and show end-to-end invocation with sample
+            inputs and outputs. Supported input formats include JPEG, PNG, TGA, BMP, PSD, GIF, HDR, PIC, and PNM, with
+            PNG output for easy inspection.
+        </p>
+        <div class="project-meta">
+            <span>License: MIT</span>
+            <span>Interfaces: C, Python</span>
+            <span>Delegate: libQnn (HTP backend)</span>
+            <span>Models: TFLite image transformations</span>
+        </div>
+        <div class="badge-row">
+            <span class="badge">C++</span>
+            <span class="badge">C</span>
+            <span class="badge">Python</span>
+            <span class="badge">TFLite</span>
+            <span class="badge">QNN</span>
+            <span class="badge">Qualcomm NPU</span>
+        </div>
+        <a class="link" href="https://github.com/ramalamadingdong/rubik-tflite" target="_blank" rel="noreferrer">View on GitHub</a>
+    </article>
+</section>
+
+<section class="section" id="military-service" data-reveal>
+    <article class="project-card project-detail">
+        <div class="project-header">
+            <h2>Military Service Leadership</h2>
+            <p class="project-subtitle">Maintenance, logistics, and mission support</p>
+        </div>
+        <p>
+            Deployed overseas with a HIMARS maintenance company and served as a local interpreter across multiple
+            Middle East deployments. Started as a 91B mechanic, then moved into logistics and platoon leadership.
+        </p>
+        <p>
+            Led a 35-soldier maintenance platoon, automated tracking to remove bottlenecks, and earned the Army
+            Commendation Medal for complex repairs and readiness gains. Known for mastering technical manuals,
+            diagnosing hard failures fast, and coaching teams under pressure.
+        </p>
+        <p>
+            Partnered with the Designing for Defense program on Navy equipment tracking, consolidating data from
+            multiple systems into commander-ready reports.
+        </p>
+        <div class="project-meta">
+            <span>Award: Army Commendation Medal</span>
+            <span>Roles: Platoon Leader, 91B Mechanic, Logistics, Interpreter</span>
+            <span>Focus: HIMARS maintenance, readiness automation</span>
+        </div>
+        <div class="badge-row">
+            <span class="badge">Platoon Leadership</span>
+            <span class="badge">Field Maintenance</span>
+            <span class="badge">Logistics Automation</span>
+            <span class="badge">Equipment Tracking</span>
+            <span class="badge">Interpreter</span>
+        </div>
+        <div class="project-subsection" id="auto-xo">
+            <div class="project-header">
+                <h3>Auto XO</h3>
+                <p class="project-subtitle">Signal-driven TOC task automation</p>
+            </div>
+            <p>
+                Auto XO started as a joke about automating the XO role inside the TOC truck with text messages. I built a
+                proof-of-concept that turned short updates into structured spreadsheet entries. Years later, a new
+                commander asked for a Signal-based rebuild for real operations.
+            </p>
+            <p>
+                The system normalizes Signal messages into a log and writes updates into a spreadsheet for fast
+                situational awareness. It cut manual copy-paste and kept the XO workflow moving in high-tempo ops.
+            </p>
+            <div class="project-meta">
+                <span>Context: TOC/XO automation</span>
+                <span>Role: E4 91B, platoon leader duties</span>
+                <span>Interface: Signal to spreadsheet</span>
+            </div>
+            <div class="badge-row">
+                <span class="badge">Python</span>
+                <span class="badge">Signal API</span>
+                <span class="badge">Automation</span>
+                <span class="badge">Ops Workflows</span>
+            </div>
+            <a class="link" href="https://github.com/ramalamadingdong/auto_xo" target="_blank" rel="noreferrer">View on GitHub</a>
+        </div>
+        <div class="project-subsection" id="dd-1750">
+            <div class="project-header">
+                <h3>DD Form 1750 Automation</h3>
+                <p class="project-subtitle">Excel macro for packing lists</p>
+            </div>
+            <p>
+                While building DD Form 1750 packing lists, I was copying items from BOMs into long multi-page forms.
+                I wrote an Excel macro that takes a single-column list and generates the full 1750 packet automatically.
+            </p>
+            <p>
+                Supports quick conversions from MALs, SIs, and property book exports. Handles large payloads across many
+                pages while keeping labels consistent.
+            </p>
+            <div class="project-meta">
+                <span>Use cases: MAL to 1750, SI to 1750, Property Book to 1750</span>
+                <span>Interface: Excel VBA macro</span>
+            </div>
+            <div class="badge-row">
+                <span class="badge">Excel VBA</span>
+                <span class="badge">Logistics</span>
+                <span class="badge">Process Automation</span>
+                <span class="badge">Forms</span>
+            </div>
+            <a class="link" href="https://drive.google.com/file/d/1dKxFEAz4nOSq5AKoMH2BpfUpxAhmWSVo/view?usp=sharing" target="_blank" rel="noreferrer">View sample usage</a>
+            <a class="link" href="https://buymeacoffee.com/?via=ramalamadingdon" target="_blank" rel="noreferrer">Buy me a coffee</a>
+        </div>
+    </article>
+</section>
+
+<section class="section" id="qualcomm-youtube" data-reveal>
+    <div class="section-heading">
+        <p class="eyebrow">Content Creation</p>
+        <h2>Selected talks and demos.</h2>
+    </div>
+    <div class="video-grid">
+        <article class="video-card" data-reveal>
+            <a class="video-thumb" href="https://www.youtube.com/watch?v=1LRJVeAd1aU" target="_blank" rel="noreferrer" style="background-image: url('https://i.ytimg.com/vi/1LRJVeAd1aU/hqdefault.jpg');">
+                <span class="video-play">Play</span>
+            </a>
+            <div class="video-copy">
+                <h3>Edge AI in action</h3>
+                <p>Hands-on walkthrough showing how Qualcomm edge AI tools unlock faster on-device inference.</p>
+            </div>
+        </article>
+        <article class="video-card" data-reveal>
+            <a class="video-thumb" href="https://www.youtube.com/watch?v=oIpFH2HKsCE" target="_blank" rel="noreferrer" style="background-image: url('https://i.ytimg.com/vi/oIpFH2HKsCE/hqdefault.jpg');">
+                <span class="video-play">Play</span>
+            </a>
+            <div class="video-copy">
+                <h3>Developer workflow focus</h3>
+                <p>Overview of developer tooling priorities and how they map to real robotics deployments.</p>
+            </div>
+        </article>
+        <article class="video-card" data-reveal>
+            <a class="video-thumb" href="https://www.youtube.com/watch?v=Mhm1wlb7qc0" target="_blank" rel="noreferrer" style="background-image: url('https://i.ytimg.com/vi/Mhm1wlb7qc0/hqdefault.jpg');">
+                <span class="video-play">Play</span>
+            </a>
+            <div class="video-copy">
+                <h3>Edge AI + vision pipeline</h3>
+                <p>Practical demo of vision workloads optimized for real-time robotics use cases.</p>
+            </div>
+        </article>
+        <article class="video-card" data-reveal>
+            <a class="video-thumb" href="https://www.youtube.com/watch?v=EqmYnCqdnqw" target="_blank" rel="noreferrer" style="background-image: url('https://i.ytimg.com/vi/EqmYnCqdnqw/hqdefault.jpg');">
+                <span class="video-play">Play</span>
+            </a>
+            <div class="video-copy">
+                <h3>Qualcomm priorities</h3>
+                <p>Context on Qualcomm platform direction, focused on accessible AI and robotics education.</p>
+            </div>
+        </article>
+    </div>
+</section>
+
+<footer class="footer" data-reveal>
+    <div>
+        <h2>Connect</h2>
+        <p>Open to collaboration, mentoring, and conversations about edge AI in robotics.</p>
+        <div class="hero-links">
+            <a class="button" href="https://www.linkedin.com/in/rami-mouro/" target="_blank" rel="noreferrer">LinkedIn</a>
+            <a class="button ghost" href="https://github.com/ramalamadingdong" target="_blank" rel="noreferrer">GitHub</a>
+        </div>
+    </div>
+    <div class="footer-meta">
+        <p>Copyright 2026 Rami Mouro</p>
+        <p>Built with Django</p>
+    </div>
+</footer>
+{% endblock %}

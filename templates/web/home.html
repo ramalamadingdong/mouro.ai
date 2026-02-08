@@ -1,11 +1,163 @@
 {% extends "base.html" %}
 
-{% block title %}mouro.ai{% endblock %}
+{% block title %}Rami Mouro — Senior Software Engineer, Qualcomm{% endblock %}
 
 {% block content %}
-<section class="hero">
-    <p class="eyebrow">Hello, I'm Rami</p>
-    <h1 class="title">Personal site for notes, work, and experiments.</h1>
-    <p class="subtitle">Hosted on my own machine. Built with Django.</p>
+<section class="hero" data-reveal>
+    <div class="hero-copy">
+        <p class="eyebrow">Rami Mouro</p>
+        <h1 class="title">Senior Software Engineer, Qualcomm</h1>
+        <p class="tagline">Building the bridge between edge AI and the next generation of roboticists.</p>
+        <p class="subtitle">
+            Embedded software engineer at Qualcomm focused on AI and developer relations for edge computing platforms.
+            FIRST Robotics alumnus turned mentor, technical advisor, and conference speaker. Passionate about making
+            advanced AI accessible to student teams and developers worldwide.
+        </p>
+        <div class="hero-links">
+            <a class="button" href="https://www.linkedin.com/in/rami-mouro/" target="_blank" rel="noreferrer">LinkedIn</a>
+            <a class="button ghost" href="https://github.com/ramalamadingdong" target="_blank" rel="noreferrer">GitHub</a>
+            <a class="button ghost" href="/projects/">View projects</a>
+        </div>
+    </div>
+    <div class="hero-card">
+        <img class="hero-photo" src="https://media.licdn.com/dms/image/v2/D5603AQFXzp3myLeOzw/profile-displayphoto-shrink_400_400/B56ZXYadr9GoAg-/0/1743092571461?e=1772064000&v=beta&t=KyvoY0d8CofSKS0amWCd0GAskS5ZC4jASt1Pq8waJ9I" alt="Rami Mouro" loading="eager">
+        <p class="card-label">Current Focus</p>
+        <ul>
+            <li>Edge AI developer relations</li>
+            <li>Making advanced IoT chipsets and NPUs accessible to everyone</li>
+            <li>FIRST Robotics Vision Platform</li>
+            <li>Mentor enablement and workshops</li>
+        </ul>
+    </div>
 </section>
+
+<section class="section" data-reveal>
+    <div class="section-heading">
+        <p class="eyebrow">About</p>
+        <h2>Engineer, mentor, and builder of communities.</h2>
+    </div>
+    <p>
+        Living in Colorado where I built my foundation in embedded systems at the University of Colorado
+        Boulder and served in the Colorado Army National Guard as a HIMARS mechanic. After two internships at Qualcomm,
+        I returned full-time first working on 5G Modems where I built my technical experience and now lead Edge AI and developer relations work focused on the vision platform for FIRST
+        Robotics. I mentor FRC Team 2972, serve as Colorado FTA for FTC, and speak at FIRST and Qualcomm events to help
+        students and mentors adopt modern edge AI tools.
+    </p>
+    <div class="inline-links">
+        <a href="https://podcasts.apple.com/us/podcast/rami-mouro/id1450870331?i=1000437179473" target="_blank" rel="noreferrer">Operation Code podcast</a>
+        <a href="https://cafirst.org/2024/10/30/qualcomm-career-chat-takeaways/" target="_blank" rel="noreferrer">California FIRST career chat</a>
+    </div>
+</section>
+
+<section class="section" data-reveal>
+    <div class="section-heading">
+        <p class="eyebrow">Featured Projects</p>
+        <h2>Selected work</h2>
+    </div>
+    <div class="carousel" data-carousel>
+        <button class="carousel-button prev" type="button" aria-label="Scroll projects left">
+            <span aria-hidden="true">&#8592;</span>
+        </button>
+        <div class="carousel-track" data-carousel-track>
+            <article class="project-card" data-reveal>
+                <div class="project-header">
+                    <h3>FIRST Agentic CSA</h3>
+                    <p class="project-subtitle">AI-powered FRC documentation search</p>
+                </div>
+                <p>
+                    MCP server that unifies WPILib, REV, CTRE, Redux Robotics, and PhotonVision docs into a single natural
+                    language search surface for FRC teams.
+                </p>
+                <div class="badge-row">
+                    <span class="badge">Python</span>
+                    <span class="badge">MCP Protocol</span>
+                    <span class="badge">VS Code Integration</span>
+                </div>
+                <a class="link" href="/projects/#agentic-csa">Full write-up</a>
+            </article>
+
+            <article class="project-card" data-reveal>
+                <div class="project-header">
+                    <h3>FRC Shooter Selector</h3>
+                    <p class="project-subtitle">Ballistics analysis and optimization tool</p>
+                </div>
+                <p>
+                    Physics simulation toolkit for REBUILT (game element) shooters with drag modeling, motor torque analysis, and
+                    plot-driven optimization outputs.
+                </p>
+                <div class="badge-row">
+                    <span class="badge">Python</span>
+                    <span class="badge">Django</span>
+                    <span class="badge">Plotly</span>
+                </div>
+                <a class="link" href="/projects/#shooter-selector">Full write-up</a>
+            </article>
+
+            <article class="project-card" data-reveal>
+                <div class="project-header">
+                    <h3>Rubik TFLite</h3>
+                    <p class="project-subtitle">TFLite + libQnn on Qualcomm NPU</p>
+                </div>
+                <p>
+                    Worked with a student to make Qualcomm NPU access easy using the TFLite libQnn delegate, with C and Python
+                    demos for image transformation models.
+                </p>
+                <div class="badge-row">
+                    <span class="badge">C++</span>
+                    <span class="badge">TFLite</span>
+                    <span class="badge">QNN</span>
+                    <span class="badge">Python</span>
+                </div>
+                <a class="link" href="/projects/#rubik-tflite">Full write-up</a>
+            </article>
+
+            <article class="project-card" data-reveal>
+                <div class="project-header">
+                    <h3>Military Service Leadership</h3>
+                    <p class="project-subtitle">Maintenance, logistics, and mission support</p>
+                </div>
+                <p>
+                    Deployed overseas on HIMARS maintenance while serving as a local interpreter. Led a 35-soldier platoon,
+                    automated logistics workflows, and earned the Army Commendation Medal for hands-on repairs and system
+                    reprogramming. Known for mastering technical manuals, fixing hard failures fast, and mentoring teams
+                    under pressure. Built <a class="link" href="/projects/#auto-xo">Auto XO</a> and
+                    <a class="link" href="/projects/#dd-1750">DD Form 1750 automation</a> to streamline TOC and logistics
+                    workflows.
+                </p>
+                <div class="badge-row">
+                    <span class="badge">Platoon Leadership</span>
+                    <span class="badge">Logistics Automation</span>
+                    <span class="badge">Field Maintenance</span>
+                </div>
+                <a class="link" href="/projects/#military-service">Full write-up</a>
+            </article>
+        </div>
+        <button class="carousel-button next" type="button" aria-label="Scroll projects right">
+            <span aria-hidden="true">&#8594;</span>
+        </button>
+    </div>
+    <div class="teaser-card">
+        <div>
+            <p class="card-label">Media</p>
+            <h3 class="teaser-title">Qualcomm YouTube talks and demos</h3>
+            <p class="teaser-text">Short, practical sessions on edge AI tooling, robotics vision, and developer workflows.</p>
+        </div>
+        <a class="button ghost" href="/projects/#qualcomm-youtube">Watch the playlist</a>
+    </div>
+</section>
+
+<footer class="footer" data-reveal>
+    <div>
+        <h2>Connect</h2>
+        <p>Open to collaboration, mentoring, and conversations about edge AI in robotics.</p>
+        <div class="hero-links">
+            <a class="button" href="https://www.linkedin.com/in/rami-mouro/" target="_blank" rel="noreferrer">LinkedIn</a>
+            <a class="button ghost" href="https://github.com/ramalamadingdong" target="_blank" rel="noreferrer">GitHub</a>
+        </div>
+    </div>
+    <div class="footer-meta">
+        <p>Copyright 2026 Rami Mouro</p>
+        <p>Built with Django</p>
+    </div>
+</footer>
 {% endblock %}
