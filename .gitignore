@@ -30,8 +30,25 @@ yarn-error.*
 .DS_Store
 *.pem
 
-# local env files
+# env files (note: Expo EXPO_PUBLIC_* vars are bundled into the client and are
+# NOT secret; still, never commit a real .env — commit .env.example instead)
+.env
+.env.*
+!.env.example
 .env*.local
+
+# Firebase local artifacts (may contain your email / project ids / tokens)
+.firebase/
+*-debug.log
+firebase-debug.log*
+firestore-debug.log*
+database-debug.log*
+ui-debug.log*
+pubsub-debug.log*
+
+# stray local Claude/editor backups
+.claude/dotclaude_backup/
+.claude/settings.local.json
 
 # typescript
 *.tsbuildinfo
