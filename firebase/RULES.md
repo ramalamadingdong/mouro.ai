@@ -46,6 +46,46 @@ The `.validate` rules that remain are a second layer for ordinary well-formed
 writes, plus `$deep: { ".validate": false }` on each leaf as belt-and-braces
 against a deep write the `.write` layer somehow admits.
 
+### The corollary: **an object-valued node cannot be closed by these rules**
+
+There is no "only these children" operator in RTDB. A write aimed *below* an
+object node passes the ancestor's `.write` (which still sees the required
+children, merged in from the untouched siblings) and is measured against no
+`.validate` at all. So the shape assertions can be made arbitrarily strict and
+a deep write still walks past them into a rule-free subtree.
+
+**Therefore every node a non-host can write is a SCALAR**, because a scalar
+assertion in the grant is unsatisfiable for a deep write — writing a child turns
+the node into an object and `isNumber()` / `isString()` fails:
+
+| node | wire type | codec |
+|---|---|---|
+| `holds/$uid` | integer bitmask 0..31 | `src/util/holds.ts` |
+| `presence/$uid` | bare number (last-seen ms) | `src/fb/presence.ts` |
+| `seats/$uid` | packed string `"<joinedAt>\|<name>"` | `src/util/seat.ts` |
+
+Each of these was an object once, and each was exploitable in exactly the same
+way. The app still speaks the richer shape internally; encoding and decoding
+happen only at the Firebase boundary, which is why scalarizing all three moved
+no consumer.
+
+`meta` and `state` remain objects, and that is safe for reasons that do not
+generalise to the nodes above:
+
+- **`meta` has no node-level `.write` at all.** Nothing grants the object, so
+  there is no cascade to escape from. `host` and `createdAt` are reachable only
+  through the whole-room create/delete; `status` and `updatedAt` each carry
+  their own narrow leaf grant that asserts a scalar (`isString()` with an
+  enumerated transition, `isNumber()` with a bound).
+- **`state` is protected by the version-monotonicity conjunct.** Its grant
+  requires `newData.version > data.version` together with the full
+  `hasChildren([...])` shape and the `turnUid`/`players[turn]` agreement — and
+  a partial deep write cannot satisfy those. Writing `state/junk/deep` leaves
+  `version` at its old value, so the strict inequality fails. The write is
+  refused before shape ever matters. **Only the host or the player on turn can
+  reach this node in the first place**, which is the other half of it: `state`
+  is not a node a non-participant can write.
+
 ### Other rule-engine facts relied on here
 
 - `root` and `data` are the **pre-write** database; `newData` is post-write,
@@ -148,12 +188,51 @@ grant.
 
 `$other: false` on `meta` refuses unknown keys for ordinary writes.
 
-### `seats/$uid`
+### `seats/$uid` — **a packed string**, `"<joinedAt>|<name>"`
 
-- Writable **only by `$uid`**. Creating or changing a seat additionally requires
-  `meta` to exist, `status === 'waiting'`, and the complete `{ name, joinedAt }`
-  shape with `name` a non-empty string ≤ 24 chars — all asserted in the
-  `.write`, so no deeper write can dodge them.
+On the wire a seat is ONE STRING, e.g. `"1784571234567|Ann"`. It used to be the
+object it obviously is, `{ name, joinedAt }`, and that was the last remaining
+instance of the hole described at the top of this file:
+
+> `.write` cascades to every descendant; `.validate` never runs on an ancestor
+> of the written path and is skipped entirely on a delete; and RTDB has no
+> "only these children" operator. **Therefore an object-valued node cannot be
+> closed by these rules.** `$other: { ".validate": false }` and every `$deep`
+> terminator are simply never evaluated for a write below them.
+
+Concretely: anyone who joined a lobby (they need only the room code) could
+`set('rooms/ABCDE/seats/<own uid>/junk/deep', <10MB string>)`. The `.write` at
+`seats/$uid` saw merged `newData` still carrying a valid `name` and `joinedAt`,
+so every shape conjunct passed and the write was **granted** — into a subtree
+with no rules at all. Repeat with `junk2`, `junk3` … to exhaust the 1 GB Spark
+quota. And because `subscribeRoom` does a whole-room `onValue`, every client in
+the room re-downloads the blob on every change.
+
+**A scalar is closable.** `newData.isString()` in the grant itself becomes
+UNSATISFIABLE the moment the node turns into an object, which is exactly what
+writing a child does. So the grant now asserts:
+
+- `newData.isString()`, `length >= 3`, `length <= 40`, and
+  `matches(/^[0-9]{1,15}[|]/)` — plus, as before, `auth.uid === $uid`, the
+  `$code` regex, `meta.exists()` and `status === 'waiting'`.
+- The regex validates **the numeric prefix and the delimiter only**, and the
+  cap bounds the TOTAL length. It deliberately does not charset-match the name
+  portion: display names are user text and may be unicode or emoji, and an
+  over-tight regex there would reject perfectly good names with a silent
+  `PERMISSION_DENIED`.
+- The `name` / `joinedAt` / `$other` child rules are **gone**. A scalar has no
+  children, and leaving them would imply a structure that no longer exists.
+
+`src/util/seat.ts` is the codec (`packSeat` / `unpackSeat`); the app above that
+boundary still passes `{ name, joinedAt }` around, so `seatOrder` and every
+consumer are unchanged. `packSeat` clamps the name so the WHOLE string stays
+under the cap and substitutes `'Player'` for an empty one — the rule's
+`length >= 3` would otherwise refuse a nameless seat. It splits on the **first**
+`|` only, so a name containing a pipe round-trips. `decodeSeats` also accepts
+the legacy object shape: rules validate writes, never reads, so rooms created
+before this change stay readable. That branch can be deleted once none can
+survive — the 24h reaper bounds it.
+
 - **Deleting your own seat is unconditional**, at any point in the game. That is
   deliberate: it is what lets `leaveRoom()` clean up mid-match. The dealt
   `state` holds its own copy of the player list, so leaving does not disturb the
@@ -194,7 +273,7 @@ Every child is named and bounded, and `state` is closed with `$other: false`:
 `version >= 0`; `turnUid` a string ≤ 128; `phase` one of three literals; `turn`
 0..3; `round` 1..14 (14 is terminal, `RULES.ROUNDS + 1`); `rollsUsed` 0..3;
 `dice/$i` key 0..4 with a value 1..6; `players/$seat` key 0..3 with `uid` ≤ 128
-and `name` ≤ 24 (**the same cap `seats/$uid/name` enforces** — names were once
+and `name` ≤ 24 (**the same cap `packSeat` applies at the door** — names were once
 capped at the door and uncapped once copied into `state`); `cards/$seat/$category`
 a known category name with a value 0..50 (a Yahtzee is 50, and `0` is a legal
 *used* box); `yahtzeeBonus/$seat` 0..13; `result.scores` / `result.winners`;
@@ -232,7 +311,10 @@ nonetheless deletes presence/holds/rematch **before** `seats/<uid>`, because
 under the membership-first form that ordering was the difference between a
 lobby leaver being cleaned up and being stranded as `online: true` forever.
 
-- `presence`: exactly `{ online: boolean, lastSeen: number }`. `onDisconnect`
+- `presence`: **one positive number**, the last-seen timestamp — presence is
+  existence, so a node means online and the value is only *when*. (It was the
+  object `{ online, lastSeen }`, scalarized for the reason above; the decoder in
+  `rooms.ts` still hands that object to the UI.) `onDisconnect`
   handlers are evaluated at disconnect time under the same auth, so they satisfy
   the same rule; if the room was deleted first the queued write simply fails,
   which is the desired outcome.

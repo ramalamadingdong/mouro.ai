@@ -41,22 +41,14 @@
 
         "seats": {
           "$uid": {
-            ".write": "auth != null && auth.uid === $uid && $code.matches(/^[A-HJKMNP-Z2-9]{5}$/) && (!newData.exists() || (root.child('rooms').child($code).child('meta').exists() && root.child('rooms').child($code).child('meta/status').val() === 'waiting' && newData.hasChildren(['name', 'joinedAt']) && newData.child('name').isString() && newData.child('name').val().length > 0 && newData.child('name').val().length <= 24 && newData.child('joinedAt').isNumber()))",
-            ".validate": "$uid === auth.uid && $uid.length <= 128 && newData.hasChildren(['name', 'joinedAt'])",
-            "name": {
-              ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 24",
-              "$deep": { ".validate": false }
-            },
-            "joinedAt": {
-              ".validate": "newData.isNumber()",
-              "$deep": { ".validate": false }
-            },
-            "$other": { ".validate": false }
+            ".write": "auth != null && auth.uid === $uid && $code.matches(/^[A-HJKMNP-Z2-9]{5}$/) && (!newData.exists() || (root.child('rooms').child($code).child('meta').exists() && root.child('rooms').child($code).child('meta/status').val() === 'waiting' && newData.isString() && newData.val().length >= 3 && newData.val().length <= 120 && newData.val().matches(/^[0-9]{1,15}[|]/)))",
+            ".validate": "$uid === auth.uid && $uid.length <= 128 && newData.isString() && newData.val().length >= 3 && newData.val().length <= 120 && newData.val().matches(/^[0-9]{1,15}[|]/)",
+            "$deep": { ".validate": false }
           }
         },
 
         "state": {
-          ".write": "auth != null && $code.matches(/^[A-HJKMNP-Z2-9]{5}$/) && newData.hasChildren(['version', 'players', 'phase', 'turn', 'turnUid', 'round', 'rollsUsed']) && newData.child('version').isNumber() && newData.child('version').val() >= 0 && newData.child('version').val() <= 100000 && ((newData.child('turn').val() === 0 && newData.child('turnUid').val() === newData.child('players/0/uid').val()) || (newData.child('turn').val() === 1 && newData.child('turnUid').val() === newData.child('players/1/uid').val()) || (newData.child('turn').val() === 2 && newData.child('turnUid').val() === newData.child('players/2/uid').val()) || (newData.child('turn').val() === 3 && newData.child('turnUid').val() === newData.child('players/3/uid').val())) && (root.child('rooms').child($code).child('seats').hasChild(auth.uid) || root.child('rooms').child($code).child('meta/host').val() === auth.uid) && (!data.exists() ? root.child('rooms').child($code).child('meta/host').val() === auth.uid : (data.child('turnUid').val() === auth.uid || (data.child('phase').val() === 'over' && newData.child('lastMove/kind').val() === 'rematch' && newData.child('round').val() === 1 && newData.child('rollsUsed').val() === 0 && !newData.hasChild('result')))) && (!data.exists() ? (!newData.hasChild('lastMove') || newData.child('lastMove/by').val() === auth.uid) : newData.child('lastMove/by').val() === auth.uid) && (!data.exists() || newData.child('version').val() > data.child('version').val())",
+          ".write": "auth != null && $code.matches(/^[A-HJKMNP-Z2-9]{5}$/) && newData.hasChildren(['version', 'players', 'phase', 'turn', 'turnUid', 'round', 'rollsUsed']) && newData.child('version').isNumber() && newData.child('version').val() >= 0 && newData.child('version').val() <= 100000 && ((newData.child('turn').val() === 0 && newData.child('turnUid').val() === newData.child('players/0/uid').val()) || (newData.child('turn').val() === 1 && newData.child('turnUid').val() === newData.child('players/1/uid').val()) || (newData.child('turn').val() === 2 && newData.child('turnUid').val() === newData.child('players/2/uid').val()) || (newData.child('turn').val() === 3 && newData.child('turnUid').val() === newData.child('players/3/uid').val())) && (root.child('rooms').child($code).child('seats').hasChild(auth.uid) || root.child('rooms').child($code).child('meta/host').val() === auth.uid) && (!data.exists() ? root.child('rooms').child($code).child('meta/host').val() === auth.uid : (data.child('turnUid').val() === auth.uid || (data.child('phase').val() === 'over' && (data.child('players/0/uid').val() === auth.uid || data.child('players/1/uid').val() === auth.uid || data.child('players/2/uid').val() === auth.uid || data.child('players/3/uid').val() === auth.uid) && newData.child('lastMove/kind').val() === 'rematch' && newData.child('round').val() === 1 && newData.child('rollsUsed').val() === 0 && !newData.hasChild('result')))) && (!data.exists() ? (!newData.hasChild('lastMove') || newData.child('lastMove/by').val() === auth.uid) : newData.child('lastMove/by').val() === auth.uid) && (!data.exists() || newData.child('version').val() > data.child('version').val())",
 
           ".validate": "newData.hasChildren(['version', 'players', 'phase', 'turn', 'turnUid', 'round', 'rollsUsed'])",
 

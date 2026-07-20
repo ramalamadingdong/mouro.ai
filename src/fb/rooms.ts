@@ -5,7 +5,7 @@
  *
  *   rooms/<CODE>/
  *     meta      { host, status, createdAt, updatedAt }
- *     seats/<uid>     { name, joinedAt }      <- membership; seat ORDER is derived
+ *     seats/<uid>     "<joinedAt>|<name>"     <- membership; seat ORDER is derived
  *     state           GameState               <- the only node moves touch
  *     presence/<uid>  { online, lastSeen }    <- cosmetic
  *     holds/<uid>     number (bitmask 0..31)  <- cosmetic (which dice are held)
@@ -47,6 +47,7 @@ import { db } from '@/fb/firebase';
 import { ensureAnonymousAuth, getCurrentUid } from '@/fb/auth';
 import { randomRoomCode } from '@/util/seed';
 import { holdsToMask, maskToHolds } from '@/util/holds';
+import { MAX_NAME_LENGTH, packSeat, unpackSeat } from '@/util/seat';
 
 // ── Wire types ───────────────────────────────────────────────────────────────
 
@@ -90,9 +91,6 @@ export interface RoomSnapshot {
 
 /** How many fresh codes to try before giving up on a create. */
 const CREATE_ATTEMPTS = 5;
-
-/** Cap enforced by `seats/$uid`'s `name` validate. Trim rather than be rejected. */
-const MAX_NAME_LENGTH = 24;
 
 /** The idle window after which the rules let anyone delete a room. */
 const ROOM_STALE_MS = 86_400_000;
@@ -141,11 +139,16 @@ function isPermissionDenied(err: unknown): boolean {
   return code === 'PERMISSION_DENIED' || message.includes('PERMISSION_DENIED');
 }
 
-/** A name that will survive the `seats/$uid/name` validate rule. */
+/**
+ * A name fit to carry around the app. `packSeat` applies the same trim, the
+ * same cap and the same 'Player' substitution when it writes; this exists for
+ * the copies that never go through it — `state.players[].name`, whose own
+ * validate still caps at MAX_NAME_LENGTH.
+ */
 function cleanName(raw: string): string {
-  const trimmed = raw.trim().slice(0, MAX_NAME_LENGTH);
-  // The rule requires length > 0, so an all-whitespace name would be rejected
-  // by the server with an opaque PERMISSION_DENIED. Substitute instead.
+  const trimmed = Array.from(raw.trim()).slice(0, MAX_NAME_LENGTH).join('');
+  // The rule requires a non-empty name, so an all-whitespace one would be
+  // rejected by the server with an opaque PERMISSION_DENIED. Substitute instead.
   return trimmed.length > 0 ? trimmed : 'Player';
 }
 
@@ -165,10 +168,30 @@ function decodeMeta(v: unknown): RoomMeta | null {
   };
 }
 
+/**
+ * Decode the seats map.
+ *
+ * On the wire each entry is a PACKED STRING (see util/seat.ts for why it is not
+ * an object). The decoded `RoomSeat` is unchanged, so scalarizing the wire
+ * format moved no consumer — `seatOrder`, the lobby list and `startGame` all
+ * still read `{ name, joinedAt }`.
+ *
+ * TWO SHAPES ARE ACCEPTED. Rules validate WRITES only, never reads, so rooms
+ * created before this change still hold `{ name, joinedAt }` objects and remain
+ * perfectly readable. The legacy branch below exists for exactly those rooms and
+ * can be deleted once none can survive — the 24h reaper bounds that, so any
+ * time after a day past deployment.
+ */
 function decodeSeats(v: unknown): Record<string, RoomSeat> {
   const out: Record<string, RoomSeat> = {};
   if (!isObj(v)) return out;
   for (const [uid, entry] of Object.entries(v)) {
+    const packed = unpackSeat(entry);
+    if (packed) {
+      out[uid] = packed;
+      continue;
+    }
+    // Legacy: a room seated under the pre-scalar wire format.
     if (!isObj(entry)) continue;
     const name = typeof entry.name === 'string' && entry.name.length > 0 ? entry.name : 'Player';
     const joinedAt = Number(entry.joinedAt);
@@ -299,7 +322,8 @@ export async function createRoom(hostName: string): Promise<string> {
     // clock, which must be a settled number the moment the room exists.
     const room = {
       meta: { host: uid, status: 'waiting' as const, createdAt: now, updatedAt: now },
-      seats: { [uid]: { name, joinedAt: now } },
+      // Packed, like every other seat write: the rule now demands a string.
+      seats: { [uid]: packSeat(now, name) },
     };
 
     let result;
@@ -416,7 +440,7 @@ export async function joinRoom(code: string, name: string): Promise<void> {
 
   try {
     await update(ref(db, `rooms/${code}`), {
-      [`seats/${uid}`]: { name: cleanName(name), joinedAt: Date.now() },
+      [`seats/${uid}`]: packSeat(Date.now(), name),
       'meta/updatedAt': serverTimestamp(),
     });
   } catch (err) {
