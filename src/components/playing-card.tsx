@@ -9,7 +9,10 @@ import {
   suitOf,
   type CardId,
 } from '@/engine';
-import { card as cardColors } from '@/theme/colors';
+import { accent, card as cardColors } from '@/theme/colors';
+
+/** Discard-hint marker: discarding this card would let you knock, or go gin. */
+export type KnockHint = 'knock' | 'gin';
 
 export type PlayingCardProps = {
   card: CardId;
@@ -19,6 +22,11 @@ export type PlayingCardProps = {
   meldColor?: string | null;
   /** Meld kind: 'run' draws a solid underline, 'set' a dashed one. */
   meldKind?: 'set' | 'run' | null;
+  /**
+   * A subtle top-right dot marking that discarding this card enables a knock
+   * (green) or gin (gold). Only a hint — it never plays for you.
+   */
+  knockHint?: KnockHint | null;
   /** Size multiplier (1 = the default hand-card size). Piles render larger. */
   scale?: number;
   /** Hold-to-peek: ring color when this card matches the held card (else null). */
@@ -38,6 +46,7 @@ function PlayingCardBase({
   selected,
   meldColor,
   meldKind,
+  knockHint,
   scale = 1,
   matchRing,
   dimmed,
@@ -49,6 +58,8 @@ function PlayingCardBase({
   const rank = RANK_LABELS[rankOf(card)];
   const suit = SUIT_SYMBOLS[suitOf(card)];
   const s = scale;
+  const hintColor =
+    knockHint === 'gin' ? accent.gold : knockHint === 'knock' ? accent.good : null;
 
   const face = (
     <View
@@ -67,24 +78,30 @@ function PlayingCardBase({
       ]}
     >
       <View style={styles.corner}>
-        <Text style={[styles.rank, { color }, s !== 1 && { fontSize: 15 * s, lineHeight: 16 * s }]}>
+        <Text selectable={false} style={[styles.rank, { color }, s !== 1 && { fontSize: 15 * s, lineHeight: 16 * s }]}>
           {rank}
         </Text>
-        <Text style={[styles.cornerSuit, { color }, s !== 1 && { fontSize: 12 * s, lineHeight: 13 * s }]}>
+        <Text selectable={false} style={[styles.cornerSuit, { color }, s !== 1 && { fontSize: 12 * s, lineHeight: 13 * s }]}>
           {suit}
         </Text>
       </View>
-      <Text style={[styles.pip, { color }, s !== 1 && { fontSize: 22 * s, bottom: 4 * s, right: 5 * s }]}>
+      <Text selectable={false} style={[styles.pip, { color }, s !== 1 && { fontSize: 22 * s, bottom: 4 * s, right: 5 * s }]}>
         {suit}
       </Text>
+      {hintColor ? (
+        <View
+          style={[
+            styles.hintDot,
+            { backgroundColor: hintColor },
+            s !== 1 && { width: 7 * s, height: 7 * s, borderRadius: 4 * s, top: 3 * s, right: 3 * s },
+          ]}
+        />
+      ) : null}
       {meldColor ? (
         meldKind === 'set' ? (
           <View style={styles.meldDashes}>
             {[0, 1, 2, 3].map((k) => (
-              <View
-                key={k}
-                style={[styles.meldDash, { backgroundColor: meldColor }]}
-              />
+              <View key={k} style={[styles.meldDash, { backgroundColor: meldColor }]} />
             ))}
           </View>
         ) : (
@@ -103,7 +120,9 @@ function PlayingCardBase({
       onPressOut={onPressOut}
       delayLongPress={300}
       accessibilityRole="button"
-      accessibilityLabel={`${rank}${suit}`}
+      accessibilityLabel={
+        knockHint ? `${rank}${suit}, discard to ${knockHint}` : `${rank}${suit}`
+      }
       accessibilityState={{ selected: !!selected }}
     >
       {face}
@@ -114,8 +133,9 @@ function PlayingCardBase({
 /** A single face-up playing card. Memoized — it only depends on its own props. */
 export const PlayingCard = memo(PlayingCardBase);
 
-/** Base hand-card footprint (scale = 1). Exported so the hand layout and the
- *  drag-reorder row can position cards against the same dimensions. */
+/** Base hand-card footprint (scale = 1). The single source of truth for card
+ *  dimensions — the fanned hand, the piles, and the card back all size against
+ *  these (multiplied by their own `scale`). */
 export const CARD_WIDTH = 48;
 export const CARD_HEIGHT = 68;
 
@@ -129,6 +149,8 @@ const styles = StyleSheet.create({
     borderColor: cardColors.faceEdge,
     paddingHorizontal: 4,
     paddingTop: 3,
+    // Web: holding a card to peek must not start a text/element selection.
+    userSelect: 'none',
   },
   selected: {
     borderWidth: 2,
@@ -157,6 +179,15 @@ const styles = StyleSheet.create({
     bottom: 4,
     right: 5,
     fontSize: 22,
+  },
+  // Knock/gin discard hint — a small dot in the top-right corner.
+  hintDot: {
+    position: 'absolute',
+    top: 3,
+    right: 3,
+    width: 7,
+    height: 7,
+    borderRadius: 4,
   },
   // Run: one solid underline bar pinned to the bottom edge, inside the corners.
   meldBar: {

@@ -8,10 +8,16 @@ import {
 } from 'react-native';
 
 import { accent, felt, text } from '@/theme/colors';
+import { mono } from '@/theme/typography';
+import { CODE_LENGTH, sanitizeCode } from '@/util/room-code';
 
-/** The room-code alphabet — omits visually ambiguous characters (0/O/1/I/L). */
-const CODE_ALPHABET = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
-const CODE_LENGTH = 5;
+/*
+ * The alphabet, the length and `sanitizeCode` all live in @/util/room-code now —
+ * they were duplicated across this file, the generator and the analytics script,
+ * with the same rule restated a fourth time as a regex in the database rules.
+ * Re-exported here so existing importers keep working.
+ */
+export { CODE_ALPHABET, CODE_LENGTH, sanitizeCode } from '@/util/room-code';
 
 export type CodeInputProps = {
   value: string;
@@ -19,17 +25,6 @@ export type CodeInputProps = {
   onSubmit?: () => void;
   autoFocus?: boolean;
 };
-
-/** Strip to uppercase room-code characters and clamp to the code length. */
-function sanitize(raw: string): string {
-  const upper = raw.toUpperCase();
-  let out = '';
-  for (const ch of upper) {
-    if (CODE_ALPHABET.includes(ch)) out += ch;
-    if (out.length === CODE_LENGTH) break;
-  }
-  return out;
-}
 
 /**
  * A 5-slot room-code entry. A single hidden `TextInput` captures keystrokes;
@@ -45,7 +40,7 @@ export function CodeInput({
   const inputRef = useRef<TextInput>(null);
 
   const handleChange = (raw: string) => {
-    const next = sanitize(raw);
+    const next = sanitizeCode(raw);
     onChangeText(next);
     if (next.length === CODE_LENGTH) onSubmit?.();
   };
@@ -70,6 +65,27 @@ export function CodeInput({
         autoCorrect={false}
         keyboardType="visible-password"
         maxLength={CODE_LENGTH}
+        /*
+         * OS AUTOFILL OF THE CODE OUT OF A TEXT MESSAGE.
+         *
+         * `inviteMessage` (util/invite.ts) ends with the origin-bound
+         * one-time-code line `@host #CODE`. These two attributes are the other
+         * half of that contract: they tell the platform this field is where such
+         * a code goes, so the keyboard offers it on a tap instead of the
+         * recipient reading five characters off a chat and retyping them.
+         *
+         * This matters most on iOS, where it is the ONLY good path. An installed
+         * home-screen web app cannot be opened from a link at all, so an iOS
+         * recipient with the app has to come in through the code — and this turns
+         * that from transcription into one tap.
+         *
+         * `textContentType` is the native (iOS) spelling; `autoComplete` is the
+         * one react-native-web forwards to the DOM as
+         * `autocomplete="one-time-code"`. Both are needed because this component
+         * renders on both.
+         */
+        textContentType="oneTimeCode"
+        autoComplete="one-time-code"
         style={styles.hiddenInput}
         accessibilityLabel="Room code"
       />
@@ -130,6 +146,6 @@ const styles = StyleSheet.create({
     color: text.primary,
     fontSize: 28,
     fontWeight: '800',
-    fontFamily: 'monospace',
+    fontFamily: mono,
   },
 });

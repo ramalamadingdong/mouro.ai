@@ -53,6 +53,9 @@ pubsub-debug.log*
 # typescript
 *.tsbuildinfo
 
+# analytics pipeline output (generated CSV / sample dumps)
+scripts/analytics/out/
+
 app-example
 
 # generated native folders

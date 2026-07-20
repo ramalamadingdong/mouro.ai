@@ -52,7 +52,12 @@ export const text = {
   primary: '#f5f0e1',
   /** Secondary / muted text on felt. */
   muted: '#a8c3b5',
-  /** Faint / disabled text. */
+  /**
+   * Readable hint text on felt (~3.5:1 on `felt.table`). Use this for hints the
+   * player must actually read; reserve `faint` for decorative/disabled text.
+   */
+  hint: '#93b0a3',
+  /** Faint / disabled / decorative text — too low-contrast for must-read copy. */
   faint: '#6f8c7e',
   /** Text on light (card face) surfaces. */
   onLight: '#1c2b24',

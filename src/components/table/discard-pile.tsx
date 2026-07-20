@@ -1,7 +1,8 @@
 import { memo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { PlayingCard } from '@/components/playing-card';
+import { PlayingCard, CARD_WIDTH, CARD_HEIGHT } from '@/components/playing-card';
+import { pileGlow } from '@/components/table/pile-glow';
 import type { CardId } from '@/engine';
 import { accent, text } from '@/theme/colors';
 
@@ -21,9 +22,6 @@ export type DiscardPileProps = {
   /** Fired when the press is released (e.g. to end a hold-to-peek). */
   onPressOut?: () => void;
 };
-
-const CARD_WIDTH = 48;
-const CARD_HEIGHT = 68;
 
 function DiscardPileBase({
   top,
@@ -51,10 +49,11 @@ function DiscardPileBase({
     <View
       style={[
         styles.pile,
-        drawable && styles.drawable,
+        drawable && pileGlow.drawable,
         isTarget && styles.target,
       ]}
     >
+      {drawable ? <View style={pileGlow.halo} pointerEvents="none" /> : null}
       {face}
     </View>
   );
@@ -88,15 +87,6 @@ const styles = StyleSheet.create({
   pile: {
     borderRadius: 8,
     padding: 4,
-  },
-  drawable: {
-    borderWidth: 2,
-    borderColor: accent.gold,
-    shadowColor: accent.gold,
-    shadowOpacity: 0.9,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 0 },
-    elevation: 6,
   },
   target: {
     borderWidth: 2,

@@ -94,6 +94,9 @@ function normalizeRoundResult(v: unknown): RoundResult | null {
   if (typeof v.type !== 'string' || !ROUND_RESULT_TYPES.includes(v.type)) return null;
   const deadwood = asSeatNumRecord(v.deadwood) ?? { p0: 0, p1: 0 };
   const handAtReveal = asSeatCardsRecord(v.handAtReveal);
+  // RTDB prunes null fields; a finite id (including 0 = A♣) round-trips, anything
+  // else (missing/pruned) becomes null. Never use `|| null` — 0 is falsy.
+  const kc = Number(v.knockCard);
   return {
     type: v.type as RoundResult['type'],
     knocker: isSeat(v.knocker) ? v.knocker : null,
@@ -105,6 +108,7 @@ function normalizeRoundResult(v: unknown): RoundResult | null {
     deadwood,
     winner: isSeat(v.winner) ? v.winner : null,
     points: Number(v.points) || 0,
+    knockCard: Number.isFinite(kc) ? kc : null,
     handAtReveal,
   };
 }

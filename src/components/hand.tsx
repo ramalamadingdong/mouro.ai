@@ -5,12 +5,13 @@ import { meldKind, type CardId, type MatchKind, type Meld } from '@/engine';
 import {
   SORT_LABELS,
   SORT_MODES,
-  useHandSort,
+  orderHand,
   type SortMode,
 } from '@/hooks/use-hand-sort';
 import { accent, felt, meldColors, peek, text } from '@/theme/colors';
 
-import { PlayingCard } from './playing-card';
+import { AnimatedCard } from './animated-card';
+import { type KnockHint } from './playing-card';
 
 export type HandProps = {
   /** The player's cards, in game-state (draw) order. */
@@ -19,8 +20,14 @@ export type HandProps = {
   selected?: CardId | null;
   /** Tapping a card reports its id. */
   onSelect?: (card: CardId) => void;
-  /** Initial sort mode (defaults to `off` = draw order). */
-  initialSort?: SortMode;
+  /** Current sort mode (controlled — persisted by the caller). */
+  sortMode: SortMode;
+  /** Called when the player changes the sort mode via the toggle. */
+  onSortChange: (mode: SortMode) => void;
+  /** Card size multiplier (grows the whole fan on tablets / large screens). */
+  scale?: number;
+  /** Ease cards in on mount (deal cascade / drawn card). Off = instant. */
+  animate?: boolean;
   /**
    * The card just drawn this turn. It is held out separately at the end of the
    * hand (never sorted into the group) so you can see what you picked up before
@@ -41,6 +48,8 @@ export type HandProps = {
   peekCard?: CardId | null;
   /** Which hand cards match the held card, and how (set = rank, run = suit). */
   peekMatches?: Map<CardId, MatchKind> | null;
+  /** Cards whose discard would enable a knock/gin — marked with a corner dot. */
+  knockHints?: Map<CardId, KnockHint> | null;
   /** Press-and-hold a hand card to start a peek (reports the card's id). */
   onPeek?: (card: CardId) => void;
   /** Release ends the peek. */
@@ -48,19 +57,23 @@ export type HandProps = {
 };
 
 /**
- * The player's hand: a fanned row of cards plus a "Off / Rank / Suit" sort
- * toggle. Sorting only reorders the on-screen view — selection is tracked by
- * card id, so the staged card stays staged across a sort change.
+ * The player's hand: a fanned row of cards plus an "Off / Rank / Suit / Meld"
+ * sort toggle. Sorting only reorders the on-screen view — selection is tracked
+ * by card id, so the staged card stays staged across a sort change.
  */
 export function Hand({
   hand,
   selected,
   onSelect,
-  initialSort = 'off',
+  sortMode,
+  onSortChange,
+  scale = 1,
+  animate = false,
   drawnCard = null,
   melds,
   peekCard = null,
   peekMatches = null,
+  knockHints = null,
   onPeek,
   onPeekEnd,
 }: HandProps) {
@@ -69,7 +82,10 @@ export function Hand({
     () => (drawnCard != null ? hand.filter((c) => c !== drawnCard) : hand),
     [hand, drawnCard],
   );
-  const { mode, setMode, ordered } = useHandSort(rest, initialSort);
+  const ordered = useMemo(
+    () => orderHand(rest, sortMode, melds),
+    [rest, sortMode, melds],
+  );
   const showDrawn = drawnCard != null && hand.includes(drawnCard);
 
   // Map every melded card to its group color (cycled per meld) and kind, so a
@@ -96,18 +112,25 @@ export function Hand({
 
   return (
     <View style={styles.container}>
-      <SortToggle mode={mode} onChange={setMode} />
-      <View style={styles.row}>
+      <SortToggle mode={sortMode} onChange={onSortChange} />
+      <View style={[styles.row, scale !== 1 && { paddingTop: 12 * scale }]}>
         {ordered.map((c, i) => {
           const ms = meldStyleOf.get(c);
           const pk = peekStyle(c);
           return (
-            <View key={c} style={i === 0 ? undefined : styles.overlap}>
-              <PlayingCard
+            <View
+              key={c}
+              style={i === 0 ? undefined : [styles.overlap, scale !== 1 && { marginLeft: -22 * scale }]}
+            >
+              <AnimatedCard
+                animate={animate}
+                delay={i * 25}
                 card={c}
                 selected={selected === c}
                 meldColor={ms?.color ?? null}
                 meldKind={ms?.kind ?? null}
+                knockHint={knockHints?.get(c) ?? null}
+                scale={scale}
                 matchRing={pk.matchRing}
                 dimmed={pk.dimmed}
                 onPress={onSelect}
@@ -118,13 +141,16 @@ export function Hand({
           );
         })}
         {showDrawn ? (
-          <View style={styles.drawnWrap}>
+          <View style={[styles.drawnWrap, scale !== 1 && { marginLeft: 18 * scale }]}>
             <Text style={styles.drawnLabel}>new</Text>
-            <PlayingCard
+            <AnimatedCard
+              animate={animate}
               card={drawnCard}
               selected={selected === drawnCard}
               meldColor={meldStyleOf.get(drawnCard)?.color ?? null}
               meldKind={meldStyleOf.get(drawnCard)?.kind ?? null}
+              knockHint={knockHints?.get(drawnCard) ?? null}
+              scale={scale}
               matchRing={peekStyle(drawnCard).matchRing}
               dimmed={peekStyle(drawnCard).dimmed}
               onLongPress={onPeek}
@@ -195,7 +221,7 @@ const styles = StyleSheet.create({
   toggle: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 4,
     backgroundColor: felt.tableDeep,
     borderRadius: 999,
     padding: 4,
@@ -211,7 +237,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     paddingVertical: 5,
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     borderRadius: 999,
     overflow: 'hidden', // clip the pill background to the rounded corners
   },

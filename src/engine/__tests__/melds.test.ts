@@ -6,8 +6,9 @@ import {
   isBigGin,
   meldKind,
   matchingCards,
+  arrangeForDisplay,
 } from '../melds';
-import { pipValue, makeDeck } from '../cards';
+import { pipValue, makeDeck, rankOf, sortByRank } from '../cards';
 import { makeRng, shuffle } from '../rng';
 import type { CardId, Meld } from '../types';
 
@@ -238,6 +239,66 @@ describe('knockOptions', () => {
     const ginOpt = opts.find((o) => o.deadwoodAfter === 0);
     expect(ginOpt).toBeDefined();
     expect(ginOpt!.card).toBe(C(3, 12));
+  });
+});
+
+describe('arrangeForDisplay', () => {
+  // A-2-3 clubs (run), three 5s (set), plus four loose cards.
+  const HAND = [
+    C(0, 0), C(0, 1), C(0, 2), // A-2-3 clubs
+    C(0, 4), C(1, 4), C(2, 4), // three 5s
+    C(3, 11), C(2, 10), C(1, 8), C(0, 9), // Q♠ J♥ 9♦ 10♣ loose
+  ];
+
+  const isContiguous = (result: CardId[], cards: CardId[]): boolean => {
+    const pos = cards.map((c) => result.indexOf(c)).sort((a, b) => a - b);
+    if (pos[0] === -1) return false;
+    for (let i = 1; i < pos.length; i++) if (pos[i] !== pos[i - 1] + 1) return false;
+    return true;
+  };
+
+  test('preserves the exact multiset of cards', () => {
+    const arr = bestArrangement(HAND);
+    const result = arrangeForDisplay(HAND, arr.melds);
+    expect([...result].sort((a, b) => a - b)).toEqual([...HAND].sort((a, b) => a - b));
+  });
+
+  test('each meld appears as a contiguous block', () => {
+    const arr = bestArrangement(HAND);
+    const result = arrangeForDisplay(HAND, arr.melds);
+    expect(arr.melds.length).toBeGreaterThan(0);
+    for (const meld of arr.melds) expect(isContiguous(result, meld)).toBe(true);
+  });
+
+  test('deadwood trails, sorted by rank', () => {
+    const arr = bestArrangement(HAND);
+    const result = arrangeForDisplay(HAND, arr.melds);
+    const tail = result.slice(result.length - arr.deadwood.length);
+    expect(tail).toEqual(sortByRank(arr.deadwood));
+    // and the tail is non-increasing? no — ascending by rank
+    for (let i = 1; i < tail.length; i++) {
+      expect(rankOf(tail[i])).toBeGreaterThanOrEqual(rankOf(tail[i - 1]));
+    }
+  });
+
+  test('no melds → equals sortByRank(hand)', () => {
+    expect(arrangeForDisplay(HAND, [])).toEqual(sortByRank(HAND));
+  });
+
+  test('ignores meld cards not present in the hand', () => {
+    // A meld referencing a card the hand doesn't hold must not be injected.
+    const foreign: Meld = [C(3, 0), C(3, 1), C(3, 2)]; // A-2-3 spades, none in HAND
+    const result = arrangeForDisplay(HAND, [foreign]);
+    expect([...result].sort((a, b) => a - b)).toEqual([...HAND].sort((a, b) => a - b));
+    expect(result).toEqual(sortByRank(HAND));
+  });
+
+  test('never mutates the input hand', () => {
+    const snapshot = HAND.slice();
+    const arr = bestArrangement(HAND);
+    arrangeForDisplay(HAND, arr.melds);
+    arrangeForDisplay(HAND, []);
+    expect(HAND).toEqual(snapshot);
   });
 });
 

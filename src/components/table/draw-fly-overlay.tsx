@@ -25,11 +25,20 @@ export function DrawFlyOverlay({
   version,
   mySeat,
   names,
+  sizeScale = 1,
+  cardBack,
 }: {
   lastMove: LastMove | null;
   version: number;
   mySeat: Seat;
   names: Record<Seat, string>;
+  /** Match the table's responsive card size on larger screens. */
+  sizeScale?: number;
+  /**
+   * The opponent's card-back photo. The face-down fly card is THEIR card, so it
+   * wears their back. `null`/omitted → the default lattice.
+   */
+  cardBack?: string | null;
 }) {
   const [anim, setAnim] = useState<ActiveAnim | null>(null);
   const progress = useRef(new Animated.Value(0)).current;
@@ -94,9 +103,9 @@ export function DrawFlyOverlay({
       </Animated.Text>
       <Animated.View style={[styles.cardWrap, { opacity, transform: [{ translateY }, { scale }] }]}>
         {anim.fromStock || anim.card === null ? (
-          <CardBack width={66} height={94} />
+          <CardBack width={66 * sizeScale} height={94 * sizeScale} uri={cardBack ?? null} />
         ) : (
-          <PlayingCard card={anim.card} scale={1.4} />
+          <PlayingCard card={anim.card} scale={1.4 * sizeScale} />
         )}
       </Animated.View>
     </View>

@@ -18,6 +18,9 @@
           },
           "updatedAt": {
             ".validate": "newData.isNumber()"
+          },
+          "target": {
+            ".validate": "newData.isNumber() && newData.val() >= 25 && newData.val() <= 500"
           }
         },
         "state": {
@@ -39,6 +42,49 @@
           "$uid": {
             ".write": "auth != null && auth.uid === $uid",
             ".validate": "$uid === data.parent().parent().child('meta/host').val() || $uid === data.parent().parent().child('meta/guest').val()"
+          }
+        },
+        "backs": {
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid",
+            ".validate": "(newData.val() === null || (newData.isString() && newData.val().length <= 200000)) && ($uid === data.parent().parent().child('meta/host').val() || $uid === data.parent().parent().child('meta/guest').val())"
+          }
+        },
+        "emotes": {
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid",
+            ".validate": "$uid === data.parent().parent().child('meta/host').val() || $uid === data.parent().parent().child('meta/guest').val()",
+            "emoji": {
+              ".validate": "newData.isString() && newData.val().length <= 16"
+            },
+            "n": {
+              ".validate": "newData.isNumber()"
+            },
+            "$other": {
+              ".validate": false
+            }
+          }
+        }
+      }
+    },
+    "matches": {
+      "$mid": {
+        ".read": false,
+        ".validate": "$mid.matches(/^[A-HJKMNP-Z2-9]{5}-[0-9]{10,15}$/)",
+        "players": {
+          ".write": "auth != null && !data.exists() && (newData.child('p0').val() === auth.uid || newData.child('p1').val() === auth.uid)",
+          ".validate": "newData.child('p0').isString() && newData.child('p1').isString()"
+        },
+        "initial": {
+          ".write": "auth != null && !data.exists()"
+        },
+        "meta": {
+          ".write": "auth != null && !data.child('createdAt').exists()"
+        },
+        "log": {
+          "$v": {
+            ".write": "auth != null && !data.exists() && (data.parent().parent().child('players/p0').val() === auth.uid || data.parent().parent().child('players/p1').val() === auth.uid)",
+            ".validate": "$v.matches(/^[0-9]+$/) && newData.hasChild('seat') && newData.hasChild('move')"
           }
         }
       }

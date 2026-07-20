@@ -9,6 +9,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 
 import { GameTable } from '@/components/table/game-table';
+import { TargetPicker } from '@/components/target-picker';
 import { Button } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
 import type { Difficulty } from '@/ai/cpu';
@@ -38,6 +39,8 @@ export default function SoloScreen() {
   const playerName = useSettingsStore((s) => s.playerName);
   const cpuDifficulty = useSettingsStore((s) => s.cpuDifficulty);
   const setCpuDifficulty = useSettingsStore((s) => s.setCpuDifficulty);
+  const matchTarget = useSettingsStore((s) => s.matchTarget);
+  const setMatchTarget = useSettingsStore((s) => s.setMatchTarget);
 
   // Tear down the local game (and its CPU timer) when leaving the screen.
   useEffect(() => reset, [reset]);
@@ -78,9 +81,12 @@ export default function SoloScreen() {
           })}
         </View>
 
+        <Text style={styles.targetLabel}>Play to</Text>
+        <TargetPicker value={matchTarget} onChange={setMatchTarget} />
+
         <Button
           title="Deal"
-          onPress={() => newGame(nameFor(), cpuDifficulty)}
+          onPress={() => newGame(nameFor(), cpuDifficulty, matchTarget)}
           style={styles.deal}
         />
         <Button title="Back" variant="ghost" onPress={() => router.replace('/')} style={styles.back} />
@@ -100,6 +106,7 @@ export default function SoloScreen() {
       connected
       opponentOnline
       opponentTurnLabel={cpuThinking ? 'Computer is thinking…' : "Computer's turn"}
+      opponentThinking={cpuThinking}
       rematchVotes={{}}
     />
   );
@@ -151,6 +158,17 @@ const styles = StyleSheet.create({
   },
   pillBlurbOn: {
     color: text.primary,
+  },
+  targetLabel: {
+    color: text.muted,
+    fontSize: 13,
+    fontWeight: '700',
+    alignSelf: 'flex-start',
+    marginTop: 24,
+    marginBottom: 8,
+    marginLeft: 2,
+    width: '100%',
+    maxWidth: 360,
   },
   deal: {
     marginTop: 24,

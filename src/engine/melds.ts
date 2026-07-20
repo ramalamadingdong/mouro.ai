@@ -7,7 +7,7 @@
  * take-or-skip DFS over enumerated disjoint melds with a bitmask memo.
  */
 import type { Arrangement, CardId, KnockOption, Meld } from './types';
-import { pipValue, rankOf, suitOf } from './cards';
+import { pipValue, rankOf, sortByRank, suitOf } from './cards';
 
 /** All k-sized combinations of `items`. */
 function combinations<T>(items: T[], k: number): T[][] {
@@ -213,4 +213,27 @@ export function knockOptions(hand: CardId[]): KnockOption[] {
 /** True iff an 11-card hand melds completely (deadwood empty) — big gin. */
 export function isBigGin(hand: CardId[]): boolean {
   return hand.length === 11 && bestArrangement(hand).deadwood.length === 0;
+}
+
+/**
+ * Reorder `hand` for display so each meld's cards sit contiguously (in the order
+ * the meld lists them), with the leftover deadwood sorted by rank and trailing.
+ * Pure and deterministic; the exact set of cards is preserved (never adds/drops).
+ * `melds` typically comes from `bestArrangement(hand).melds`; any meld card not
+ * actually in `hand` is ignored. With no melds this is just `sortByRank(hand)`.
+ */
+export function arrangeForDisplay(hand: CardId[], melds: Meld[]): CardId[] {
+  const inHand = new Set(hand);
+  const placed = new Set<CardId>();
+  const grouped: CardId[] = [];
+  for (const meld of melds) {
+    for (const c of meld) {
+      if (inHand.has(c) && !placed.has(c)) {
+        placed.add(c);
+        grouped.push(c);
+      }
+    }
+  }
+  const deadwood = sortByRank(hand.filter((c) => !placed.has(c)));
+  return [...grouped, ...deadwood];
 }

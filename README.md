@@ -198,6 +198,72 @@ point them at your machine's LAN IP (e.g. `http://192.168.1.20:3000`).
 - **Android / desktop Chrome:** an **Install** icon appears in the address bar
   (or menu → *Install app*).
 
+### Deploy to mouro.ai/gin-rummey (automatic)
+
+The public site is hosted at **<https://mouro.ai/gin-rummey>** on a home server
+(nginx; mouro.ai itself is a Django app). Two pieces make the **sub-path** work:
+
+- [`app.json`](app.json) sets `experiments.baseUrl: "/gin-rummey"` so Expo
+  prefixes every asset URL. [`src/app/+html.tsx`](src/app/+html.tsx) prefixes its
+  hand-written `<link>` tags with `process.env.EXPO_BASE_URL`, and
+  [`public/manifest.json`](public/manifest.json) uses **relative** paths — so the
+  same export works at a domain root or any sub-path.
+- An nginx `location /gin-rummey/` block (`root /home/rami`, SPA fallback to
+  `index.html`) serves `/home/rami/gin-rummey/`, ahead of the site's `/` proxy.
+
+**Auto-deploy:** [`.github/workflows/deploy-web.yml`](.github/workflows/deploy-web.yml)
+runs on every push to `master` — it typechecks, tests, runs
+`expo export --platform web`, then rsyncs `dist/` to the server. Required repo
+**secrets**:
+
+| Secret(s) | Value |
+| --- | --- |
+| `SSH_HOST`, `SSH_USER`, `SSH_KEY`, `SSH_PORT` | Same SSH access the mouro.ai repo uses |
+| `EXPO_PUBLIC_FIREBASE_*` (all 8) | The same public values as your `.env` |
+
+The one-time nginx block is installed on the server with
+`sudo bash /home/rami/deploy-gin-rummey/install-nginx.sh` (backs up the config,
+injects the block, runs `nginx -t`, reloads, and auto-rolls-back on failure).
+
+### Invite links
+
+The lobby's **Share invite link** button (and tapping the big room code) shares a
+link instead of making your friend retype five characters:
+
+```
+https://mouro.ai/gin-rummey/join/ABCDE
+```
+
+Opening it lands on `src/app/join/[code].tsx`, which prefills the code and shows
+a **Join** button. It deliberately **does not auto-join** — link-preview
+crawlers in iMessage/WhatsApp/Slack fetch shared URLs, and an auto-join would let
+a preview bot take the guest seat of a strictly 2-player room before the human
+tapped anything.
+
+> **`WEB_BASE_PATH` in [`src/util/invite.ts`](src/util/invite.ts) must match
+> `experiments.baseUrl` in [`app.json`](app.json).** Nothing enforces this —
+> app.json is JSON with no place for a comment, and `EXPO_BASE_URL` exists only
+> in the web bundle, not on native. If you move the site to a different
+> sub-path, change both.
+
+These are ordinary https links, **not** universal links / app links: those need
+an `apple-app-site-association` file and a custom native build, which this
+project rules out (Expo Go only, no Mac). So link handling is whatever the OS
+does with a normal web URL:
+
+- **Android:** an installed PWA usually *captures* in-scope links, so the invite
+  opens inside the installed app.
+- **iOS:** home-screen web apps do **not** capture links. The invite opens in
+  **Safari**, and Safari has **separate storage** from the installed web app —
+  therefore a **different anonymous Firebase uid**. Consequence, plainly: *a game
+  joined from a link in Safari will not appear in the installed app.* An iPhone
+  user who has added the app to their home screen should open the app and type
+  the code, or just keep playing in the Safari tab they joined from.
+
+> This deploys the **website** only. Updating the installed iOS/Android app is
+> the separate EAS channel (§5) — a PWA and a native binary are different
+> deliverables built from the same code.
+
 ## How to play (and test with two devices)
 
 Online gin rummy needs **two players**, so use two devices — for example your
@@ -224,11 +290,12 @@ src/
   engine/      Pure TS gin rummy rules engine (no React/Firebase) + Jest tests
   fb/          Firebase: config, firebase (singleton), auth, rooms, presence
   store/       Zustand state (gameStore = live game, settingsStore = prefs)
-  util/        seed.ts (crypto seed + room code)
+  util/        seed.ts (crypto seed + room code), invite.ts (invite link URLs)
   components/  Cards + hand, and table/ (piles, opponent bar, action controls,
                reveal modals) and ui/ (button, code input, screen)
   hooks/       use-hand-sort (display ordering)
-  app/         expo-router screens: index (Home), join, lobby/[code], game/[code]
+  app/         expo-router screens: index (Home), join/ (index = manual entry,
+               [code] = invite link), lobby/[code], game/[code]
                plus +html.tsx (web-only <head>: PWA manifest + iOS meta tags)
   theme/       Felt-table color palette
 public/        Static web assets copied to the site root: manifest.json + icons/

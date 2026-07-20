@@ -183,6 +183,7 @@ function makeRoundResult(args: {
   layoffs: RoundResult['layoffs'];
   winner: Seat;
   points: number;
+  knockCard: CardId | null;
   knockerHand: CardId[];
   defenderHand: CardId[];
 }): RoundResult {
@@ -204,6 +205,7 @@ function makeRoundResult(args: {
     deadwood,
     winner: args.winner,
     points: args.points,
+    knockCard: args.knockCard,
     handAtReveal,
   };
 }
@@ -342,6 +344,7 @@ export function applyMove(state: GameState, move: Move, uid: string): ApplyResul
           deadwood: { p0: 0, p1: 0 },
           winner: null,
           points: 0,
+          knockCard: null,
           handAtReveal: { p0: s.hands.p0.slice(), p1: s.hands.p1.slice() },
         };
         s.roundResult = result;
@@ -389,6 +392,7 @@ export function applyMove(state: GameState, move: Move, uid: string): ApplyResul
           layoffs: [],
           winner: knocker,
           points,
+          knockCard: card,
           knockerHand: kh,
           defenderHand,
         });
@@ -410,6 +414,7 @@ export function applyMove(state: GameState, move: Move, uid: string): ApplyResul
             layoffs: lay.layoffs,
             winner: defender,
             points,
+            knockCard: card,
             knockerHand: kh,
             defenderHand,
           });
@@ -427,6 +432,7 @@ export function applyMove(state: GameState, move: Move, uid: string): ApplyResul
             layoffs: lay.layoffs,
             winner: knocker,
             points,
+            knockCard: card,
             knockerHand: kh,
             defenderHand,
           });
@@ -459,6 +465,7 @@ export function applyMove(state: GameState, move: Move, uid: string): ApplyResul
         layoffs: [],
         winner: knocker,
         points,
+        knockCard: null,
         knockerHand,
         defenderHand,
       });

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Platform,
   Pressable,
   Share,
   StyleSheet,
@@ -9,10 +10,15 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
+import { TargetPicker, DEFAULT_TARGET } from '@/components/target-picker';
 import { Button } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
+import { getCurrentUid } from '@/fb/auth';
 import { useGameStore } from '@/store/gameStore';
+import { useSettingsStore } from '@/store/settingsStore';
 import { accent, felt, text } from '@/theme/colors';
+import { mono } from '@/theme/typography';
+import { inviteMessage, inviteUrl } from '@/util/invite';
 
 /** Presence dot: green when online, grey otherwise. */
 function PresenceDot({ online }: { online: boolean }) {
@@ -60,8 +66,17 @@ export default function LobbyScreen() {
   const state = useGameStore((s) => s.state);
   const presence = useGameStore((s) => s.presence);
   const connected = useGameStore((s) => s.connected);
+  const setTarget = useGameStore((s) => s.setTarget);
+
+  const matchTarget = useSettingsStore((s) => s.matchTarget);
+  const setMatchTarget = useSettingsStore((s) => s.setMatchTarget);
 
   const [settled, setSettled] = useState(false);
+  // Web-only share feedback: `copied` confirms the clipboard write (the browser
+  // gives no visible signal of its own), `showLink` reveals a selectable URL
+  // when no clipboard API exists at all.
+  const [copied, setCopied] = useState(false);
+  const [showLink, setShowLink] = useState(false);
 
   useEffect(() => {
     if (!code) return;
@@ -70,6 +85,19 @@ export default function LobbyScreen() {
     const t = setTimeout(() => setSettled(true), 6000);
     return () => clearTimeout(t);
   }, [code, bindRoom]);
+
+  // Host: seed the room's winning score from the saved preference as soon as the
+  // room is open and no target is set yet, so the guest inherits it even if the
+  // host never touches the picker (the deal reads meta.target).
+  const isHost = !!(meta && getCurrentUid() === meta.host);
+  useEffect(() => {
+    if (isHost && meta && meta.target === undefined) setTarget(matchTarget);
+  }, [isHost, meta, matchTarget, setTarget]);
+
+  const handleTarget = (t: number) => {
+    setMatchTarget(t); // remember the preference for next time
+    setTarget(t); // write to the room
+  };
 
   // Once the host has dealt, move into the game (and don't allow coming back).
   useEffect(() => {
@@ -85,9 +113,41 @@ export default function LobbyScreen() {
 
   const handleShare = () => {
     if (!code) return;
-    Share.share({
-      message: `Join my gin rummy game — code ${code}`,
-    }).catch(() => {});
+    const url = inviteUrl(code);
+
+    // Web: React Native's Share is unreliable/unsupported under react-native-web,
+    // so go through the browser APIs directly — each one feature-checked, because
+    // all of them are absent in plausible situations (no navigator.share on
+    // desktop Firefox; no navigator.clipboard on insecure origins or inside an
+    // iframe) and an unguarded call throws instead of degrading.
+    if (Platform.OS === 'web') {
+      const nav: Navigator | undefined =
+        typeof navigator !== 'undefined' ? navigator : undefined;
+
+      if (nav?.share) {
+        nav
+          .share({ title: 'Gin Rummy', text: inviteMessage(code), url })
+          // A rejection here is usually the user dismissing the sheet, not a
+          // failure — don't fall through to copying behind their back.
+          .catch(() => {});
+        return;
+      }
+      if (nav?.clipboard?.writeText) {
+        nav.clipboard
+          .writeText(url)
+          .then(() => setCopied(true))
+          .catch(() => setShowLink(true));
+        return;
+      }
+      // Last resort: render the URL so it can be selected and copied by hand.
+      setShowLink(true);
+      return;
+    }
+
+    // Native. iOS reads `url` separately to build the rich share sheet preview;
+    // Android IGNORES `url` entirely, which is why inviteMessage() also embeds
+    // the link in the text.
+    Share.share({ message: inviteMessage(code), url }).catch(() => {});
   };
 
   // Room is gone / access denied — but only trust this once we're actually
@@ -108,12 +168,36 @@ export default function LobbyScreen() {
     );
   }
 
-  // Waiting for the first snapshot.
+  // Settled but never connected — don't leave the player on an endless spinner.
+  if (settled && !meta && !connected) {
+    return (
+      <Screen center>
+        <Text style={styles.title}>Couldn’t connect</Text>
+        <Text style={styles.subtitle}>
+          Check your internet connection and try again.
+        </Text>
+        <Button
+          title="Back to home"
+          onPress={leaveHome}
+          style={styles.homeButton}
+        />
+      </Screen>
+    );
+  }
+
+  // Waiting for the first snapshot (still within the settle window). Always offer
+  // an exit so a slow/absent connection can never trap the player here.
   if (!meta) {
     return (
       <Screen center>
         <ActivityIndicator size="large" color={accent.gold} />
         <Text style={styles.loadingText}>Opening room…</Text>
+        <Button
+          title="Leave"
+          onPress={leaveHome}
+          variant="ghost"
+          style={styles.loadingLeave}
+        />
       </Screen>
     );
   }
@@ -125,23 +209,31 @@ export default function LobbyScreen() {
   return (
     <Screen center>
       <Text style={styles.title}>Room ready</Text>
-      <Text style={styles.subtitle}>Share this code with your opponent</Text>
+      <Text style={styles.subtitle}>Send this link to your opponent</Text>
 
       <Pressable
         onPress={handleShare}
         accessibilityRole="button"
-        accessibilityLabel={`Room code ${code}, tap to share`}
+        accessibilityLabel={`Room code ${code}, tap to share the invite link`}
         style={styles.codeBox}
       >
         <Text style={styles.code}>{code}</Text>
       </Pressable>
 
       <Button
-        title="Share code"
+        title="Share invite link"
         onPress={handleShare}
         variant="secondary"
         style={styles.shareButton}
       />
+
+      {copied && <Text style={styles.copied}>Link copied</Text>}
+
+      {showLink && (
+        <Text style={styles.linkFallback} selectable>
+          {inviteUrl(code)}
+        </Text>
+      )}
 
       <View style={styles.players}>
         <PlayerRow name={meta.hostName} online={hostOnline} />
@@ -150,6 +242,17 @@ export default function LobbyScreen() {
           online={guestOnline}
           waiting={!hasGuest}
         />
+      </View>
+
+      <View style={styles.targetSection}>
+        <Text style={styles.targetHeading}>Winning score</Text>
+        {isHost ? (
+          <TargetPicker value={meta.target ?? matchTarget} onChange={handleTarget} />
+        ) : (
+          <Text style={styles.targetReadonly}>
+            First to {meta.target ?? DEFAULT_TARGET} wins
+          </Text>
+        )}
       </View>
 
       {!hasGuest && (
@@ -198,12 +301,26 @@ const styles = StyleSheet.create({
     color: accent.gold,
     fontSize: 48,
     fontWeight: '800',
-    fontFamily: 'monospace',
+    fontFamily: mono,
     letterSpacing: 8,
     textAlign: 'center',
   },
   shareButton: {
     minWidth: 200,
+  },
+  copied: {
+    color: accent.online,
+    fontSize: 13,
+    fontWeight: '700',
+    marginTop: 10,
+  },
+  linkFallback: {
+    color: text.muted,
+    fontSize: 12,
+    fontFamily: mono,
+    marginTop: 10,
+    textAlign: 'center',
+    maxWidth: 340,
   },
   players: {
     width: '100%',
@@ -232,9 +349,32 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   playerWaiting: {
-    color: text.faint,
+    color: text.hint,
     fontWeight: '500',
     fontStyle: 'italic',
+  },
+  targetSection: {
+    width: '100%',
+    maxWidth: 340,
+    marginTop: 24,
+    alignItems: 'center',
+  },
+  targetHeading: {
+    color: text.muted,
+    fontSize: 13,
+    fontWeight: '700',
+    alignSelf: 'flex-start',
+    marginLeft: 2,
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  targetReadonly: {
+    color: text.primary,
+    fontSize: 15,
+    fontWeight: '700',
+    alignSelf: 'flex-start',
+    marginLeft: 2,
   },
   waitingBanner: {
     flexDirection: 'row',
@@ -257,5 +397,8 @@ const styles = StyleSheet.create({
     color: text.muted,
     fontSize: 15,
     marginTop: 16,
+  },
+  loadingLeave: {
+    marginTop: 24,
   },
 });

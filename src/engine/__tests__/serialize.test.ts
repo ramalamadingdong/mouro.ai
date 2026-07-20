@@ -77,6 +77,24 @@ describe('normalize', () => {
     expect(n.roundResult!.knockerMelds).toEqual([]);
     expect(n.roundResult!.layoffs).toEqual([]);
     expect(n.roundResult!.handAtReveal.p0).toEqual([]);
+    expect(n.roundResult!.knockCard).toBeNull(); // pruned null -> null (not 0/A♣)
+  });
+
+  test('preserves a knockCard of 0 (A♣) across the RTDB round-trip', () => {
+    const s = fresh();
+    const raw: any = JSON.parse(JSON.stringify(s));
+    raw.phase = 'roundOver';
+    raw.roundResult = {
+      type: 'knock',
+      knocker: 'p0',
+      deadwood: { p0: 3, p1: 10 },
+      winner: 'p0',
+      points: 7,
+      knockCard: 0, // A♣ — falsy, must not be coerced to null
+      handAtReveal: { p0: {}, p1: {} },
+    };
+    const n = normalize(raw)!;
+    expect(n.roundResult!.knockCard).toBe(0);
   });
 
   test('rejects a roundResult with an invalid type', () => {

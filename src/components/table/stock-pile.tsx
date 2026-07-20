@@ -2,6 +2,8 @@ import { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { CardBack } from '@/components/card-back';
+import { CARD_WIDTH, CARD_HEIGHT } from '@/components/playing-card';
+import { pileGlow } from '@/components/table/pile-glow';
 import { accent, text } from '@/theme/colors';
 
 export type StockPileProps = {
@@ -13,18 +15,22 @@ export type StockPileProps = {
   scale?: number;
   /** Fired when a drawable pile is tapped. */
   onPress?: () => void;
+  /**
+   * Card-back photo for the pile — the CURRENT player's back (whose turn it is).
+   * `undefined` → this device's own back; `null` → the default lattice.
+   */
+  cardBack?: string | null;
 };
 
 const LOW_STOCK = 5;
-const BASE_W = 48;
-const BASE_H = 68;
 
-function StockPileBase({ count, drawable, scale = 1, onPress }: StockPileProps) {
+function StockPileBase({ count, drawable, scale = 1, onPress, cardBack }: StockPileProps) {
   const lowStock = count <= LOW_STOCK;
 
   const pile = (
-    <View style={[styles.pile, drawable && styles.drawable]}>
-      <CardBack width={BASE_W * scale} height={BASE_H * scale} />
+    <View style={[styles.pile, drawable && pileGlow.drawable]}>
+      {drawable ? <View style={pileGlow.halo} pointerEvents="none" /> : null}
+      <CardBack width={CARD_WIDTH * scale} height={CARD_HEIGHT * scale} uri={cardBack} />
       <View style={[styles.badge, lowStock && styles.badgeLow]}>
         <Text style={[styles.badgeText, lowStock && styles.badgeTextLow]}>{count}</Text>
       </View>
@@ -51,15 +57,6 @@ const styles = StyleSheet.create({
   pile: {
     borderRadius: 8,
     padding: 4,
-  },
-  drawable: {
-    borderWidth: 2,
-    borderColor: accent.gold,
-    shadowColor: accent.gold,
-    shadowOpacity: 0.9,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 0 },
-    elevation: 6,
   },
   badge: {
     position: 'absolute',

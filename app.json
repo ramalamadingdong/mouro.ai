@@ -4,7 +4,7 @@
     "slug": "gin-rummey",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/cats-icon.png",
     "scheme": "ginrummey",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
@@ -18,17 +18,15 @@
     "android": {
       "package": "com.ramimouro.ginrummy",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "backgroundColor": "#0d271e",
+        "foregroundImage": "./assets/images/cats-icon.png"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/cats-icon.png"
     },
     "plugins": [
       "expo-router",
@@ -47,7 +45,8 @@
     ],
     "experiments": {
       "typedRoutes": true,
-      "reactCompiler": true
+      "reactCompiler": true,
+      "baseUrl": "/gin-rummey"
     }
   }
 }

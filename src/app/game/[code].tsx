@@ -13,6 +13,7 @@ import { Screen } from '@/components/ui/screen';
 import { otherSeat } from '@/engine';
 import { voteRematch } from '@/fb/rooms';
 import { useGameStore } from '@/store/gameStore';
+import { useSettingsStore } from '@/store/settingsStore';
 import { text } from '@/theme/colors';
 
 export default function GameScreen() {
@@ -23,13 +24,17 @@ export default function GameScreen() {
   const state = useGameStore((s) => s.state);
   const mySeat = useGameStore((s) => s.mySeat);
   const presence = useGameStore((s) => s.presence);
+  const backs = useGameStore((s) => s.backs);
+  const emotes = useGameStore((s) => s.emotes);
   const rematchVotes = useGameStore((s) => s.rematchVotes);
   const pendingMove = useGameStore((s) => s.pendingMove);
   const error = useGameStore((s) => s.error);
   const connected = useGameStore((s) => s.connected);
   const send = useGameStore((s) => s.send);
+  const sendEmote = useGameStore((s) => s.sendEmote);
   const reset = useGameStore((s) => s.reset);
   const bindRoom = useGameStore((s) => s.bindRoom);
+  const setLastRoom = useSettingsStore((s) => s.setLastRoom);
 
   // Bind the room (idempotent — the lobby may already have bound the same code).
   useEffect(() => {
@@ -37,6 +42,9 @@ export default function GameScreen() {
   }, [code, bindRoom]);
 
   const onLeave = () => {
+    // Once the match is over, drop the Resume pointer so Home doesn't offer a
+    // dead room. Leaving mid-match keeps it, so the player can rejoin.
+    if (state?.matchResult) setLastRoom(null);
     reset();
     router.replace('/');
   };
@@ -54,8 +62,12 @@ export default function GameScreen() {
     );
   }
 
+  const myUid = state.players[mySeat];
   const oppUid = state.players[otherSeat(mySeat)];
   const opponentOnline = presence[oppUid]?.online ?? false;
+  const opponentCardBack = backs[oppUid] ?? null;
+  const myEmote = emotes[myUid] ?? null;
+  const opponentEmote = emotes[oppUid] ?? null;
 
   return (
     <GameTable
@@ -70,7 +82,12 @@ export default function GameScreen() {
       error={error}
       connected={connected}
       opponentOnline={opponentOnline}
+      opponentThinking={opponentOnline}
       rematchVotes={rematchVotes}
+      opponentCardBack={opponentCardBack}
+      onEmote={sendEmote}
+      myEmote={myEmote}
+      opponentEmote={opponentEmote}
     />
   );
 }

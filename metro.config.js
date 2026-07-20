@@ -9,11 +9,19 @@ const config = getDefaultConfig(__dirname);
 // `.cjs` files. This is harmless for the rest of the app.
 config.resolver.sourceExts.push('cjs');
 
-// ── Firebase troubleshooting fallback ────────────────────────────────────────
-// If you ever see "Component auth has not been registered yet" or an
-// "INTERNAL ASSERTION FAILED" from Firebase at runtime, uncomment the next line
-// to disable Metro's package-exports resolution (a known Firebase + Metro
-// interaction). Not needed with firebase@^12 on Expo SDK 54 in normal cases.
-// config.resolver.unstable_enablePackageExports = false;
+// ── Disable Metro package-exports resolution (REQUIRED for the web build) ─────
+// With package "exports" enabled (the SDK 54 default), Metro resolves some deps
+// to their ESM build via the "import" condition. zustand v5's ESM — pulled in by
+// `zustand/middleware` (for `persist`), and Metro does NOT tree-shake, so the
+// devtools code comes along too — uses Vite-style `import.meta.env`. The web
+// entry is served as a classic <script>, not type="module", so `import.meta` is
+// a hard parse error ("Cannot use 'import.meta' outside a module") that kills
+// hydration and leaves the app frozen on the prerendered "connecting…" screen.
+// Disabling exports makes every platform use each package's classic CJS build
+// (which uses process.env.NODE_ENV, not import.meta). Native was already fine —
+// it resolves zustand's CJS build via the "react-native" export condition — so
+// this only changes web. It also sidesteps the known Firebase "Component auth
+// has not been registered yet" interaction.
+config.resolver.unstable_enablePackageExports = false;
 
 module.exports = config;

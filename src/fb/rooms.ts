@@ -4,10 +4,26 @@
  * violates the rules is rejected at runtime.
  *
  * Data model (rooms/<CODE>):
- *   meta:     { host, hostName, guest?, guestName?, status, createdAt, updatedAt }
+ *   meta:     { host, hostName, guest?, guestName?, status, createdAt, updatedAt,
+ *               target? }  // target = host-chosen winning score; read at deal.
  *   presence: { <uid>: { online, lastSeen } }
  *   state:    <GameState>   // written whole via transaction; ABSENT until dealt
  *   rematch:  { <uid>: true }
+ *   backs:    { <uid>: "data:image/jpeg;base64,…" }  // each player's card-back
+ *             photo, so the OPPONENT sees it on our face-down cards. Cosmetic,
+ *             kept OUT of `state` so it never bloats the per-move transaction.
+ *   emotes:   { <uid>: { emoji, n } }  // latest reaction each player sent; `n`
+ *             bumps per send so the peer re-pops the same emoji. Ephemeral, kept
+ *             OUT of `state` (like backs) so it never touches the move transaction.
+ *
+ * Separate analytics archive (matches/<matchId>), OUTSIDE rooms/ so it survives
+ * the 24h room reaper (see matchIdFor):
+ *   meta:     { code, createdAt, startedAt }
+ *   players:  { p0: <uid>, p1: <uid> }
+ *   initial:  <GameState>            // the round-1 deal (version 0)
+ *   log:      { <version>: { seat, move } }  // every accepted move, in order
+ * `initial` + the ordered `log` deterministically replays the whole match
+ * offline (scripts/analytics/extract-features.ts) to mine per-player strategy.
  */
 import {
   get,
@@ -33,11 +49,19 @@ export interface RoomMeta {
   status: 'waiting' | 'playing' | 'finished';
   createdAt: number;
   updatedAt: number;
+  /** Host-chosen winning score. Absent → engine default (100). Read at deal. */
+  target?: number;
 }
 
 export interface PresenceEntry {
   online: boolean;
   lastSeen: number;
+}
+
+/** A player's latest reaction. `n` bumps each send so the peer re-pops it. */
+export interface EmoteEntry {
+  emoji: string;
+  n: number;
 }
 
 export interface RoomSnapshot {
@@ -46,9 +70,25 @@ export interface RoomSnapshot {
   state: GameState | null;
   presence: Record<string, PresenceEntry>;
   rematch: Record<string, boolean>;
+  /** Per-uid custom card-back photo (`data:` URI). Missing → default lattice. */
+  backs: Record<string, string>;
+  /** Per-uid latest reaction, for the floating emote pops. */
+  emotes: Record<string, EmoteEntry>;
 }
 
 const DAY_MS = 86400000;
+
+/**
+ * Stable archive id for a match at `matches/<matchId>`. Room codes are recycled
+ * (the 24h reaper + create-collision sweep free them), so the code alone is not
+ * unique across time — we pair it with the room's immutable `createdAt` so a
+ * later game that reuses the code writes to a DISTINCT match node. Both the
+ * dealer (startRoundIfNeeded) and every mover (submitMove) derive the same id
+ * from data they already hold, so no extra read or stored pointer is needed.
+ */
+export function matchIdFor(code: string, createdAt: number): string {
+  return `${code}-${createdAt}`;
+}
 
 /** True for a Realtime Database permission-denied rejection. */
 function isPermissionDenied(err: unknown): boolean {
@@ -170,6 +210,8 @@ export function subscribeRoom(
             state?: unknown;
             presence?: Record<string, PresenceEntry>;
             rematch?: Record<string, boolean>;
+            backs?: Record<string, string>;
+            emotes?: Record<string, EmoteEntry>;
           }
         | null;
       if (!val || !val.meta) {
@@ -182,6 +224,8 @@ export function subscribeRoom(
         state: normalize(val.state),
         presence: val.presence ?? {},
         rematch: val.rematch ?? {},
+        backs: val.backs ?? {},
+        emotes: val.emotes ?? {},
       });
     },
     () => {
@@ -198,10 +242,18 @@ export function subscribeRoom(
  * value, runs the pure reducer, and writes the new state (or aborts). On success
  * bumps meta/updatedAt. Returns {ok} rather than throwing so callers can surface
  * rejection reasons.
+ *
+ * When `matchId` is supplied the accepted move is also appended (best-effort) to
+ * `matches/<matchId>/log/<version>` for offline replay/analysis. The key is the
+ * NEW state version, which makes the write idempotent (a retried move maps to
+ * the same key and the append-only rule denies the overwrite) and gives the
+ * extractor a strictly-ordered, gap-detectable stream. Archiving never blocks or
+ * fails a move: a denied/offline log write is swallowed.
  */
 export async function submitMove(
   code: string,
-  move: Move
+  move: Move,
+  matchId?: string
 ): Promise<{ ok: boolean; error?: string }> {
   const uid = getCurrentUid();
   if (!uid) return { ok: false, error: 'Not authenticated' };
@@ -233,6 +285,19 @@ export async function submitMove(
     update(ref(db, `rooms/${code}/meta`), {
       updatedAt: serverTimestamp(),
     }).catch(() => {});
+
+    // Fire-and-forget analytics: archive the move keyed by the resulting version.
+    // The committed state carries the new version and the acting seat (lastMove),
+    // so the log entry is a compact { seat, move } — the seed for a nextRound /
+    // rematch rides inside `move`, keeping every round deterministically replayable.
+    if (matchId) {
+      const committed = result.snapshot.val() as GameState | null;
+      const version = committed?.version;
+      const seat = committed?.lastMove?.seat;
+      if (typeof version === 'number' && seat) {
+        set(ref(db, `matches/${matchId}/log/${version}`), { seat, move }).catch(() => {});
+      }
+    }
 
     return { ok: true };
   } catch (err) {
@@ -267,6 +332,8 @@ export async function startRoundIfNeeded(
     hostName: meta.hostName,
     guestName: meta.guestName ?? 'Guest',
     seed: randomSeed(),
+    // Host's chosen winning score; initialMatchState falls back to 100 if unset.
+    target: meta.target,
   });
   const initial: GameState = {
     ...dealt,
@@ -287,6 +354,18 @@ export async function startRoundIfNeeded(
     await update(ref(db, `rooms/${code}/meta`), {
       status: 'playing',
       updatedAt: serverTimestamp(),
+    }).catch(() => {});
+
+    // Fire-and-forget analytics: open the replay archive for this match. We write
+    // the round-1 deal as `initial` and the seat->uid map as `players` (the log's
+    // append rule checks the latter). Subsequent rounds arrive as nextRound/rematch
+    // moves in the log, so `initial` + the move stream replays the whole match.
+    // Best-effort: a denied/offline write just means this game goes uncaptured.
+    const matchId = matchIdFor(code, meta.createdAt);
+    update(ref(db, `matches/${matchId}`), {
+      meta: { code, createdAt: meta.createdAt, startedAt: serverTimestamp() },
+      players: { p0: meta.host, p1: meta.guest },
+      initial,
     }).catch(() => {});
   }
 }
@@ -309,7 +388,66 @@ export async function voteRematch(code: string): Promise<void> {
   const votesSnap = await get(ref(db, `rooms/${code}/rematch`));
   const votes = (votesSnap.val() ?? {}) as Record<string, boolean>;
   if (votes[meta.host] && votes[meta.guest]) {
-    await submitMove(code, { kind: 'rematch', seed: randomSeed() });
+    // Pass matchId so the rematch (a fresh deal carrying its own seed) is logged
+    // too, keeping the archived move stream complete across rematches.
+    await submitMove(code, { kind: 'rematch', seed: randomSeed() }, matchIdFor(code, meta.createdAt));
+  }
+}
+
+/**
+ * Publish this device's custom card-back to rooms/<code>/backs/<uid> so the
+ * OPPONENT renders it on our face-down cards. Only self-contained `data:` URIs
+ * are synced — a device-local file path (the rare picker fallback) would be
+ * meaningless on the peer, so those (and null) clear the node instead. Cosmetic
+ * and fire-and-forget: if the write is denied (rules not yet deployed) or the
+ * device is offline, we simply fall back to the default back on the other side.
+ */
+export async function setMyCardBack(code: string, uri: string | null): Promise<void> {
+  const uid = getCurrentUid();
+  if (!uid) return;
+  const backRef = ref(db, `rooms/${code}/backs/${uid}`);
+  const shareable = uri && uri.startsWith('data:') ? uri : null;
+  try {
+    if (shareable) await set(backRef, shareable);
+    else await remove(backRef);
+  } catch {
+    // permission denied / offline — cosmetic only, ignore.
+  }
+}
+
+/**
+ * Host-only: set the match winning score before the round is dealt. Writes
+ * meta/target (and freshens updatedAt). The security rules permit only a member
+ * to write meta and bound the value; a non-host or an out-of-range value is
+ * rejected. Best-effort — a denied write (e.g. rules not yet deployed) is
+ * swallowed and the deal falls back to the default target.
+ */
+export async function setRoomTarget(code: string, target: number): Promise<void> {
+  const uid = getCurrentUid();
+  if (!uid) return;
+  try {
+    await update(ref(db, `rooms/${code}/meta`), {
+      target,
+      updatedAt: Date.now(),
+    });
+  } catch {
+    // permission denied / offline — falls back to the default target at deal.
+  }
+}
+
+/**
+ * Broadcast a reaction to the room: write emotes/<uid> = { emoji, n } so the
+ * OPPONENT's client re-pops it (n bumps each send to retrigger an identical
+ * emoji). Ephemeral and fire-and-forget — a denied write (rules not yet
+ * deployed) or an offline device simply drops the reaction.
+ */
+export async function sendEmote(code: string, emoji: string): Promise<void> {
+  const uid = getCurrentUid();
+  if (!uid) return;
+  try {
+    await set(ref(db, `rooms/${code}/emotes/${uid}`), { emoji, n: Date.now() });
+  } catch {
+    // permission denied / offline — reactions are cosmetic, ignore.
   }
 }
 

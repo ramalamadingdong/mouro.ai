@@ -1,15 +1,24 @@
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { SCORING, type MatchResult, type Seat } from '@/engine';
+import { RoundReveal } from '@/components/table/round-reveal';
+import { SCORING, type MatchResult, type RoundResult, type Seat } from '@/engine';
 import { accent, felt, text } from '@/theme/colors';
+
+/** After this long waiting alone for a rematch, nudge the player toward Exit. */
+const STALL_MS = 30000;
 
 export type MatchEndModalProps = {
   visible: boolean;
   result: MatchResult;
+  /** The deciding round, revealed before the tally so players see HOW it ended. */
+  roundResult: RoundResult;
   names: Record<Seat, string>;
   mySeat: Seat;
   players: Record<Seat, string>;
   rematchVotes: Record<string, boolean>;
+  /** Whether the opponent is still connected (online). Solo: always true. */
+  opponentPresent?: boolean;
   onRematch: () => void;
   onExit: () => void;
   pending?: boolean;
@@ -18,17 +27,20 @@ export type MatchEndModalProps = {
 const SEATS: Seat[] = ['p0', 'p1'];
 
 /**
- * Match-over overlay. DUMB: renders the final `MatchResult` tallies (base + game
- * bonus + boxes, with a shutout flag) and reports Rematch / Exit taps. Rematch
+ * Match-over overlay. Two beats: first it reveals the deciding round (how it was
+ * won, via the shared `RoundReveal`), then — on "Continue" — the final tallies
+ * (base + game bonus + boxes, with a shutout flag) and Rematch / Exit. Rematch
  * shows a live vote count derived from `rematchVotes` keyed by player uid.
  */
 export function MatchEndModal({
   visible,
   result,
+  roundResult,
   names,
   mySeat,
   players,
   rematchVotes,
+  opponentPresent = true,
   onRematch,
   onExit,
   pending,
@@ -38,9 +50,36 @@ export function MatchEndModal({
       ? `${names[result.winner]} (you)`
       : names[result.winner];
 
+  // A match can only be decided by a scoring round, but guard defensively.
+  const canReveal = roundResult.type !== 'void' && roundResult.winner != null;
+  const [step, setStep] = useState<'reveal' | 'tally'>('reveal');
+  useEffect(() => {
+    if (visible) setStep(canReveal ? 'reveal' : 'tally');
+  }, [visible]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const votes = SEATS.filter((s) => rematchVotes[players[s]]).length;
   const iVoted = !!rematchVotes[players[mySeat]];
   const rematchDisabled = pending || iVoted;
+
+  // If the opponent disconnected, a rematch can never complete — say so.
+  const opponentLeft = iVoted && !opponentPresent;
+
+  // Otherwise, after a while waiting alone, nudge toward Exit.
+  const [stalled, setStalled] = useState(false);
+  useEffect(() => {
+    if (step !== 'tally' || !visible || !iVoted || votes >= 2 || opponentLeft) {
+      setStalled(false);
+      return;
+    }
+    const t = setTimeout(() => setStalled(true), STALL_MS);
+    return () => clearTimeout(t);
+  }, [step, visible, iVoted, votes, opponentLeft]);
+
+  const rematchText = !iVoted
+    ? 'Rematch'
+    : opponentLeft
+      ? 'Opponent left'
+      : `Waiting for opponent… (${votes}/2)`;
 
   return (
     <Modal
@@ -51,61 +90,100 @@ export function MatchEndModal({
     >
       <View style={styles.backdrop}>
         <View style={styles.sheet}>
-          <Text style={styles.trophy}>🏆</Text>
-          <Text style={styles.banner}>{winnerName} wins!</Text>
-          {result.shutout && (
-            <View style={styles.shutout}>
-              <Text style={styles.shutoutText}>SHUTOUT ×{SCORING.SHUTOUT_X}</Text>
-            </View>
+          {step === 'reveal' ? (
+            <>
+              <ScrollView
+                style={styles.body}
+                contentContainerStyle={styles.bodyContent}
+                showsVerticalScrollIndicator={false}
+              >
+                <RoundReveal
+                  result={roundResult}
+                  names={names}
+                  mySeat={mySeat}
+                />
+              </ScrollView>
+
+              <Pressable
+                onPress={() => setStep('tally')}
+                accessibilityRole="button"
+                accessibilityLabel="Continue to final score"
+                style={({ pressed }) => [
+                  styles.button,
+                  styles.primary,
+                  pressed && styles.pressed,
+                ]}
+              >
+                <Text style={styles.primaryText}>Continue</Text>
+              </Pressable>
+            </>
+          ) : (
+            <>
+              <Text style={styles.trophy}>🏆</Text>
+              <Text style={styles.banner}>{winnerName} wins!</Text>
+              {result.shutout && (
+                <View style={styles.shutout}>
+                  <Text style={styles.shutoutText}>
+                    SHUTOUT ×{SCORING.SHUTOUT_X}
+                  </Text>
+                </View>
+              )}
+
+              <View style={styles.tallies}>
+                {SEATS.map((seat) => (
+                  <SeatTally
+                    key={seat}
+                    name={seat === mySeat ? `${names[seat]} (you)` : names[seat]}
+                    base={result.base[seat]}
+                    boxes={result.boxes[seat]}
+                    hasGameBonus={result.gameBonusTo === seat}
+                    shutout={result.shutout && result.winner === seat}
+                    total={result.final[seat]}
+                    isWinner={result.winner === seat}
+                  />
+                ))}
+              </View>
+
+              <Pressable
+                onPress={onRematch}
+                disabled={rematchDisabled}
+                accessibilityRole="button"
+                accessibilityLabel="Rematch"
+                accessibilityState={{ disabled: rematchDisabled }}
+                style={({ pressed }) => [
+                  styles.button,
+                  styles.primary,
+                  rematchDisabled && styles.primaryDisabled,
+                  pressed && !rematchDisabled && styles.pressed,
+                ]}
+              >
+                <Text style={styles.primaryText}>{rematchText}</Text>
+              </Pressable>
+
+              {opponentLeft ? (
+                <Text style={styles.waitHint}>
+                  Your opponent left the game — tap Exit to return home.
+                </Text>
+              ) : stalled ? (
+                <Text style={styles.waitHint}>
+                  Still waiting — you can Exit anytime.
+                </Text>
+              ) : null}
+
+              <Pressable
+                onPress={onExit}
+                accessibilityRole="button"
+                accessibilityLabel="Exit to home"
+                style={({ pressed }) => [
+                  styles.button,
+                  styles.ghost,
+                  pressed && styles.pressed,
+                ]}
+              >
+                <Text style={styles.ghostText}>Exit</Text>
+              </Pressable>
+            </>
           )}
-
-          <View style={styles.tallies}>
-            {SEATS.map((seat) => (
-              <SeatTally
-                key={seat}
-                name={
-                  seat === mySeat ? `${names[seat]} (you)` : names[seat]
-                }
-                base={result.base[seat]}
-                boxes={result.boxes[seat]}
-                hasGameBonus={result.gameBonusTo === seat}
-                shutout={result.shutout && result.winner === seat}
-                total={result.final[seat]}
-                isWinner={result.winner === seat}
-              />
-            ))}
-          </View>
-
-          <Pressable
-            onPress={onRematch}
-            disabled={rematchDisabled}
-            accessibilityRole="button"
-            accessibilityLabel="Rematch"
-            accessibilityState={{ disabled: rematchDisabled }}
-            style={({ pressed }) => [
-              styles.button,
-              styles.primary,
-              rematchDisabled && styles.primaryDisabled,
-              pressed && !rematchDisabled && styles.pressed,
-            ]}
-          >
-            <Text style={styles.primaryText}>
-              {iVoted ? `Waiting for opponent… (${votes}/2)` : 'Rematch'}
-            </Text>
-          </Pressable>
-
-          <Pressable
-            onPress={onExit}
-            accessibilityRole="button"
-            accessibilityLabel="Exit to home"
-            style={({ pressed }) => [
-              styles.button,
-              styles.ghost,
-              pressed && styles.pressed,
-            ]}
-          >
-            <Text style={styles.ghostText}>Exit</Text>
-          </Pressable>
         </View>
       </View>
     </Modal>
@@ -184,6 +262,7 @@ const styles = StyleSheet.create({
   sheet: {
     width: '100%',
     maxWidth: 440,
+    maxHeight: '90%',
     backgroundColor: felt.tableRaised,
     borderRadius: 18,
     borderWidth: 1,
@@ -191,6 +270,12 @@ const styles = StyleSheet.create({
     padding: 24,
     gap: 12,
     alignItems: 'stretch',
+  },
+  body: {
+    flexGrow: 0,
+  },
+  bodyContent: {
+    paddingVertical: 4,
   },
   trophy: {
     fontSize: 48,
@@ -291,6 +376,12 @@ const styles = StyleSheet.create({
     color: text.muted,
     fontSize: 15,
     fontWeight: '700',
+  },
+  waitHint: {
+    color: text.hint,
+    fontSize: 13,
+    textAlign: 'center',
+    marginTop: -4,
   },
   pressed: {
     opacity: 0.85,

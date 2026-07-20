@@ -89,6 +89,12 @@ export interface RoundResult {
   winner: Seat | null;
   /** Points awarded to the winner this round (0 for a void hand). */
   points: number;
+  /**
+   * The card the winner discarded to knock / go gin. `null` for big gin (all 11
+   * cards melded, no discard) and for a void hand. For an undercut this is the
+   * KNOCKER's discard that the defender then undercut.
+   */
+  knockCard: CardId | null;
   /** Whole hands at the moment of reveal, for the UI. */
   handAtReveal: Record<Seat, CardId[]>;
 }

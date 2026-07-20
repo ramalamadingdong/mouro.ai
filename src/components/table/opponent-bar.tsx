@@ -17,6 +17,11 @@ export type OpponentBarProps = {
   isTurn?: boolean;
   /** Show a subtle "reconnecting…" label. */
   reconnecting?: boolean;
+  /**
+   * The opponent's chosen card-back photo (a `data:` URI), synced from the room.
+   * `null`/omitted → the default lattice. Never the local player's own back.
+   */
+  cardBack?: string | null;
 };
 
 /** Fan a few face-down cards to hint the size of the opponent's hand. */
@@ -35,6 +40,7 @@ function OpponentBarBase({
   online,
   isTurn,
   reconnecting,
+  cardBack,
 }: OpponentBarProps) {
   const fanned = Math.min(handCount, MAX_FANNED);
 
@@ -61,7 +67,7 @@ function OpponentBarBase({
         {handCount > 0 ? (
           Array.from({ length: fanned }).map((_, i) => (
             <View key={i} style={i === 0 ? undefined : styles.fanOverlap}>
-              <CardBack width={FAN_WIDTH} height={FAN_HEIGHT} />
+              <CardBack width={FAN_WIDTH} height={FAN_HEIGHT} uri={cardBack ?? null} />
             </View>
           ))
         ) : (

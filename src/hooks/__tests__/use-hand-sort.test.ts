@@ -1,4 +1,12 @@
-import { cardId, rankOf, sortByRank, sortBySuit, suitOf } from '@/engine';
+import {
+  arrangeForDisplay,
+  bestArrangement,
+  cardId,
+  rankOf,
+  sortByRank,
+  sortBySuit,
+  suitOf,
+} from '@/engine';
 
 import { orderHand } from '../use-hand-sort';
 
@@ -39,16 +47,31 @@ describe('orderHand', () => {
     }
   });
 
+  test('meld delegates to arrangeForDisplay and preserves the multiset', () => {
+    const melds = bestArrangement(HAND).melds;
+    const result = orderHand(HAND, 'meld', melds);
+    expect(result).toEqual(arrangeForDisplay(HAND, melds));
+    expect([...result].sort((a, b) => a - b)).toEqual(
+      [...HAND].sort((a, b) => a - b),
+    );
+  });
+
+  test('meld with no melds falls back to rank order', () => {
+    expect(orderHand(HAND, 'meld', [])).toEqual(sortByRank(HAND));
+    expect(orderHand(HAND, 'meld')).toEqual(sortByRank(HAND));
+  });
+
   test('never mutates the input hand', () => {
     const snapshot = HAND.slice();
     orderHand(HAND, 'rank');
     orderHand(HAND, 'suit');
     orderHand(HAND, 'off');
+    orderHand(HAND, 'meld', bestArrangement(HAND).melds);
     expect(HAND).toEqual(snapshot);
   });
 
   test('preserves the exact multiset of cards', () => {
-    for (const mode of ['off', 'rank', 'suit'] as const) {
+    for (const mode of ['off', 'rank', 'suit', 'meld'] as const) {
       const result = orderHand(HAND, mode);
       expect([...result].sort((a, b) => a - b)).toEqual(
         [...HAND].sort((a, b) => a - b),

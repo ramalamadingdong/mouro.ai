@@ -198,6 +198,7 @@ describe('knock / gin / big gin scoring', () => {
     expect(r.roundResult!.deadwood.p1).toBe(41);
     expect(r.roundResult!.points).toBe(66);
     expect(r.roundResult!.layoffs).toEqual([]);
+    expect(r.roundResult!.knockCard).toBe(C(3, 12)); // discarded to go gin
     expect(r.scores.p0).toBe(66);
     expect(r.boxes.p0).toBe(1);
     expect(r.phase).toBe('roundOver');
@@ -218,6 +219,7 @@ describe('knock / gin / big gin scoring', () => {
     const r = ok(applyMove(s, { kind: 'bigGin' }, H));
     expect(r.roundResult!.type).toBe('bigGin');
     expect(r.roundResult!.deadwood.p1).toBe(41);
+    expect(r.roundResult!.knockCard).toBeNull(); // big gin has no discard
     expect(r.roundResult!.points).toBe(72); // 41 + 31
     expect(r.scores.p0).toBe(72);
   });
@@ -244,6 +246,7 @@ describe('knock / gin / big gin scoring', () => {
     expect(r.roundResult!.deadwood.p0).toBe(10);
     expect(r.roundResult!.deadwood.p1).toBe(10);
     expect(r.roundResult!.points).toBe(25); // (10-10)+25
+    expect(r.roundResult!.knockCard).toBe(C(0, 12)); // knocker's discard that got undercut
     expect(r.scores.p1).toBe(25);
     expect(r.boxes.p1).toBe(1);
   });
@@ -268,6 +271,7 @@ describe('knock / gin / big gin scoring', () => {
     expect(r.roundResult!.deadwood.p0).toBe(3);
     expect(r.roundResult!.deadwood.p1).toBe(10);
     expect(r.roundResult!.points).toBe(7); // 10 - 3
+    expect(r.roundResult!.knockCard).toBe(C(3, 12)); // discarded to knock
   });
 
   test('legalMoves omits knock when the only knockable discard is noDiscard', () => {
@@ -331,6 +335,7 @@ describe('void', () => {
     expect(r.roundResult!.type).toBe('void');
     expect(r.roundResult!.winner).toBeNull();
     expect(r.roundResult!.points).toBe(0);
+    expect(r.roundResult!.knockCard).toBeNull();
     expect(r.scores).toEqual({ p0: 12, p1: 7 }); // unchanged
 
     // nextRound after void keeps the same dealer
@@ -350,7 +355,7 @@ describe('round / dealer flow', () => {
       roundResult: {
         type: 'knock', knocker: 'p0', knockerMelds: [], knockerDeadwoodCards: [],
         defenderMelds: [], defenderDeadwoodCards: [], layoffs: [],
-        deadwood: { p0: 3, p1: 10 }, winner: 'p0', points: 7,
+        deadwood: { p0: 3, p1: 10 }, winner: 'p0', points: 7, knockCard: null,
         handAtReveal: { p0: [], p1: [] },
       },
     });
