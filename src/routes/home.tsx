@@ -209,7 +209,20 @@ export function HomeRoute() {
           </div>
         )}
 
-        <InstallPrompt />
+        {/*
+          Suppressed while a game is resumable, and the reason is not cosmetic:
+          on iOS a home-screen web app gets its OWN storage, separate from
+          Safari. Installing therefore starts the player over with a fresh
+          anonymous uid — so anyone who accepts this prompt mid-game silently
+          loses the seat they are holding, and `lastRoom` points at a room they
+          can no longer act in. Offering "install" and "resume" side by side is
+          offering to destroy the thing next to it.
+
+          Safe to gate on, because lastRoom is cleared on leaving the lobby, on
+          leaving the game, and on dismissing the resume card — so the prompt
+          reappears as soon as there is nothing to lose.
+        */}
+        {!lastRoom && <InstallPrompt />}
       </div>
     </main>
   );

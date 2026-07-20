@@ -134,9 +134,27 @@ export function LobbyRoute() {
   }
 
   async function handleShare(): Promise<void> {
+    /*
+     * The message carries the room code as TEXT as well as inside the link, and
+     * ends with `@host #CODE` — the origin-bound one-time-code format.
+     *
+     * Both exist for the same recipient: someone on iOS who already has this
+     * installed to their home screen. An installed web app cannot be opened from
+     * a link on iOS at all (iOS hands every web link to Safari regardless of
+     * scope), so a link-only invite is useless to them — they have to come in
+     * through the code. That last line is what lets their phone offer the code
+     * straight above the keyboard, turning "read five characters off a chat and
+     * retype them" into one tap. `randomRoomCode` guarantees a digit because the
+     * format requires one; CodeInput carries the matching
+     * autocomplete="one-time-code".
+     *
+     * The host must be the origin the code gets typed into, so it is derived
+     * from the invite link rather than written down a second time.
+     */
+    const shareHost = new URL(inviteLink).host;
     const payload = {
       title: 'Yahtzee',
-      text: `Join my Yahtzee game — room ${code}`,
+      text: `Join my Yahtzee game — room ${code}\n${inviteLink}\n\n@${shareHost} #${code}`,
       url: inviteLink,
     };
     // Clear last attempt's failure up front, so a retry that works (or a share

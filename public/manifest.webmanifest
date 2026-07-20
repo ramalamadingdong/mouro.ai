@@ -11,6 +11,12 @@
   "theme_color": "#151828",
   "background_color": "#151828",
   "categories": ["games"],
+
+  "_comment_links": "The two members below exist for ONE flow: someone is sent an invite link (/yahtzee/join/ABCDE) and already has the app installed. 'handle_links: preferred' asks the browser to route in-scope links INTO the installed app rather than a browser tab, and 'navigate-existing' says that if the app is already open, point THAT window at the invite instead of opening a second copy — otherwise a player with the game open in the background gets a duplicate window and two live listeners on the same room. Both are Chromium-only (Android install, desktop Chrome/Edge). iOS ignores them: deep-linking into a home-screen web app is not possible at all, so an invite opened on iOS lands in Safari, which has SEPARATE storage from the installed app and therefore a different anonymous uid. Nothing in a manifest can change that — it is why the shared message carries the room code as text too, so an iOS user can open their app and type it.",
+  "handle_links": "preferred",
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
   "icons": [
     {
       "_comment": "purpose 'any' — drawn as-is, so the artwork may run to the edges.",

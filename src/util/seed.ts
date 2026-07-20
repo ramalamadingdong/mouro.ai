@@ -47,20 +47,45 @@ export const CODE_LENGTH = 5;
  */
 const REJECT_AT = 256 - (256 % CODE_ALPHABET.length);
 
+/** The digits within CODE_ALPHABET. See `hasDigit` for why they are singled out. */
+export const CODE_DIGITS = '23456789';
+
 /** A uniformly random room code. */
 export function randomRoomCode(): string {
-  let code = '';
-  // Draw in batches: one syscall per character would be wasteful, and asking
-  // for a few extra bytes covers the rare rejected draw without a second trip.
-  while (code.length < CODE_LENGTH) {
-    const bytes = crypto.getRandomValues(new Uint8Array(CODE_LENGTH * 2));
-    for (const byte of bytes) {
-      if (byte >= REJECT_AT) continue; // biased tail — throw it away, do not fold it in
-      code += CODE_ALPHABET[byte % CODE_ALPHABET.length];
-      if (code.length === CODE_LENGTH) break;
+  for (;;) {
+    let code = '';
+    // Draw in batches: one syscall per character would be wasteful, and asking
+    // for a few extra bytes covers the rare rejected draw without a second trip.
+    while (code.length < CODE_LENGTH) {
+      const bytes = crypto.getRandomValues(new Uint8Array(CODE_LENGTH * 2));
+      for (const byte of bytes) {
+        if (byte >= REJECT_AT) continue; // biased tail — throw it away, do not fold it in
+        code += CODE_ALPHABET[byte % CODE_ALPHABET.length];
+        if (code.length === CODE_LENGTH) break;
+      }
     }
+    // Redraw until the code contains a digit. See `hasDigit` — this is what
+    // makes the code eligible for OS autofill out of the invite message, and
+    // ~22% of raw draws ((23/31)^5) are all letters. It removes 6.4M of the
+    // 28.6M possible codes, leaving 22.2M, which is not a constraint that will
+    // ever be felt.
+    if (hasDigit(code)) return code;
   }
-  return code;
+}
+
+/**
+ * True when the code contains at least one digit.
+ *
+ * Not cosmetic. The origin-bound one-time-code format that drives OS autofill —
+ * the `@host #CODE` line at the end of the shared invite — requires a 4-10
+ * character alphanumeric code CONTAINING AT LEAST ONE NUMBER. A pure-letter code
+ * like `ABCDE` falls outside the format, so the phone would offer to autofill
+ * some invites and silently not others: a feature that works inconsistently for
+ * reasons the player cannot see is worse than one that does not exist.
+ */
+export function hasDigit(value: string): boolean {
+  for (const ch of value) if (CODE_DIGITS.includes(ch)) return true;
+  return false;
 }
 
 /**
