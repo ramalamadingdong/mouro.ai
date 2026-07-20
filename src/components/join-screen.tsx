@@ -20,6 +20,15 @@ export type JoinScreenProps = {
    * fallback to manual entry explains itself instead of looking like a bug.
    */
   notice?: string;
+  /**
+   * Render a neutral shell instead of the real screen.
+   *
+   * This is what `/join/<code>` prerenders and what it renders on its first
+   * client pass, so the two AGREE and React can hydrate rather than throwing a
+   * mismatch and rebuilding the tree. See the comment in join/[code].tsx — it
+   * mirrors the "Opening room…" shell /lobby and /game already use.
+   */
+  pending?: boolean;
 };
 
 /**
@@ -30,7 +39,7 @@ export type JoinScreenProps = {
  *
  * On success we record the room for resume and replace into the lobby.
  */
-export function JoinScreen({ initialCode, invited, notice }: JoinScreenProps) {
+export function JoinScreen({ initialCode, invited, notice, pending }: JoinScreenProps) {
   const router = useRouter();
 
   const playerName = useSettingsStore((s) => s.playerName);
@@ -59,6 +68,19 @@ export function JoinScreen({ initialCode, invited, notice }: JoinScreenProps) {
       setJoining(false);
     }
   };
+
+  // The neutral shell. Deliberately contains NO code-derived content: anything
+  // that depends on the URL would differ between the build-time prerender (no
+  // param) and the client (param present), which is the whole mismatch this
+  // exists to avoid.
+  if (pending) {
+    return (
+      <Screen center>
+        <Text style={styles.title}>You’re invited</Text>
+        <Text style={styles.subtitle}>Opening invite…</Text>
+      </Screen>
+    );
+  }
 
   return (
     <Screen center>
