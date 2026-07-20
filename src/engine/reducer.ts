@@ -106,6 +106,14 @@ function jokerApplies(dice: number[], card: ScoreCard): boolean {
  * any rejection of a listed category as a hard failure.
  */
 export function legalCategories(state: GameState, seat: Seat): Category[] {
+  // PHASE GATE. `applyMove` rejects every score outside 'decide' ("roll the
+  // dice first"), so without this line the two disagree for the whole of phase
+  // 'roll' — every open box comes back legal while `dice` is still []. That
+  // forced each caller to re-check the phase itself (the scorecard would
+  // otherwise light up and preview scores for an empty roll before the turn had
+  // even started), and a second caller that forgot would ship the bug again.
+  if (state.phase !== 'decide') return [];
+
   const card = state.cards[seat];
   if (!card) return [];
   const open = CATEGORIES.filter((c) => card[c] === null);
@@ -120,6 +128,28 @@ export function legalCategories(state: GameState, seat: Seat): Category[] {
 
   // Lower section exhausted: the Yahtzee must scratch an open upper box.
   return open;
+}
+
+/**
+ * What `category` would pay `seat` for the dice currently on the table — the
+ * exact number `applyMove` will write into the box.
+ *
+ * This exists so the UI never has to restate the joker predicate. The scorecard
+ * previously recomputed `isYahtzee(dice) && card.yahtzee !== null` inline, a
+ * verbatim copy of the private `jokerApplies` above: a second, unchecked
+ * statement of the joker rule sitting outside the "legalCategories and applyMove
+ * must agree exactly" invariant and outside fuzz coverage, feeding every number
+ * the player picks from. The flag is owned here instead, so a change to the
+ * joker rule lands on the preview and the payout together.
+ *
+ * Returns 0 when there is no complete roll — there is nothing to preview yet,
+ * and 0 is what the box would score for no dice anyway.
+ */
+export function previewFor(state: GameState, seat: Seat, category: Category): number {
+  const card = state.cards[seat];
+  if (!card) return 0;
+  if (state.dice.length !== RULES.DICE) return 0;
+  return scoreFor(category, state.dice, jokerApplies(state.dice, card));
 }
 
 /** Legal move kinds for `uid` in the given state. */
@@ -236,8 +266,10 @@ export function applyMove(state: GameState, move: Move, uid: string): ApplyResul
       }
 
       const s = clone(state);
-      const joker = jokerApplies(state.dice, card);
-      const points = scoreFor(move.category, state.dice, joker);
+      // The SAME call the scorecard previews with, not a parallel one: if these
+      // two ever computed the joker flag separately the player could be shown a
+      // number the reducer then refuses to pay.
+      const points = previewFor(state, turn, move.category);
       s.cards[turn][move.category] = points;
 
       // A Yahtzee earns the bonus only once the box itself holds the full 50.

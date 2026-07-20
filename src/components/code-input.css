@@ -1,0 +1,108 @@
+/*
+ * Room-code entry. Five painted boxes over one real, invisible input.
+ */
+
+.code {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.code__label {
+  font-size: var(--size-sm);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.code__boxes {
+  display: flex;
+  gap: var(--space-sm);
+  cursor: text;
+}
+
+.code__box {
+  flex: 1 1 0;
+  /* Square-ish boxes that keep their proportions as --ui-scale grows. */
+  min-width: 2.4rem;
+  aspect-ratio: 3 / 4;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--felt-deep);
+
+  font-size: var(--size-xl);
+  font-weight: var(--weight-bold);
+  /* Codes are read aloud and compared character by character; a monospace face
+     keeps ambiguous shapes distinct and the boxes evenly weighted. */
+  font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, monospace;
+  color: var(--text);
+
+  transition:
+    border-color var(--dur-fast) var(--ease),
+    background-color var(--dur-fast) var(--ease);
+}
+
+.code__box[data-filled='true'] {
+  border-color: var(--accent-dim);
+  background: var(--surface);
+}
+
+/*
+ * The fake caret. Only shown while the real input has focus — `:focus-within`
+ * on the wrapper — because a blinking caret on an unfocused field is a lie that
+ * makes people type into nothing.
+ */
+.code:focus-within .code__box[data-caret='true'] {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.code:focus-within .code__box[data-caret='true']::after {
+  content: '';
+  width: 2px;
+  height: 55%;
+  background: var(--accent);
+  animation: code-caret 1s steps(2, start) infinite;
+}
+
+@keyframes code-caret {
+  to {
+    opacity: 0;
+  }
+}
+
+/*
+ * The real input. Not `display: none` and not `visibility: hidden` — either
+ * would make it unfocusable, and an unfocusable input cannot summon the
+ * software keyboard. It has to be a rendered, focusable, 1px transparent box.
+ */
+.code__input {
+  position: absolute;
+  /* Anchored over the boxes rather than off-screen: iOS scrolls the focused
+     element into view, and a field parked at -9999px drags the page with it. */
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  border: 0;
+  padding: 0;
+  /* Taps must reach the boxes underneath, which forward focus in JS. */
+  pointer-events: none;
+}
+
+.code[data-disabled='true'] .code__boxes {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.code__error {
+  font-size: var(--size-sm);
+  color: var(--bad);
+}

@@ -12,9 +12,9 @@
  */
 
 import { describe, expect, test } from 'vitest';
-import { applyMove, initialGameState, legalCategories, legalMoves } from '../reducer';
+import { applyMove, initialGameState, legalCategories, legalMoves, previewFor } from '../reducer';
 import { makeRng } from '../rng';
-import { breakdown, scoreFor } from '../scoring';
+import { breakdown } from '../scoring';
 import { normalize } from '../serialize';
 import { CATEGORIES, RULES, type GameState, type Move } from '../types';
 
@@ -116,6 +116,17 @@ describe('fuzz', () => {
           const legal = legalMoves(s, uid);
           if (legal.length === 0) throw new Error(`game ${g}: stuck with no legal move`);
 
+          // legalCategories must agree with applyMove about the PHASE as well as
+          // about the joker rule: outside 'decide' the reducer rejects every
+          // score, so nothing at all may be offered.
+          if (s.phase !== 'decide') {
+            for (let seat2 = 0; seat2 < seatCount; seat2++) {
+              if (legalCategories(s, seat2).length > 0) {
+                throw new Error(`game ${g} step ${steps}: categories offered in phase ${s.phase}`);
+              }
+            }
+          }
+
           // Roll while rolls remain, with a bias toward stopping early so both
           // the re-roll path and the score-immediately path get exercised.
           const mustScore = !legal.includes('roll');
@@ -139,13 +150,12 @@ describe('fuzz', () => {
             // builds an upper bonus, and both paths need coverage.
             let category = options[Math.floor(rng() * options.length)];
             if (rng() < 0.5) {
-              const joker =
-                s.dice.length === RULES.DICE &&
-                s.dice.every((d) => d === s.dice[0]) &&
-                s.cards[seat].yahtzee !== null;
+              // Greedy pick via `previewFor`, which is also what the scorecard
+              // shows the player — so the joker flag is stated once, in the
+              // engine, rather than re-derived here as it used to be.
               let best = -1;
               for (const c of options) {
-                const v = scoreFor(c, s.dice, joker);
+                const v = previewFor(s, seat, c);
                 if (v > best) {
                   best = v;
                   category = c;
@@ -172,6 +182,17 @@ describe('fuzz', () => {
           if (move.kind === 'score') {
             scoresMade++;
             filled[seat]++;
+            // The preview the UI showed and the payout the reducer wrote must be
+            // the same number, on every roll of every game — including the joker
+            // ones, which is the pair that used to be computed twice.
+            const promised = previewFor(s, seat, move.category);
+            const paid = next.cards[seat][move.category];
+            if (paid !== promised) {
+              throw new Error(
+                `game ${g} step ${steps}: previewFor promised ${promised} for ` +
+                  `${move.category} but the reducer paid ${paid}`,
+              );
+            }
             let used = 0;
             for (const cat of CATEGORIES) if (next.cards[seat][cat] !== null) used++;
             if (used !== filled[seat]) {
@@ -202,8 +223,10 @@ describe('fuzz', () => {
 
         for (const b of s.yahtzeeBonus) if (b > 0) sawYahtzeeBonus++;
 
-        // A finished game accepts a rematch from any seat and nothing else.
+        // A finished game accepts a rematch from any seat and nothing else, and
+        // offers no scoring boxes at all — phase 'over' is not 'decide'.
         for (const p of s.players) expect(legalMoves(s, p.uid)).toEqual(['rematch']);
+        for (let seat = 0; seat < seatCount; seat++) expect(legalCategories(s, seat)).toEqual([]);
       }
 
       expect(reachedOver).toBe(GAMES);

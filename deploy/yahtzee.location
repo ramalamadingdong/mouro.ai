@@ -1,0 +1,38 @@
+# Yahtzee — static SPA served at https://mouro.ai/yahtzee/
+#
+# Installed into /etc/nginx/sites-available/mouro.ai by install-nginx.sh, which
+# injects this file immediately BEFORE the `location / {` Django proxy block.
+# Order matters: nginx picks the longest matching prefix, but the exact-match
+# rule below only wins if it is present at all.
+#
+# Nothing here touches DNS, TLS or the Cloudflare Tunnel. The tunnel already
+# terminates every path under mouro.ai, so a new sub-path is pure nginx routing.
+
+# Without this, https://mouro.ai/yahtzee (no trailing slash) does not match the
+# prefix below, falls through to the Django proxy, and 404s. The 301 sends it to
+# the canonical trailing-slash URL, which also keeps relative asset resolution
+# correct in the browser.
+location = /yahtzee { return 301 /yahtzee/; }
+
+location /yahtzee/ {
+    # `root`, NOT `alias`. With root, nginx appends the FULL request path to the
+    # root, so /yahtzee/assets/x.js resolves to /home/rami/yahtzee/assets/x.js —
+    # which is exactly where the deploy puts it. Switching to `alias` would strip
+    # the /yahtzee/ prefix and look in /home/rami/assets/, and alias + try_files
+    # is a well-known nginx footgun besides.
+    root /home/rami;
+
+    # Client-side routing survives a hard refresh / deep link because any path
+    # that isn't a real file falls back to the SPA's single index.html, which
+    # boots React Router and lets it read the URL itself.
+    #
+    # There is deliberately no `$uri.html` entry here: a Vite SPA emits exactly
+    # one index.html. (The gin rummy block needs it because Expo prerenders a
+    # separate .html per route.)
+    try_files $uri $uri/ /yahtzee/index.html;
+
+    # No cache headers on purpose. Vite content-hashes every asset filename, so
+    # assets are already safely cacheable by URL and index.html must NOT be
+    # pinned — there is no service worker to bust a stale one. nginx's defaults
+    # (validate with If-Modified-Since) are the correct behaviour here.
+}

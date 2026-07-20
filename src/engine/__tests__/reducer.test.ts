@@ -1,7 +1,14 @@
 import { describe, expect, test } from 'vitest';
-import { applyMove, initialGameState, legalCategories, legalMoves, seatOf } from '../reducer';
+import {
+  applyMove,
+  initialGameState,
+  legalCategories,
+  legalMoves,
+  previewFor,
+  seatOf,
+} from '../reducer';
 import { emptyCard } from '../scoring';
-import { RULES, type ApplyResult, type GameState } from '../types';
+import { CATEGORIES, RULES, type ApplyResult, type Category, type GameState } from '../types';
 
 const A = 'uid-a';
 const B = 'uid-b';
@@ -172,7 +179,10 @@ describe('scoring a turn', () => {
     const next = ok(applyMove(s, { kind: 'score', category: 'yahtzee' }, A));
     // 0 is a USED box. Anything that treats it as falsy re-opens the category.
     expect(next.cards[0].yahtzee).toBe(0);
-    expect(legalCategories(next, 0)).not.toContain('yahtzee');
+    // `legalCategories` is phase-gated, and scoring ended the turn — so put dice
+    // back on the table to ask the question it can actually answer.
+    const rolled = { ...next, phase: 'decide' as const, rollsUsed: 1, dice: [1, 2, 3, 4, 6] };
+    expect(legalCategories(rolled, 0)).not.toContain('yahtzee');
   });
 
   test('the round advances only when play wraps to seat 0', () => {
@@ -368,6 +378,99 @@ describe('game end and rematch', () => {
     const over = ok(applyMove(nearlyDone(), { kind: 'score', category: 'chance' }, B));
     expect(err(applyMove(over, { kind: 'roll', keep: [], seed: SEED }, A))).toBe('the game is over');
     expect(err(applyMove(base(), { kind: 'rematch' }, A))).toMatch(/not over/);
+  });
+});
+
+describe('legalCategories is phase-gated', () => {
+  test('offers nothing before the dice are rolled', () => {
+    // The contract is that legalCategories and applyMove agree EXACTLY. Without
+    // the phase gate this returned all 13 open boxes for a state in which
+    // applyMove refuses every one of them, and each caller had to remember to
+    // re-check the phase itself.
+    const s = base();
+    expect(s.phase).toBe('roll');
+    expect(legalCategories(s, 0)).toEqual([]);
+    expect(err(applyMove(s, { kind: 'score', category: 'chance' }, A))).toMatch(/roll the dice/);
+  });
+
+  test('offers the open boxes once there are dice on the table', () => {
+    // The positive control for the gate above: it must not have turned the
+    // function off altogether.
+    const s = base({ phase: 'decide', rollsUsed: 1, dice: [1, 2, 3, 4, 6] });
+    expect(legalCategories(s, 0)).toHaveLength(RULES.ROUNDS);
+  });
+});
+
+describe('previewFor', () => {
+  /**
+   * The whole point of `previewFor`: the number shown in a box must be the
+   * number the reducer writes into it. Any joker flag computed a second time
+   * outside the engine is exactly what this would catch.
+   */
+  function expectPreviewMatchesPayout(s: GameState): void {
+    const legal = legalCategories(s, s.turn);
+    expect(legal.length).toBeGreaterThan(0);
+    for (const cat of legal) {
+      const promised = previewFor(s, s.turn, cat);
+      const next = ok(applyMove(s, { kind: 'score', category: cat }, s.turnUid));
+      expect(next.cards[s.turn][cat]).toBe(promised);
+    }
+  }
+
+  test('previews nothing before the first roll', () => {
+    const s = base();
+    for (const cat of CATEGORIES) expect(previewFor(s, 0, cat)).toBe(0);
+  });
+
+  test('agrees with the payout on an ordinary roll', () => {
+    expectPreviewMatchesPayout(base({ phase: 'decide', rollsUsed: 2, dice: [5, 5, 5, 2, 2] }));
+  });
+
+  test('agrees with the payout under the joker rule', () => {
+    // Yahtzee box holds 50 and the matching upper box is full, so a further
+    // five-of-a-kind is forced into the lower section — where it pays the FIXED
+    // value of boxes it does not naturally satisfy.
+    const card = emptyCard();
+    card.yahtzee = RULES.YAHTZEE;
+    card.fours = 8;
+    const s = base({
+      phase: 'decide',
+      rollsUsed: 1,
+      dice: [4, 4, 4, 4, 4],
+      cards: [card, emptyCard()],
+    });
+
+    const jokerPays: Record<string, number> = {
+      fullHouse: RULES.FULL_HOUSE,
+      smallStraight: RULES.SMALL_STRAIGHT,
+      largeStraight: RULES.LARGE_STRAIGHT,
+    };
+    const targets: Category[] = ['fullHouse', 'smallStraight', 'largeStraight'];
+    for (const cat of targets) expect(previewFor(s, 0, cat)).toBe(jokerPays[cat]);
+
+    expectPreviewMatchesPayout(s);
+  });
+
+  test('a SCRATCHED Yahtzee box still previews joker values, and pays no bonus', () => {
+    // The trap: `card.yahtzee === 0` is a resolved box, so jokers apply — but
+    // `!== null` is the test, not truthiness. A preview that used `card.yahtzee`
+    // as a boolean would show 0 for full house here and pay 25.
+    const card = emptyCard();
+    card.yahtzee = 0;
+    card.fours = 8;
+    const s = base({
+      phase: 'decide',
+      rollsUsed: 1,
+      dice: [4, 4, 4, 4, 4],
+      cards: [card, emptyCard()],
+    });
+
+    expect(previewFor(s, 0, 'fullHouse')).toBe(RULES.FULL_HOUSE);
+    const next = ok(applyMove(s, { kind: 'score', category: 'fullHouse' }, A));
+    expect(next.cards[0].fullHouse).toBe(RULES.FULL_HOUSE);
+    expect(next.yahtzeeBonus[0]).toBe(0);
+
+    expectPreviewMatchesPayout(s);
   });
 });
 
