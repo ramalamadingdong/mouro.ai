@@ -1,0 +1,44 @@
+# Gin Rummy — serve the RIGHT prerendered shell for dynamic routes.
+#
+# THE PROBLEM THIS FIXES
+# Expo's `output: "static"` prerenders one HTML file per route, and a route with
+# a dynamic segment lands on disk with the bracket still in its filename:
+#
+#     dist/join/[code].html      dist/lobby/[code].html      dist/game/[code].html
+#
+# Nothing maps a real URL like /gin-rummey/join/4K8HJ onto those files, so the
+# existing `try_files $uri $uri.html $uri/ /gin-rummey/index.html` falls all the
+# way through to index.html — which is the prerendered HOME screen. React then
+# tries to hydrate Home's markup against the join screen's component tree, fails
+# (minified React error #418), and recovers with a full client re-render.
+#
+# It works, which is why nobody noticed: /lobby/<code> and /game/<code> have
+# behaved this way since the app shipped. But every deep link paints the wrong
+# screen for a frame and logs a hydration error. Serving the correct prerendered
+# shell removes both.
+#
+# WHY A REGEX LOCATION
+# nginx checks exact (`=`) matches, then remembers the longest PREFIX match, then
+# tries regex locations in order — and the first matching regex WINS over the
+# remembered prefix. So this block takes precedence over `location /gin-rummey/`
+# without that block having to change at all. There are no other regex locations
+# in this server block, so there is no ordering hazard to reason about.
+#
+# The pattern matches the ROOM-CODE SHAPE rather than a bare `.+` on purpose: a
+# malformed or truncated code then does NOT match here, falls through to the
+# prefix block, and reaches the SPA fallback — where the app shows its own
+# "that isn't a valid code" copy instead of nginx guessing.
+#
+# The `{5}` and the square brackets are why the regex is QUOTED: unquoted, nginx
+# would read `{` and `}` as config block delimiters and fail to parse.
+location ~ "^/gin-rummey/(join|lobby|game)/[A-HJKMNP-Z2-9]{5}/?$" {
+    # `root`, not `alias` — matches the sibling /gin-rummey/ block, so the full
+    # request path is appended and files resolve under /home/rami/gin-rummey/.
+    root /home/rami;
+
+    # $1 is the route folder captured above. The second entry keeps the SPA
+    # fallback as a safety net: if an export ever stops emitting a [code].html
+    # for one of these routes, the link degrades to today's behaviour rather
+    # than 404ing.
+    try_files "/gin-rummey/$1/[code].html" /gin-rummey/index.html;
+}
