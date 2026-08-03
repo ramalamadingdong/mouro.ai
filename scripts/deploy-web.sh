@@ -25,20 +25,68 @@ SITE_URL="${SITE_URL:-https://mouro.ai/backgammon/}"
 
 cd "$(dirname "$0")/.."   # project root
 
-# The NUC has no single stable address — it is dual-homed and fails over to
-# Wi-Fi on a different router's subnet when the wired link drops, so the
-# `mouro-nuc` alias and the wired IP can both time out while another answers.
-# Tailscale is last because it only works from a machine on the tailnet.
-# Identify the box by HOST KEY, never by address:
-#   ssh-keyscan -t ed25519 <ip> | ssh-keygen -lf -
-#   expect SHA256:svkQfH8HLRBzMuWetQ1XmAYvWCBFrzo5o0ILI4Aybqk
+# ── Finding the NUC ──────────────────────────────────────────────────────────
+# The NUC has no single stable address: it is dual-homed and fails over to Wi-Fi
+# on a different router's subnet when the wired link drops, so the `mouro-nuc`
+# alias and the wired IP can both go dark while another answers. Tailscale is
+# last because it only works from a machine on the tailnet.
+#
+# IDENTIFY THE BOX BY HOST KEY, NEVER BY ADDRESS. This is not paranoia: on
+# 2026-08-03 the wired IP 192.168.1.166 was answering on port 22 with a DIFFERENT
+# host key, because DHCP had handed that address to another device while the NUC
+# was on the other subnet. A probe that only checked "does SSH connect" would
+# have been one keystroke away from rsyncing the site onto a stranger's machine.
+NUC_FINGERPRINT="${NUC_FINGERPRINT:-SHA256:svkQfH8HLRBzMuWetQ1XmAYvWCBFrzo5o0ILI4Aybqk}"
+
+# Print the ed25519 fingerprint of whatever is listening at $1, or nothing.
+#
+# Every failure here is EXPECTED — most candidates are unreachable most of the
+# time — so the whole thing is wrapped to always succeed. Without that, `set -e`
+# plus `pipefail` turns the first unreachable candidate into a silent exit 255,
+# and the probe never reaches the address that would have worked.
+host_fingerprint() {
+  local target="${1#*@}"
+  { ssh-keyscan -T 5 -t ed25519 "$target" 2>/dev/null \
+      | ssh-keygen -lf - 2>/dev/null \
+      | awk '{print $2}'; } || true
+}
+
 if [ -z "${NUC_SSH:-}" ] || [ "$NUC_SSH" = "mouro-nuc" ]; then
-  for cand in mouro-nuc rami@192.168.50.171 rami@192.168.1.166 rami@100.117.50.75; do
+  wrong_key=""
+  for cand in rami@192.168.1.166 rami@192.168.50.171 rami@100.117.50.75; do
+    fp="$(host_fingerprint "$cand" || true)"
+    [ -z "$fp" ] && continue
+    if [ "$fp" != "$NUC_FINGERPRINT" ]; then
+      wrong_key="$wrong_key\n    $cand answered with $fp"
+      continue
+    fi
     if ssh -o BatchMode=yes -o ConnectTimeout=8 "$cand" true 2>/dev/null; then
       NUC_SSH="$cand"
       break
     fi
   done
+
+  if [ -z "${NUC_SSH:-}" ]; then
+    echo "✗ Could not find the NUC."
+    if [ -n "$wrong_key" ]; then
+      echo "  Something IS listening on SSH, but it is not the NUC:"
+      printf "%b\n" "$wrong_key"
+      echo "    expected $NUC_FINGERPRINT"
+      echo "  That address has almost certainly been reassigned by DHCP."
+      echo "  Do NOT accept the new key — find the real box instead."
+    fi
+    echo
+    echo "  The site itself may well be up: public traffic reaches it through a"
+    echo "  Cloudflare Tunnel, which does not carry SSH. Check with:"
+    echo "    curl -sI https://mouro.ai/gin-rummey/ | head -1"
+    echo
+    echo "  To deploy, do ONE of:"
+    echo "    · put this machine on the same LAN as the NUC, or"
+    echo "    · join the tailnet so 100.117.50.75 resolves, or"
+    echo "    · set NUC_SSH=<user@host> to a reachable address, or"
+    echo "    · push to master and let .github/workflows/deploy-web.yml do it."
+    exit 1
+  fi
 fi
 
 # ── Preconditions ────────────────────────────────────────────────────────────
