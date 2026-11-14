@@ -15,6 +15,15 @@ set -euo pipefail
 
 LOGIN_USER="${LOGIN_USER:-rami}"
 REPO_URL="${REPO_URL:-https://github.com/ramalamadingdong/mouro.ai.git}"
+# Seed config from the checkout this script lives in (works before the PR is
+# merged); fall back to cloning REPO_URL only if the script is run on its own.
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+seed() { # seed <file in infra/> <destination> [install args...]
+  local f="$1" dest="$2"; shift 2
+  if [ -f "$HERE/$f" ]; then install "$@" "$HERE/$f" "$dest"; return; fi
+  local tmp; tmp=$(mktemp -d) && git clone -q --depth 1 "$REPO_URL" "$tmp/repo"
+  install "$@" "$tmp/repo/infra/$f" "$dest"; rm -rf "$tmp"
+}
 
 [ "$(id -u)" = 0 ] || { echo "run as root"; exit 1; }
 export DEBIAN_FRONTEND=noninteractive
@@ -75,34 +84,33 @@ cat > /etc/caddy/Caddyfile <<'EOF'
 import /srv/mouro.ai/infra/Caddyfile
 EOF
 if [ ! -f /srv/mouro.ai/infra/Caddyfile ]; then
-  # First boot, before any deploy: seed from the repo so Caddy can start.
-  tmp=$(mktemp -d) && git clone -q --depth 1 "$REPO_URL" "$tmp/repo"
+  # First boot, before any deploy: seed so Caddy can start.
   install -d -o deploy -g deploy /srv/mouro.ai/infra
-  install -o deploy -g deploy "$tmp/repo/infra/Caddyfile" /srv/mouro.ai/infra/Caddyfile
-  rm -rf "$tmp"
+  seed Caddyfile /srv/mouro.ai/infra/Caddyfile -o deploy -g deploy
 fi
 systemctl enable --now caddy
 systemctl reload caddy || true
 
 echo "▸ realtime server unit"
-if [ -f /srv/mouro.ai/infra/mouro-realtime.service ]; then
-  install -m 644 /srv/mouro.ai/infra/mouro-realtime.service /etc/systemd/system/mouro-realtime.service
-else
-  tmp=$(mktemp -d) && git clone -q --depth 1 "$REPO_URL" "$tmp/repo"
-  install -m 644 "$tmp/repo/infra/mouro-realtime.service" /etc/systemd/system/mouro-realtime.service
-  rm -rf "$tmp"
-fi
+seed mouro-realtime.service /etc/systemd/system/mouro-realtime.service -m 644
 systemctl daemon-reload
 systemctl enable mouro-realtime
 # It starts on the first deploy, once /opt/mouro/realtime has code in it.
 
 echo "▸ ssh hardening"
-cat > /etc/ssh/sshd_config.d/10-mouro.conf <<'EOF'
+# Never lock anyone out: only turn off passwords and root login once the login
+# user can actually get in with a key.
+if [ -s "/home/$LOGIN_USER/.ssh/authorized_keys" ]; then
+  cat > /etc/ssh/sshd_config.d/10-mouro.conf <<'EOF'
 PasswordAuthentication no
 KbdInteractiveAuthentication no
 PermitRootLogin no
 EOF
-systemctl reload ssh || systemctl reload sshd || true
+  sshd -t && { systemctl reload ssh || systemctl reload sshd || true; }
+else
+  echo "  ! /home/$LOGIN_USER/.ssh/authorized_keys is empty: SKIPPED ssh hardening."
+  echo "    Add a key for $LOGIN_USER, confirm you can log in with it, then re-run."
+fi
 
 echo "▸ firewall"
 ufw allow OpenSSH >/dev/null
