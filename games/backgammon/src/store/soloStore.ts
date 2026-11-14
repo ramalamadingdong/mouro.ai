@@ -61,7 +61,7 @@ export const useSoloStore = create<SoloStore>()((set, get) => {
     // needs the end-of-game reveal to stay on screen until they dismiss it.
     const cpuActs =
       s.turn === 'p1' &&
-      (s.phase === 'opening' || s.phase === 'roll' || s.phase === 'moving' || s.phase === 'doubled');
+      (s.phase === 'opening' || s.phase === 'roll' || s.phase === 'moving');
     if (!cpuActs) {
       set({ cpuThinking: false });
       return;

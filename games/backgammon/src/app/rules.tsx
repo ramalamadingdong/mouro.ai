@@ -20,14 +20,14 @@ function P({ children }: { children: React.ReactNode }) {
 
 /**
  * A short rules reference. Backgammon needs one in a way a card game doesn't —
- * bearing off and the cube are where new players actually get stuck, and this
+ * bearing off and scoring are where new players actually get stuck, and this
  * is cheaper than a tutorial nobody finishes.
  */
 export default function RulesScreen() {
   const router = useRouter();
   return (
     <Screen scroll>
-      <Text style={styles.title}>How to play</Text>
+      <Text style={styles.title}>How to play Tawleh</Text>
 
       <Section title="The goal">
         <P>
@@ -38,11 +38,12 @@ export default function RulesScreen() {
 
       <Section title="Moving">
         <P>
-          Each player rolls one die to start; the higher roll goes first and plays those two
-          numbers. After that you roll two dice on your turn.
+          Each player rolls one die to start; ties roll again. The higher roll goes first — and
+          rolls both dice again for that first turn. After that you roll two dice on your turn.
         </P>
         <P>
-          Your checkers always move toward your home board, one die per move. You must play both
+          Your checkers always move toward your home board, one die per move — you can move one
+          checker with both dice by tapping where it lands. You must play both
           dice if there is any legal way to do so, and if only one can be played it must be the
           larger. Roll a double and you play that number four times.
         </P>
@@ -55,7 +56,7 @@ export default function RulesScreen() {
       <Section title="Hitting and the bar">
         <P>
           Landing on a lone enemy checker — a blot — sends it to the bar. A player with a checker
-          on the bar must bring it back into their opponent's home board before moving anything
+          on the bar must bring it back into their opponent&apos;s home board before moving anything
           else. If every entry point is closed, the turn is lost.
         </P>
       </Section>
@@ -69,30 +70,16 @@ export default function RulesScreen() {
         <P>Get hit while bearing off and you must bring that checker all the way round again.</P>
       </Section>
 
-      <Section title="Gammons and backgammons">
+      <Section title="Scoring: mars">
         <P>
-          Win while your opponent has borne off at least one checker and you score the value of the
-          cube. Win before they have borne off any and it is a gammon — double. Win while they
-          still have a checker on the bar or in your home board and it is a backgammon — triple.
+          A win is worth 1 point. Bear everything off before your opponent has taken a single
+          checker off and it is a mars — worth 2. That is the most a game can be worth: there is
+          no triple game and no doubling cube.
         </P>
       </Section>
 
-      <Section title="The doubling cube">
-        <P>
-          Before rolling, you may offer to double the stakes. Your opponent either takes — the game
-          is now worth twice as much, and the cube becomes theirs to turn next — or drops, ending
-          the game immediately and giving you the value the cube was on before you offered.
-        </P>
-        <P>Only the player who last accepted a double may offer the next one.</P>
-      </Section>
-
-      <Section title="Matches and the Crawford rule">
-        <P>
-          A match is played to a set number of points. When either player gets to one point short
-          of the match, the very next game is the Crawford game and no doubling is allowed in it.
-          After that game, doubling is back on.
-        </P>
-        <P>In a one-point match there is no doubling at all.</P>
+      <Section title="Matches">
+        <P>A match is played to a set number of points; the first player to reach it wins.</P>
       </Section>
 
       <Section title="On this board">

@@ -16,7 +16,6 @@ import { BAR, OFF } from '@/engine/board';
 import {
   consumedDice,
   isCompleteTurn,
-  legalStepsFrom,
   maxUsableDice,
   nextSteps,
   previewDraft,
@@ -64,6 +63,38 @@ export interface TurnDraftOptions {
 }
 
 const NO_STEPS: Step[] = [];
+
+/**
+ * Every place the checker on `from` can reach this turn — with one die, or by
+ * moving the SAME checker with several dice in a row (3 then 5 to land 8 away)
+ * — mapped to the shortest legal chain of steps that gets it there.
+ *
+ * Without this, tapping the landing point of a combined move did nothing,
+ * which felt exactly like the game refusing a legal move.
+ */
+export function reachable(
+  state: GameState,
+  seat: Seat,
+  draft: Step[],
+  from: number,
+): Map<number, Step[]> {
+  const out = new Map<number, Step[]>();
+  let frontier: { at: number; chain: Step[] }[] = [{ at: from, chain: [] }];
+  while (frontier.length) {
+    const next: { at: number; chain: Step[] }[] = [];
+    for (const { at, chain } of frontier) {
+      for (const s of nextSteps(state, seat, [...draft, ...chain])) {
+        if (s.from !== at) continue;
+        if (out.has(s.to)) continue;
+        const c = [...chain, s];
+        out.set(s.to, c);
+        if (s.to !== OFF) next.push({ at: s.to, chain: c });
+      }
+    }
+    frontier = next;
+  }
+  return out;
+}
 
 export function useTurnDraft(
   state: GameState,
@@ -117,9 +148,17 @@ export function useTurnDraft(
     [state, mySeat, draft, myTurn],
   );
   const sources = useMemo(() => Array.from(new Set(next.map((s) => s.from))), [next]);
+  const routes = useMemo(
+    () =>
+      selected === null || !mySeat || !myTurn
+        ? new Map<number, Step[]>()
+        : reachable(state, mySeat, draft, selected),
+    [state, mySeat, draft, selected, myTurn],
+  );
+  // One highlighted target per landing point (single die or combined).
   const targets = useMemo(
-    () => (selected === null || !mySeat ? [] : legalStepsFrom(state, mySeat, draft, selected)),
-    [state, mySeat, draft, selected],
+    () => Array.from(routes.keys()).map((to) => ({ from: selected ?? -1, to })),
+    [routes, selected],
   );
   const spent = useMemo(
     () => (mySeat ? consumedDice(state, mySeat, draft) : []),
@@ -130,8 +169,8 @@ export function useTurnDraft(
     [state, mySeat, draft, myTurn],
   );
 
-  const push = useCallback((step: Step) => {
-    setDraft((d) => [...d, step]);
+  const push = useCallback((...steps: Step[]) => {
+    setDraft((d) => [...d, ...steps]);
     setSelected(null);
   }, []);
 
@@ -141,9 +180,9 @@ export function useTurnDraft(
 
       // Completing a move onto an already-selected source's destination.
       if (selected !== null) {
-        const hit = targets.find((s) => s.to === own);
-        if (hit) {
-          push(hit);
+        const route = routes.get(own);
+        if (route) {
+          push(...route);
           return;
         }
         if (own === selected) {
@@ -167,22 +206,22 @@ export function useTurnDraft(
       }
       setSelected(from);
     },
-    [myTurn, mySeat, selected, targets, next, fastTap, push],
+    [myTurn, mySeat, selected, routes, next, fastTap, push],
   );
 
   const tapOff = useCallback(() => {
     if (!myTurn) return;
     if (selected !== null) {
-      const bearing = targets.find((s) => s.to === OFF);
-      if (bearing) {
-        push(bearing);
+      const route = routes.get(OFF);
+      if (route) {
+        push(...route);
         return;
       }
     }
     // Nothing selected: if exactly one checker can come off, take that one.
     const offs = next.filter((s) => s.to === OFF);
     if (offs.length === 1 && fastTap) push(offs[0]);
-  }, [myTurn, selected, targets, next, fastTap, push]);
+  }, [myTurn, selected, routes, next, fastTap, push]);
 
   const undo = useCallback(() => {
     setDraft((d) => d.slice(0, -1));

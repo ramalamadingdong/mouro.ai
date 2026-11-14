@@ -6,17 +6,17 @@
  * the player, so they are written as plain English.
  *
  * Both clients run this, and the winning writer's result is what lands in the
- * database (see `src/fb/rooms.ts`, which runs this INSIDE the RTDB
- * transaction). The security rules independently enforce the three things they
- * are able to see: membership, `turnUid`, and a strictly increasing `version`.
- * They cannot enforce the rules of backgammon — that is the trade for a
- * Cloud-Functions-free backend, and it is why every client re-validates.
+ * database (see `src/net/rooms.ts`, which runs this INSIDE the
+ * realtime transaction). The security rules independently enforce the three
+ * things they are able to see: membership, `turnUid`, and a strictly increasing
+ * `version`. They cannot enforce the rules of the game, which is why every
+ * client re-validates.
  */
 import { CHECKERS, otherSeat, startingPoints } from './board';
-import { CUBE_MAX, DEFAULT_MATCH_LENGTH, canDouble, isCrawfordGame, nextCubeValue } from './cube';
+import { DEFAULT_MATCH_LENGTH } from './match';
 import { applySteps, isCompleteTurn, maxUsableDice, turnLines } from './moves';
 import { rollDice, rollDie } from './rng';
-import { buildGameResult, buildMatchResult, buildPassResult, hasWon } from './score';
+import { buildGameResult, buildMatchResult, hasWon } from './score';
 import type { ApplyResult, GameState, LastMove, Move, MoveKind, Seat, Step } from './types';
 
 /** Which seat is this uid, if any? */
@@ -58,12 +58,6 @@ export function initialMatchState(args: {
     bar: { p0: 0, p1: 0 },
     off: { p0: 0, p1: 0 },
     dice: [],
-    cube: { value: 1, owner: null },
-    offer: null,
-    // In a 1-point match this is true from the very first game — no doubling in
-    // a 1-pointer, which falls out of the rule rather than being special-cased.
-    crawford: isCrawfordGame(scores, target, false),
-    crawfordDone: false,
     opening: { p0: null, p1: null },
     gameResult: null,
     matchResult: null,
@@ -91,7 +85,7 @@ function commit(
   seat: Seat,
   kind: MoveKind,
   baseVersion: number,
-  extra?: Partial<Pick<LastMove, 'dice' | 'steps' | 'hits' | 'cube'>>,
+  extra?: Partial<Pick<LastMove, 'dice' | 'steps' | 'hits'>>,
 ): ApplyResult {
   s.version = baseVersion + 1;
   s.turnUid = s.players[s.turn];
@@ -99,7 +93,6 @@ function commit(
   if (extra?.dice) lastMove.dice = extra.dice;
   if (extra?.steps) lastMove.steps = extra.steps;
   if (extra?.hits && extra.hits.length) lastMove.hits = extra.hits;
-  if (extra?.cube !== undefined) lastMove.cube = extra.cube;
   s.lastMove = lastMove;
   return { ok: true, state: s };
 }
@@ -110,8 +103,6 @@ function resetForNewGame(s: GameState): void {
   s.bar = { p0: 0, p1: 0 };
   s.off = { p0: 0, p1: 0 };
   s.dice = [];
-  s.cube = { value: 1, owner: null };
-  s.offer = null;
   s.phase = 'opening';
   s.turn = 'p0';
   s.opening = { p0: null, p1: null };
@@ -131,7 +122,6 @@ function finishGame(s: GameState, result: GameState['gameResult']): void {
     s.phase = 'gameOver';
   }
   s.dice = [];
-  s.offer = null;
 }
 
 export function applyMove(state: GameState, move: Move, uid: string): ApplyResult {
@@ -144,11 +134,7 @@ export function applyMove(state: GameState, move: Move, uid: string): ApplyResul
     const seat = seatOf(state, uid);
     if (!seat) return reject('You are not in this match.');
     const s = clone(state);
-    // Latch Crawford BEFORE recomputing it, so the Crawford game happens exactly
-    // once per match even if the other player later also reaches target - 1.
-    if (s.crawford) s.crawfordDone = true;
     s.game += 1;
-    s.crawford = isCrawfordGame(s.scores, s.target, s.crawfordDone);
     resetForNewGame(s);
     return commit(s, uid, seat, 'nextGame', baseVersion);
   }
@@ -160,8 +146,6 @@ export function applyMove(state: GameState, move: Move, uid: string): ApplyResul
     const s = clone(state);
     s.scores = { p0: 0, p1: 0 };
     s.game = 1;
-    s.crawfordDone = false;
-    s.crawford = isCrawfordGame(s.scores, s.target, false);
     s.matchResult = null;
     resetForNewGame(s);
     return commit(s, uid, seat, 'rematch', baseVersion);
@@ -198,9 +182,11 @@ export function applyMove(state: GameState, move: Move, uid: string): ApplyResul
 
       // The two opening dice ARE the winner's first roll — the real rule, and it
       // gives a free invariant: an opening turn never has doubles.
+      // Tawleh: the higher die wins the start, and the winner then rolls
+      // their own two dice for the first turn (the opening dice are not played).
       s.turn = opening.p0 > opening.p1 ? 'p0' : 'p1';
-      s.dice = [opening.p0, opening.p1];
-      s.phase = 'moving';
+      s.dice = [];
+      s.phase = 'roll';
       s.opening = null;
       return commit(s, uid, seat, 'openingRoll', baseVersion, { dice: [d] });
     }
@@ -259,44 +245,6 @@ export function applyMove(state: GameState, move: Move, uid: string): ApplyResul
       });
     }
 
-    case 'double': {
-      if (!canDouble(state, seat)) {
-        if (state.crawford) return reject('No doubling in the Crawford game.');
-        if (state.cube.value >= CUBE_MAX) return reject('The cube is already at 64.');
-        if (state.phase !== 'roll') return reject('You can only double before you roll.');
-        return reject('You do not own the cube.');
-      }
-      const s = clone(state);
-      const value = nextCubeValue(s.cube.value);
-      s.offer = { by: seat, value };
-      s.phase = 'doubled';
-      // Flip the turn to the RESPONDER. This is load-bearing: it makes the
-      // existing `turnUid === auth.uid` security rule grant exactly them the
-      // right to take or pass, with no extra rule.
-      s.turn = otherSeat(seat);
-      return commit(s, uid, seat, 'double', baseVersion, { cube: value });
-    }
-
-    case 'take': {
-      if (state.phase !== 'doubled' || !state.offer) return reject('There is no double to take.');
-      const s = clone(state);
-      const offer = s.offer!;
-      s.cube = { value: offer.value, owner: seat };
-      s.offer = null;
-      s.phase = 'roll';
-      s.turn = offer.by; // the doubler now rolls
-      return commit(s, uid, seat, 'take', baseVersion, { cube: offer.value });
-    }
-
-    case 'pass': {
-      if (state.phase !== 'doubled' || !state.offer) return reject('There is no double to drop.');
-      const s = clone(state);
-      const offer = s.offer!;
-      // A dropped double scores the cube value from BEFORE the double.
-      finishGame(s, buildPassResult(s, offer.by));
-      return commit(s, uid, seat, 'pass', baseVersion, { cube: offer.value });
-    }
-
     default:
       return reject('Unknown move.');
   }
@@ -318,11 +266,9 @@ export function legalMoves(state: GameState, uid: string): MoveKind[] {
     case 'opening':
       return state.opening && state.opening[seat] === null ? ['openingRoll'] : [];
     case 'roll':
-      return canDouble(state, seat) ? ['double', 'roll'] : ['roll'];
+      return ['roll'];
     case 'moving':
       return turnLines(state, seat).length ? ['play'] : [];
-    case 'doubled':
-      return ['take', 'pass'];
     default:
       return [];
   }

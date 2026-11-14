@@ -2,10 +2,11 @@ import { Fragment } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { BAR, CHECKERS, OFF, otherSeat, ownAt } from '@/engine/board';
+
+const MAX_STACK_DRAWN = 8; // matches BoardMetrics.drawn()
 import type { GameState, Seat, Step } from '@/engine/types';
 import { Checker } from '@/components/board/checker';
 import { CheckerFlyOverlay } from '@/components/board/checker-fly-overlay';
-import { CubeChip } from '@/components/board/cube-chip';
 import { Die } from '@/components/board/die';
 import type { BoardMetrics } from '@/hooks/use-board-metrics';
 import { accent, board, felt, piece, text } from '@/theme/colors';
@@ -74,9 +75,20 @@ export function BoardFrame({
     if (i >= 0) used[i] = true;
   }
 
-  const cubeOwner: 'mine' | 'theirs' | 'centre' =
-    state.cube.owner === null ? 'centre' : state.cube.owner === me ? 'mine' : 'theirs';
-  const cubePos = m.cubeXY(cubeOwner);
+  // The checker in flight, translated into MY frame. `flying.step` is in the
+  // MOVER's own frame; for the opponent that is the mirror image of mine, and
+  // drawing it untranslated made every opponent move appear to fly between the
+  // wrong points on the wrong side of the board.
+  const flight = (() => {
+    if (!flying) return null;
+    const mirror = (i: number) => (flying.mine || i === BAR || i === OFF ? i : 23 - i);
+    const from = mirror(flying.step.from);
+    const to = mirror(flying.step.to);
+    // Lift from the top of the source stack, land on top of the destination.
+    const fromCount = from === BAR ? 1 : Math.max(1, Math.abs(ownAt(state.points, me, from)));
+    const toCount = to === OFF ? 0 : flying.hit ? 0 : Math.abs(ownAt(state.points, me, to));
+    return { from, to, fromK: Math.min(fromCount, MAX_STACK_DRAWN) - 1, fromCount, toK: Math.min(toCount, MAX_STACK_DRAWN - 1), toCount: toCount + 1 };
+  })();
 
   return (
     /*
@@ -264,21 +276,12 @@ export function BoardFrame({
         return <Die key={`d${i}`} value={f} size={m.dieSize} x={p.x} y={p.y} used={used[i]} />;
       })}
 
-      {/* ── Cube ───────────────────────────────────────────────────────────── */}
-      <CubeChip
-        value={state.offer ? state.offer.value : state.cube.value}
-        size={m.cubeSize}
-        x={cubePos.x}
-        y={cubePos.y}
-        live={state.phase === 'doubled'}
-      />
-
       {/* ── The checker currently in flight ────────────────────────────────── */}
       {flying && (
         <CheckerFlyOverlay
           key={`${flying.step.from}-${flying.step.to}`}
           m={m}
-          step={flying.step}
+          flight={flight!}
           seat={flying.seat}
           mine={flying.mine}
           hit={flying.hit}

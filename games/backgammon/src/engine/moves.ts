@@ -47,10 +47,13 @@ export interface Ply {
 }
 
 /**
- * Safety valve for the enumerator. Realistic worst cases are a few thousand
- * nodes; the theoretical worst (doubles, 15 spread checkers, an open board) is
- * far higher. On overflow we fall back to a transposition-deduped search, which
- * is much smaller and still finds every distinct resulting position.
+ * Safety valve for the all-orderings enumerator. Identical dice at the same
+ * depth are explored once, so doubles cost at most 15 + 15² + 15³ + 15⁴ ≈ 54k
+ * nodes and this never trips in a real game — but if it ever does, we fall
+ * back to the transposition-deduped search, which visits each (position, dice
+ * left) pair once and therefore always terminates quickly. (The old fallback
+ * only deduped LEAVES, explored the same tree again, overflowed again, and
+ * recursed forever.)
  */
 const MAX_NODES = 60_000;
 
@@ -167,13 +170,18 @@ function enumerate(b: Scratch, dice: [number, number], dedupe: boolean): TurnLin
   let nodes = 0;
   let overflow = false;
   const acc: Ply[] = [];
-  // Only used when `dedupe` is on (the overflow fallback): one line per
-  // resulting position, which collapses the combinatorial explosion.
+  // Only used when `dedupe` is on: one line per resulting position, and each
+  // (position, dice left) node expanded once, which collapses the explosion.
   const seen = new Set<string>();
+  const visited = new Set<string>();
 
   const rec = (remaining: number[]): void => {
     if (overflow) return;
-    if (++nodes > MAX_NODES) {
+    if (dedupe) {
+      const node = `${boardKey(b)}#${remaining.join('')}`;
+      if (visited.has(node)) return;
+      visited.add(node);
+    } else if (++nodes > MAX_NODES) {
       overflow = true;
       return;
     }
@@ -266,6 +274,28 @@ export function turnLines(state: GameState, seat: Seat): TurnLine[] {
     if (oldest !== undefined) cache.delete(oldest);
   }
   cache.set(key, lines);
+  return lines;
+}
+
+const distinctCache = new Map<string, TurnLine[]>();
+
+/**
+ * One legal turn per DISTINCT resulting position — what the computer player
+ * needs. Much cheaper than `turnLines` (which keeps every ordering, because the
+ * UI must accept whichever order a person taps), and never overflows.
+ */
+export function distinctTurns(state: GameState, seat: Seat): TurnLine[] {
+  if (state.phase !== 'moving' || state.dice.length !== 2) return [];
+  const b = toScratch(state, seat);
+  const key = cacheKey(b, state.dice, seat);
+  const hit = distinctCache.get(key);
+  if (hit) return hit;
+  const lines = enumerate(b, [state.dice[0], state.dice[1]], true);
+  if (distinctCache.size >= 64) {
+    const oldest = distinctCache.keys().next().value;
+    if (oldest !== undefined) distinctCache.delete(oldest);
+  }
+  distinctCache.set(key, lines);
   return lines;
 }
 

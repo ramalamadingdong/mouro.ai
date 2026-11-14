@@ -28,9 +28,6 @@ export interface PosSpec {
   turn?: Seat;
   target?: number;
   scores?: Partial<Record<Seat, number>>;
-  cube?: { value: number; owner: Seat | null };
-  crawford?: boolean;
-  crawfordDone?: boolean;
   game?: number;
   version?: number;
 }
@@ -72,9 +69,6 @@ export function pos(spec: PosSpec = {}): GameState {
   s.turnUid = s.players[s.turn];
   s.opening = s.phase === 'opening' ? { p0: null, p1: null } : null;
   if (spec.scores) s.scores = { p0: spec.scores.p0 ?? 0, p1: spec.scores.p1 ?? 0 };
-  if (spec.cube) s.cube = { ...spec.cube };
-  if (spec.crawford !== undefined) s.crawford = spec.crawford;
-  if (spec.crawfordDone !== undefined) s.crawfordDone = spec.crawfordDone;
   if (spec.game !== undefined) s.game = spec.game;
   if (spec.version !== undefined) s.version = spec.version;
   return s;

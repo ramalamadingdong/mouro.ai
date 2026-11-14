@@ -2,8 +2,8 @@
  * Every shape the engine deals in. ZERO runtime imports — this file must stay
  * importable from anywhere (tests, scripts, the CPU) without pulling in code.
  *
- * The whole engine is pure: no React, no Firebase, no Expo. `GameState` is
- * JSON-clean by construction, because it is written to the Realtime Database
+ * The whole engine is pure: no React, no network, no Expo. `GameState` is
+ * JSON-clean by construction, because it is written to the realtime server
  * verbatim and read back through `normalize()`.
  */
 
@@ -13,17 +13,13 @@ export type Seat = 'p0' | 'p1';
  * Where a game is.
  *
  *  - `opening`  both players roll one die to decide who starts; ties re-roll.
- *  - `roll`     the player on roll must roll — and may double FIRST.
+ *               The winner then rolls again for their first turn (Tawleh).
+ *  - `roll`     the player on roll must roll.
  *  - `moving`   dice are on the table; the whole turn must be committed at once.
- *  - `doubled`  a double is on offer; the responder must take or pass.
  *  - `gameOver` this game is scored; either player may start the next one.
  *  - `matchOver` the match is decided; either player may vote to rematch.
- *
- * The Crawford rule is deliberately NOT a phase — it is a property of an entire
- * game across every phase, so it lives as `GameState.crawford`. Making it a
- * phase would force a `crawfordRoll`/`crawfordMoving` twin of everything.
  */
-export type Phase = 'opening' | 'roll' | 'moving' | 'doubled' | 'gameOver' | 'matchOver';
+export type Phase = 'opening' | 'roll' | 'moving' | 'gameOver' | 'matchOver';
 
 /**
  * One checker movement, expressed in the ACTING SEAT'S OWN FRAME (see board.ts):
@@ -38,15 +34,7 @@ export interface Step {
   to: number;
 }
 
-export type MoveKind =
-  | 'openingRoll'
-  | 'roll'
-  | 'play'
-  | 'double'
-  | 'take'
-  | 'pass'
-  | 'nextGame'
-  | 'rematch';
+export type MoveKind = 'openingRoll' | 'roll' | 'play' | 'nextGame' | 'rematch';
 
 /**
  * Everything a player can do.
@@ -69,9 +57,6 @@ export type Move =
   | { kind: 'roll'; seed: number[] }
   /** The whole turn. `[]` is a legal, and sometimes forced, "no play". */
   | { kind: 'play'; steps: Step[] }
-  | { kind: 'double' }
-  | { kind: 'take' }
-  | { kind: 'pass' }
   | { kind: 'nextGame' }
   | { kind: 'rematch' };
 
@@ -90,26 +75,17 @@ export interface LastMove {
   steps?: Step[];
   /** Own-frame indices, in the HIT player's frame, where a blot was sent to the bar. */
   hits?: number[];
-  /** Cube value involved in a `double` / `take` / `pass`. */
-  cube?: number;
   at: number;
 }
 
 /** How a single game finished. */
 export interface GameResult {
   winner: Seat;
-  /** 1 single, 2 gammon, 3 backgammon. Always 1 when the cube was passed. */
-  multiplier: 1 | 2 | 3;
-  /** The cube value that applied. A pass scores the value BEFORE the double. */
-  cube: number;
-  /** `cube * multiplier` — what was added to the winner's score. */
+  /** 1 for a plain win, 2 for a mars (the loser had borne off nothing). */
+  multiplier: 1 | 2;
   points: number;
-  /** How it ended, for the reveal copy. */
-  how: 'single' | 'gammon' | 'backgammon' | 'pass';
-  /** Score AFTER this game, for a stable end-of-game reveal. */
+  how: 'single' | 'mars';
   scores: Record<Seat, number>;
-  /** True if this was the Crawford game. */
-  crawford: boolean;
 }
 
 /** How the match finished. */
@@ -161,15 +137,6 @@ export interface GameState {
 
   /** `[]` before a roll, `[d1, d2]` after. Doubles stay TWO entries here. */
   dice: number[];
-
-  cube: { value: number; owner: Seat | null };
-  /** A live double awaiting take/pass; `null` otherwise. */
-  offer: { by: Seat; value: number } | null;
-
-  /** THIS game is the Crawford game — no doubling allowed. */
-  crawford: boolean;
-  /** The Crawford game has been played; latches for the rest of the match. */
-  crawfordDone: boolean;
 
   /** Only meaningful while `phase === 'opening'`; each seat's single die. */
   opening: { p0: number | null; p1: number | null } | null;

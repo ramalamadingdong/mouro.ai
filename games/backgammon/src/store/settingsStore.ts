@@ -5,7 +5,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
-import { DEFAULT_MATCH_LENGTH } from '@/engine/cube';
+import { DEFAULT_MATCH_LENGTH } from '@/engine/match';
 // Type-only import — erased at compile time, so the store carries no AI dep.
 import type { Difficulty } from '@/ai/difficulty';
 

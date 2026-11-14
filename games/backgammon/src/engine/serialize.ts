@@ -23,7 +23,6 @@
  * rather than rendering a board that cannot exist. Fail closed.
  */
 import { CHECKERS, POINTS } from './board';
-import { CUBE_VALUES } from './cube';
 import type {
   GameResult,
   GameState,
@@ -35,14 +34,11 @@ import type {
   Step,
 } from './types';
 
-const PHASES: Phase[] = ['opening', 'roll', 'moving', 'doubled', 'gameOver', 'matchOver'];
+const PHASES: Phase[] = ['opening', 'roll', 'moving', 'gameOver', 'matchOver'];
 const MOVE_KINDS: MoveKind[] = [
   'openingRoll',
   'roll',
   'play',
-  'double',
-  'take',
-  'pass',
   'nextGame',
   'rematch',
 ];
@@ -164,8 +160,6 @@ function asLastMove(v: unknown): LastMove | null {
     const hits = asNumArray(v.hits);
     if (hits) out.hits = hits;
   }
-  const cube = num(v.cube);
-  if (cube !== null) out.cube = cube;
   return out;
 }
 
@@ -173,23 +167,14 @@ function asGameResult(v: unknown): GameResult | null {
   if (!isObj(v)) return null;
   const winner = seat(v.winner);
   const multiplier = num(v.multiplier);
-  const cube = num(v.cube);
   const points = num(v.points);
   const how = str(v.how);
   const scores = asSeatNums(v.scores);
-  if (winner === null || multiplier === null || cube === null || points === null) return null;
-  if (how !== 'single' && how !== 'gammon' && how !== 'backgammon' && how !== 'pass') return null;
-  if (multiplier !== 1 && multiplier !== 2 && multiplier !== 3) return null;
+  if (winner === null || multiplier === null || points === null) return null;
+  if (how !== 'single' && how !== 'mars') return null;
+  if (multiplier !== 1 && multiplier !== 2) return null;
   if (!scores) return null;
-  return {
-    winner,
-    multiplier,
-    cube,
-    points,
-    how,
-    scores,
-    crawford: v.crawford === true,
-  };
+  return { winner, multiplier, points, how, scores };
 }
 
 function asMatchResult(v: unknown): MatchResult | null {
@@ -242,21 +227,6 @@ export function normalize(raw: unknown): GameState | null {
     return null;
   }
 
-  // Cube. `owner: null` is pruned away, but the node survives via `value`.
-  const cubeRaw = isObj(raw.cube) ? raw.cube : {};
-  const cubeValue = num(cubeRaw.value);
-  if (cubeValue === null) return null;
-  const cube = { value: cubeValue, owner: seat(cubeRaw.owner) };
-
-  // Offer. Pruned entirely when null.
-  let offer: GameState['offer'] = null;
-  if (isObj(raw.offer)) {
-    const by = seat(raw.offer.by);
-    const value = num(raw.offer.value);
-    if (by === null || value === null) return null;
-    offer = { by, value };
-  }
-
   // Opening. This is the one node that vanishes in its normal state, because
   // `{p0: null, p1: null}` prunes both children and then the parent.
   let opening: GameState['opening'] = null;
@@ -282,10 +252,6 @@ export function normalize(raw: unknown): GameState | null {
     bar,
     off,
     dice,
-    cube,
-    offer,
-    crawford: raw.crawford === true,
-    crawfordDone: raw.crawfordDone === true,
     opening,
     gameResult: asGameResult(raw.gameResult),
     matchResult: asMatchResult(raw.matchResult),
@@ -301,8 +267,7 @@ export function normalize(raw: unknown): GameState | null {
  * bug. Refusing it is what keeps the reducer's preconditions honest.
  *
  * Checker conservation lives here rather than in the security rules because
- * RTDB rules cannot sum an array. Both clients check it on every read, which is
- * the best a Cloud-Functions-free backend can do.
+ * security rules cannot sum an array. Both clients check it on every read.
  */
 function isCoherent(s: GameState): boolean {
   if (s.version < 0 || !Number.isInteger(s.version)) return false;
@@ -329,16 +294,11 @@ function isCoherent(s: GameState): boolean {
   if (s.dice.length !== 0 && s.dice.length !== 2) return false;
   for (const d of s.dice) if (!Number.isInteger(d) || d < 1 || d > 6) return false;
 
-  // Cube.
-  if (!(CUBE_VALUES as readonly number[]).includes(s.cube.value)) return false;
-
   // The denormalized turn pointer must agree with the seat map.
   if (s.turnUid !== s.players[s.turn]) return false;
 
   // Phase coherence.
   if (s.phase === 'moving' && s.dice.length !== 2) return false;
-  if (s.phase === 'doubled' && !s.offer) return false;
-  if (s.phase !== 'doubled' && s.offer) return false;
   if (s.phase === 'opening' && !s.opening) return false;
   if (s.phase === 'gameOver' && !s.gameResult) return false;
   if (s.phase === 'matchOver' && (!s.matchResult || !s.gameResult)) return false;
@@ -346,9 +306,6 @@ function isCoherent(s: GameState): boolean {
   // A reached target and `matchOver` imply each other.
   const reached = s.scores.p0 >= s.target || s.scores.p1 >= s.target;
   if (reached !== (s.phase === 'matchOver')) return false;
-
-  // The Crawford game cannot also be after the Crawford game.
-  if (s.crawford && s.crawfordDone) return false;
 
   return true;
 }

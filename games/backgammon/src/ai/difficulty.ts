@@ -13,7 +13,7 @@ export const DIFFICULTY_LABEL: Record<Difficulty, string> = {
 };
 
 export const DIFFICULTY_BLURB: Record<Difficulty, string> = {
-  easy: 'Runs for home and hits what it can. Leaves blots, never doubles.',
-  medium: 'Plays the whole board — points, primes and safety. Uses the cube.',
-  hard: 'Weighs every reply before moving, and knows when to drop.',
+  easy: 'Runs for home and hits what it can. Slips up now and then.',
+  medium: 'Plays the whole board — points, primes, safety and the race.',
+  hard: 'Also weighs every roll you could reply with before it moves.',
 };

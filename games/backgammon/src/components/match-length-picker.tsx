@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { MATCH_LENGTHS } from '@/engine/cube';
+import { MATCH_LENGTHS } from '@/engine/match';
 import { accent, felt, text } from '@/theme/colors';
 
 /**

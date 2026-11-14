@@ -41,6 +41,15 @@ Backgammon has its own database on the realtime server (`backgammon` in
 Its rules live in `database.rules.json` here and are enforced by the server on
 every read and write — edit them in place; they deploy with the server.
 
+## Tawleh rules
+
+The game plays Middle-Eastern Tawleh, not American backgammon: **no doubling
+cube and no Crawford rule**; a win scores 1, a **mars** (loser bore off nothing)
+scores 2, and there is **no triple game**; the winner of the opening roll
+**rolls again** for the first turn. Movement rules are otherwise standard.
+`src/engine/__tests__/reference.test.ts` checks move generation against an
+independent implementation — keep it passing.
+
 ## Two things that are true here and not in gin rummy
 
 1. **A turn is committed atomically** as one `{kind:'play', steps}` move, not

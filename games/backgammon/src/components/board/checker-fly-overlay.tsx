@@ -2,13 +2,17 @@ import { useEffect, useRef } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
 
 import { BAR, OFF } from '@/engine/board';
-import type { Seat, Step } from '@/engine/types';
+import type { Seat } from '@/engine/types';
 import type { BoardMetrics } from '@/hooks/use-board-metrics';
 import { accent, piece } from '@/theme/colors';
 
 export type CheckerFlyOverlayProps = {
   m: BoardMetrics;
-  step: Step;
+  /**
+   * The move in the VIEWER's own frame (the board frame translates it), with
+   * the stack slots to lift from and land on.
+   */
+  flight: { from: number; to: number; fromK: number; fromCount: number; toK: number; toCount: number };
   seat: Seat;
   /** The flier belongs to the viewer (affects which bar lane / tray it uses). */
   mine: boolean;
@@ -26,7 +30,7 @@ export type CheckerFlyOverlayProps = {
  */
 export function CheckerFlyOverlay({
   m,
-  step,
+  flight,
   seat,
   mine,
   hit,
@@ -34,8 +38,9 @@ export function CheckerFlyOverlay({
 }: CheckerFlyOverlayProps) {
   const p = useRef(new Animated.Value(0)).current;
 
-  const from = step.from === BAR ? m.barXY(mine, 0) : m.checkerXY(step.from, 0, 1);
-  const to = step.to === OFF ? m.trayXY(mine, 0) : m.checkerXY(step.to, 0, 1);
+  const from =
+    flight.from === BAR ? m.barXY(mine, 0) : m.checkerXY(flight.from, flight.fromK, flight.fromCount);
+  const to = flight.to === OFF ? m.trayXY(mine, 0) : m.checkerXY(flight.to, flight.toK, flight.toCount);
 
   useEffect(() => {
     p.setValue(0);
@@ -45,7 +50,7 @@ export function CheckerFlyOverlay({
       easing: Easing.out(Easing.quad),
       useNativeDriver: true,
     }).start();
-  }, [p, durationMs, step.from, step.to]);
+  }, [p, durationMs, flight.from, flight.to]);
 
   const translateX = p.interpolate({ inputRange: [0, 1], outputRange: [0, to.x - from.x] });
   const translateY = p.interpolate({ inputRange: [0, 1], outputRange: [0, to.y - from.y] });
@@ -57,7 +62,7 @@ export function CheckerFlyOverlay({
 
   return (
     <>
-      {hit && step.to !== OFF && (
+      {hit && flight.to !== OFF && (
         <View
           pointerEvents="none"
           style={[

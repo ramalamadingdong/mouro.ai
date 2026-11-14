@@ -15,7 +15,6 @@
  * the end are ordinary `expect`s.
  */
 import { BAR, CHECKERS, OFF, allHome, otherSeat, pipCount, toScratch } from '../board';
-import { CUBE_VALUES } from '../cube';
 import { maxUsableDice, turnLines } from '../moves';
 import { applyMove, initialMatchState, legalMoves } from '../reducer';
 import { normalize } from '../serialize';
@@ -25,7 +24,8 @@ import { GUEST, HOST, prune } from './helpers';
 
 const MATCHES = 2000;
 /** Generous: a real match to 5 points is a few hundred moves. */
-const MOVE_CAP = 1500;
+// Random play with no cube to end games early: a long match can take a few thousand moves.
+const MOVE_CAP = 6000;
 const TARGETS = [1, 3, 5];
 
 function fail(msg: string): never {
@@ -71,7 +71,6 @@ function orderingIsLegal(before: GameState, seat: Seat, steps: Step[]): boolean 
   return true;
 }
 
-const legalCubeValues = new Set<number>(CUBE_VALUES);
 
 describe('fuzz: whole matches', () => {
   it(
@@ -80,15 +79,9 @@ describe('fuzz: whole matches', () => {
       const stats = {
         matchesFinished: 0,
         games: 0,
-        doubles: 0,
-        takes: 0,
-        drops: 0,
         gammons: 0,
-        backgammons: 0,
         forcedPasses: 0,
         hits: 0,
-        crawfordGames: 0,
-        maxCube: 1,
         serializeChecks: 0,
       };
 
@@ -104,7 +97,6 @@ describe('fuzz: whole matches', () => {
         });
 
         let moves = 0;
-        let sawCrawford = false;
 
         while (s.phase !== 'matchOver' && moves < MOVE_CAP) {
           // In a terminal phase EITHER player may act, so alternate at random —
@@ -113,30 +105,12 @@ describe('fuzz: whole matches', () => {
           const seat: Seat = actor === HOST ? 'p0' : 'p1';
           const legal = legalMoves(s, actor);
           if (legal.length === 0) fail(`match ${m}: nobody can move in phase ${s.phase}`);
-          if (s.crawford) {
-            sawCrawford = true;
-            if (legal.includes('double')) fail(`match ${m}: doubling offered in the Crawford game`);
-          }
 
           let move: Move;
           if (legal.includes('openingRoll')) {
             move = { kind: 'openingRoll', seed: [m, moves, 1] };
           } else if (legal.includes('roll')) {
-            // Double about one turn in twelve, so the cube gets a real workout.
-            if (legal.includes('double') && rng() < 0.08) {
-              move = { kind: 'double' };
-              stats.doubles += 1;
-            } else {
-              move = { kind: 'roll', seed: [m, moves, 2] };
-            }
-          } else if (legal.includes('take')) {
-            if (rng() < 0.75) {
-              move = { kind: 'take' };
-              stats.takes += 1;
-            } else {
-              move = { kind: 'pass' };
-              stats.drops += 1;
-            }
+            move = { kind: 'roll', seed: [m, moves, 2] };
           } else if (legal.includes('play')) {
             const lines = turnLines(s, seat);
             const line = lines[Math.floor(rng() * lines.length)];
@@ -161,9 +135,7 @@ describe('fuzz: whole matches', () => {
           }
           if (s.version !== before.version + 1) fail(`match ${m}: version did not advance by 1`);
           if (s.turnUid !== s.players[s.turn]) fail(`match ${m}: turnUid out of step with turn`);
-          if (!legalCubeValues.has(s.cube.value)) fail(`match ${m}: illegal cube ${s.cube.value}`);
           if (s.lastMove?.by !== actor) fail(`match ${m}: lastMove.by is not the mover`);
-          if (s.cube.value > stats.maxCube) stats.maxCube = s.cube.value;
 
           const reached = s.scores.p0 >= s.target || s.scores.p1 >= s.target;
           if (reached !== (s.phase === 'matchOver')) {
@@ -204,7 +176,6 @@ describe('fuzz: whole matches', () => {
             if (!s.gameResult) fail(`match ${m}: ${s.phase} with no game result`);
             stats.games += 1;
             if (s.gameResult.multiplier === 2) stats.gammons += 1;
-            if (s.gameResult.multiplier === 3) stats.backgammons += 1;
           }
 
           // Every 40th accepted move, prove the state survives the database.
@@ -223,21 +194,14 @@ describe('fuzz: whole matches', () => {
           fail(`match ${m}: winner did not reach the target`);
         }
         stats.matchesFinished += 1;
-        if (sawCrawford) stats.crawfordGames += 1;
       }
 
       // Guard against a fuzzer that silently stops exercising anything.
       expect(stats.matchesFinished).toBe(MATCHES);
       expect(stats.games).toBeGreaterThan(MATCHES);
-      expect(stats.doubles).toBeGreaterThan(0);
-      expect(stats.takes).toBeGreaterThan(0);
-      expect(stats.drops).toBeGreaterThan(0);
-      expect(stats.gammons).toBeGreaterThan(0);
-      expect(stats.backgammons).toBeGreaterThan(0);
+      expect(stats.gammons).toBeGreaterThan(0); // mars
       expect(stats.forcedPasses).toBeGreaterThan(0);
       expect(stats.hits).toBeGreaterThan(0);
-      expect(stats.crawfordGames).toBeGreaterThan(0);
-      expect(stats.maxCube).toBeGreaterThan(2);
       expect(stats.serializeChecks).toBeGreaterThan(0);
     },
     300_000,

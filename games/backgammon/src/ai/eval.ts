@@ -1,261 +1,193 @@
 /**
- * Position evaluation for the computer opponent. Pure TypeScript, engine
- * imports only, and NO `Math.random` — the same position must always score the
- * same, or the tests cannot pin anything down.
+ * Position evaluation for the computer player.
  *
- * There is no hidden information in backgammon, so unlike the gin rummy app's
- * CPU there is nothing to model and no way to cheat: the computer sees exactly
- * what you see. All of the difficulty lives in how well it evaluates.
+ * All functions take a `Scratch` board in the evaluating side's OWN frame:
+ * `pts[i] > 0` are my checkers, `< 0` the opponent's, I move from index 23
+ * toward 0 and bear off below 0; the opponent moves the other way and enters
+ * from its bar at my index `die - 1`.
+ *
+ * The score is SYMMETRIC: `evaluate(b) = side(b) - side(flip(b))`. The old
+ * evaluator scored only one side and the lookahead subtracted the opponent's
+ * one-sided score from it, mixing two different scales — which is a large part
+ * of why the computer made strange choices. With a symmetric score, "good for
+ * me" and "bad for them" are the same number, and a 1-ply search is honest.
+ *
+ * Tawleh scoring is built in: a mars (bearing everything off before the other
+ * side takes a single checker off) is worth double, so getting the first
+ * checker off matters when the opponent is already bearing off.
  */
-import { POINTS, blots, madePoints, primeLength, type Scratch } from '@/engine/board';
+import { CHECKERS, POINTS, type Scratch } from '@/engine/board';
 
-/**
- * Number of the 36 dice combinations that hit a blot `d` pips away.
- *
- * 1..6 are direct shots. 7..12 need two dice, so they are both rarer and
- * blockable — you cannot play 8 as 5+3 if the intermediate point is made
- * against you, which `combosLive` accounts for. 15/16/18/20/24 come only from
- * doubles.
- */
+/** Number of the 36 rolls that hit a blot `d` pips away (no blocking). */
 const SHOTS: Record<number, number> = {
-  1: 11,
-  2: 12,
-  3: 14,
-  4: 15,
-  5: 15,
-  6: 17,
-  7: 6,
-  8: 6,
-  9: 5,
-  10: 3,
-  11: 2,
-  12: 3,
-  15: 1,
-  16: 1,
-  18: 1,
-  20: 1,
-  24: 1,
+  1: 11, 2: 12, 3: 14, 4: 15, 5: 15, 6: 17, 7: 6, 8: 6, 9: 5, 10: 3, 11: 2, 12: 3,
+  15: 1, 16: 1, 18: 1, 20: 1, 24: 1,
 };
 
-/**
- * Whether an indirect shot of `d` pips is actually available: at least one
- * intermediate landing square must be open to the hitter.
- *
- * `to` is the blot's index in MY own frame; the opponent travels upward through
- * my frame, so an intermediate landing square is `to - k` for a first die `k`.
- */
-function combosLive(b: Scratch, to: number, d: number): boolean {
-  if (d <= 6) return true;
-  for (let k = 1; k <= 6; k++) {
-    const rest = d - k;
-    if (rest < 1 || rest > 6) continue;
-    const mid = to - rest;
-    if (mid < 0 || mid >= POINTS) continue;
-    // Blocked only by two or more of MY checkers.
-    if (b.pts[mid] < 2) return true;
+/** The same board seen from the other side, with both borne-off counts right. */
+export function flip(b: Scratch): Scratch {
+  const pts = new Int8Array(POINTS);
+  let theirsOnBoard = 0;
+  for (let i = 0; i < POINTS; i++) {
+    pts[i] = -b.pts[23 - i];
+    if (b.pts[i] < 0) theirsOnBoard += -b.pts[i];
   }
-  return false;
+  return {
+    pts,
+    bar: b.oppBar,
+    off: CHECKERS - theirsOnBoard - b.oppBar,
+    oppBar: b.bar,
+  };
 }
 
-/**
- * Expected shots against my blots, in units of 36ths.
- *
- * Per blot we take the BEST single threat rather than summing every enemy
- * checker's chance: summing double-counts the same dice roll and badly
- * over-punishes a blot in front of a stack.
- */
-export function blotRisk(b: Scratch, useCombos: boolean): number {
-  let total = 0;
-  const mine = blots(b);
-  if (mine.length === 0) return 0;
-
-  // Enemy sources in my frame. A checker on their bar re-enters at my index
-  // `die - 1`, so treating it as sitting at -1 gives the right pip distances.
-  const sources: number[] = [];
-  if (b.oppBar > 0) sources.push(-1);
-  for (let i = 0; i < POINTS; i++) if (b.pts[i] < 0) sources.push(i);
-
-  for (const blot of mine) {
-    let best = 0;
-    for (const j of sources) {
-      const d = blot - j;
-      if (d < 1) continue;
-      if (!useCombos && d > 6) continue;
-      const shots = SHOTS[d] ?? 0;
-      if (shots === 0) continue;
-      if (useCombos && !combosLive(b, blot, d)) continue;
-      if (shots > best) best = shots;
-    }
-    total += best / 36;
-  }
-  return total;
-}
-
-export interface Features {
-  /** My own pip count. */
-  myPips: number;
-  /** Theirs. */
-  theirPips: number;
-  /** Their pips minus mine — positive means I am ahead in the race. */
-  pipDiff: number;
-  /** Expected shots against my blots (0..~2). */
-  risk: number;
-  /** Points I have made in my home board. */
-  homePoints: number;
-  /** Longest run of consecutive made points. */
-  prime: number;
-  /** I hold a point in their home board. */
-  anchor: number;
-  /** Their checkers on the bar, weighted by how closed my home board is. */
-  containment: number;
-  /** My checkers still stuck in their home board. */
-  backCheckers: number;
-  /** Checkers piled beyond three deep on a single point. */
-  stacking: number;
-  /** My borne-off checkers. */
-  borneOff: number;
-  /** My checkers on the bar. */
-  onBar: number;
-}
-
-/** Own-frame pip count for a scratch board (bar counts 25). */
 export function scratchPips(b: Scratch): number {
   let p = b.bar * 25;
   for (let i = 0; i < POINTS; i++) if (b.pts[i] > 0) p += b.pts[i] * (i + 1);
   return p;
 }
 
-/** Opponent pip count in MY frame: their checker at my index i is 24 - i pips out. */
 export function oppPips(b: Scratch): number {
   let p = b.oppBar * 25;
   for (let i = 0; i < POINTS; i++) if (b.pts[i] < 0) p += -b.pts[i] * (24 - i);
   return p;
 }
 
-export function features(b: Scratch, useCombos: boolean): Features {
-  const made = madePoints(b);
-  let stacking = 0;
-  let backCheckers = 0;
-  for (let i = 0; i < POINTS; i++) {
-    const n = b.pts[i];
-    if (n > 3) stacking += n - 3;
-    if (n > 0 && i >= 18) backCheckers += n;
+/** Is any of my checkers still behind one of theirs (so hitting is possible)? */
+export function inContact(b: Scratch): boolean {
+  let myRear = b.bar > 0 ? 24 : -1;
+  if (myRear < 0) for (let i = POINTS - 1; i >= 0; i--) if (b.pts[i] > 0) { myRear = i; break; }
+  let theirRear = b.oppBar > 0 ? -1 : 24;
+  if (theirRear === 24) for (let i = 0; i < POINTS; i++) if (b.pts[i] < 0) { theirRear = i; break; }
+  return myRear > theirRear;
+}
+
+/** Can the opponent's checker at my index `j` travel `d` pips to `to`, given my points block? */
+function shotLive(b: Scratch, j: number, to: number, d: number): boolean {
+  if (d <= 6) return true;
+  // Combination shot: some split d = a + c with an open landing point between.
+  for (let a = 1; a <= 6; a++) {
+    const c = d - a;
+    if (c < 1 || c > 6) continue;
+    const mid = j + a;
+    if (mid < 0 || mid >= POINTS || b.pts[mid] < 2) return true;
   }
-  const homePoints = made.filter((i) => i <= 5).length;
-  const myPips = scratchPips(b);
-  const theirPips = oppPips(b);
-  return {
-    myPips,
-    theirPips,
-    pipDiff: theirPips - myPips,
-    risk: blotRisk(b, useCombos),
-    homePoints,
-    prime: primeLength(b),
-    anchor: made.some((i) => i >= 18) ? 1 : 0,
-    containment: b.oppBar * homePoints,
-    backCheckers,
-    stacking,
-    borneOff: b.off,
-    onBar: b.bar,
-  };
-}
-
-export interface Weights {
-  /** Value of taking a pip OFF my own count. */
-  myPips: number;
-  /** Value of putting a pip ON theirs. */
-  theirPips: number;
-  risk: number;
-  homePoints: number;
-  prime: number;
-  anchor: number;
-  containment: number;
-  backCheckers: number;
-  stacking: number;
-  borneOff: number;
-  onBar: number;
+  return false;
 }
 
 /**
- * ⚠ `myPips` and `theirPips` are deliberately ASYMMETRIC, and this is the most
- * important number in the file.
- *
- * With a single symmetric `pipDiff` term, hitting is always worth ~25 pips at
- * the cost of moving one checker, so two evaluators facing each other reach a
- * stable equilibrium where both sit in the other's home board hitting back and
- * forth and NEITHER EVER BRINGS A CHECKER HOME. A self-play match then runs
- * forever with pip counts climbing past 300. Weighting my own progress roughly
- * double the opponent's setback prices a hit at about ten pips of real progress
- * — worth taking, not worth living on.
+ * Expected pips I lose to being hit next turn: for each blot, the share of
+ * rolls that hit it times what it costs (its pips already travelled + a turn
+ * on the bar). Blots deep in my own home board cost the most.
  */
-export const WEIGHTS: Weights = {
-  myPips: -0.3,
-  theirPips: 0.16,
-  risk: -9,
-  homePoints: 4,
-  prime: 3,
-  anchor: 5,
-  containment: 2.5,
-  backCheckers: -1.4,
-  stacking: -0.7,
-  borneOff: 3,
-  onBar: -7,
-};
+export function blotExposure(b: Scratch): number {
+  const sources: number[] = [];
+  if (b.oppBar > 0) sources.push(-1);
+  for (let i = 0; i < POINTS; i++) if (b.pts[i] < 0) sources.push(i);
+  if (sources.length === 0) return 0;
 
-/**
- * Score a resulting position. Higher is better for the side to move.
- *
- * The one context-sensitive term is the anchor: holding a point in the
- * opponent's home board is worth a lot when you are behind in the race and
- * need a shot, and close to nothing when you are ahead and just want to run.
- *
- * That weighting RAMPS rather than switching at pipDiff === 0. A step function
- * there is not a detail: it made a one-pip-worse position score four points
- * BETTER purely because it crossed the threshold, so the CPU would hand back a
- * pip to buy the bonus.
- */
-export function evaluate(b: Scratch, useCombos: boolean, w: Weights = WEIGHTS): number {
-  const f = features(b, useCombos);
-  const behind = Math.max(0, Math.min(1, -f.pipDiff / 40));
-  const anchorValue = w.anchor * (0.2 + 0.8 * behind);
-  return (
-    w.myPips * f.myPips +
-    w.theirPips * f.theirPips +
-    w.risk * f.risk +
-    w.homePoints * f.homePoints +
-    w.prime * f.prime +
-    anchorValue * f.anchor +
-    w.containment * f.containment +
-    w.backCheckers * f.backCheckers +
-    w.stacking * f.stacking +
-    w.borneOff * f.borneOff +
-    w.onBar * f.onBar
-  );
+  // How strong is their home board (my points 18..23 are their 6..1)? Being
+  // hit is worse when re-entering is hard.
+  let theirHome = 0;
+  for (let i = 18; i < POINTS; i++) if (b.pts[i] <= -2) theirHome++;
+
+  let total = 0;
+  for (let blot = 0; blot < POINTS; blot++) {
+    if (b.pts[blot] !== 1) continue;
+    let shots = 0;
+    for (const j of sources) {
+      const d = blot - j;
+      if (d < 1) continue;
+      const s = SHOTS[d] ?? 0;
+      if (s && shotLive(b, j, blot, d)) shots += s;
+    }
+    if (shots === 0) continue;
+    const p = Math.min(shots, 30) / 36;
+    const cost = 24 - blot + 4 + theirHome * 2;
+    total += p * cost;
+  }
+  return total;
+}
+
+function longestPrime(b: Scratch): number {
+  let best = 0;
+  let run = 0;
+  for (let i = 0; i < POINTS; i++) {
+    if (b.pts[i] >= 2) {
+      run++;
+      if (run > best) best = run;
+    } else run = 0;
+  }
+  return best;
 }
 
 /**
- * Easy's whole world view: run for home, hit what you can reach, and flinch
- * from the most obvious blots.
- *
- * Two things here are not obvious and are both load-bearing:
- *
- *  - The bar terms are SMALL, because the pip terms already price a hit at a
- *    full 25 pips. A big extra bonus double-counts it badly enough that two
- *    easy opponents hit each other back and forth forever instead of ever
- *    coming home.
- *  - There IS a blot term, small and direct-shots-only. Without any at all,
- *    easy hands over a shot every single turn, gets sent back every single
- *    turn, and a self-play game genuinely never ends — pip counts climb past
- *    300 and stay there. Being a weak opponent is the goal; being one that
- *    cannot finish a game is not.
+ * One side's strength, from that side's frame. Contact positions value
+ * structure and safety; races value only pips and bearing off.
  */
+function side(b: Scratch, contact: boolean, oppOff: number, exposed: boolean): number {
+  const pips = scratchPips(b);
+  let v = -pips;
+
+  // Mars danger (Tawleh scores it double): if they are already bearing off and
+  // I have nothing off, every pip I am short of getting a checker home hurts.
+  if (oppOff > 0 && b.off === 0) {
+    let outside = 0;
+    for (let i = 6; i < POINTS; i++) if (b.pts[i] > 0) outside += b.pts[i] * (i - 5);
+    v -= 1.2 * outside + 6;
+  }
+
+  if (!contact) {
+    // Pure race: pips decide it. Small nudges for bearing off efficiently.
+    v += b.off * 2;
+    let gaps = 0;
+    for (let i = 0; i < 6; i++) if (b.pts[i] <= 0) gaps++;
+    let stack = 0;
+    for (let i = 0; i < 6; i++) if (b.pts[i] > 3) stack += b.pts[i] - 3;
+    return v - gaps * 0.5 - stack * 0.8;
+  }
+
+  // Contact. My blots only cost me if the opponent rolls next.
+  if (exposed) v -= blotExposure(b);
+
+  // Points made, weighted toward my home board and the points just in front
+  // of it, where they block the opponent's back checkers.
+  const W = [2.0, 2.5, 3.5, 4.5, 5.5, 6.0, 4.0, 3.0, 1.5, 1.0, 0.8, 0.8];
+  for (let i = 0; i < 12; i++) if (b.pts[i] >= 2) v += W[i];
+  v += Math.max(0, longestPrime(b) - 2) * 3;
+
+  // Anchors in their home board keep me safe while I am behind.
+  for (let i = 18; i < POINTS; i++) if (b.pts[i] >= 2) v += 2;
+
+  // Heavy stacks and checkers buried on the 1-2 points are wasted.
+  for (let i = 0; i < POINTS; i++) if (b.pts[i] > 3) v -= (b.pts[i] - 3) * 1.2;
+  if (b.pts[0] > 0) v -= b.pts[0] * 1.0;
+  if (b.pts[1] > 1) v -= (b.pts[1] - 1) * 0.6;
+
+  // On the bar against a strong board is a disaster.
+  if (b.bar > 0) {
+    let closed = 0;
+    for (let i = 18; i < POINTS; i++) if (b.pts[i] <= -2) closed++;
+    v -= b.bar * (6 + closed * closed * 1.5);
+  }
+
+  v += b.off * 3;
+  return v;
+}
+
+/**
+ * Symmetric position value for the side to evaluate (positive = good for me).
+ *
+ * `onRoll` says who moves next, because only the side NOT on roll has blots
+ * that can be hit before it moves. The default, 'them', is the usual case:
+ * judging a position I have just moved into.
+ */
+export function evaluate(b: Scratch, onRoll: 'me' | 'them' = 'them'): number {
+  const contact = inContact(b);
+  const them = flip(b);
+  return side(b, contact, them.off, onRoll === 'them') - side(them, contact, b.off, onRoll === 'me');
+}
+
+/** The easy tier: race and hit, with a nod to safety. */
 export function evaluateSimple(b: Scratch): number {
-  return (
-    -0.4 * scratchPips(b) +
-    0.2 * oppPips(b) +
-    4 * b.off +
-    3 * b.oppBar -
-    4 * b.bar -
-    4 * blotRisk(b, false)
-  );
+  return oppPips(b) - scratchPips(b) + 6 * b.oppBar - 0.4 * blotExposure(b);
 }

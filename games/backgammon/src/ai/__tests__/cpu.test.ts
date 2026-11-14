@@ -4,8 +4,7 @@
  * promises, so they are what is tested.
  */
 import { chooseLine, chooseMove } from '../cpu';
-import { shouldDouble, shouldTake } from '../cube-policy';
-import { blotRisk, evaluate, oppPips, scratchPips } from '../eval';
+import { blotExposure, evaluate, flip, inContact, oppPips, scratchPips } from '../eval';
 import { DIFFICULTIES, type Difficulty } from '../difficulty';
 import { toScratch } from '@/engine/board';
 import { isCompleteTurn, maxUsableDice, turnLines } from '@/engine/moves';
@@ -65,7 +64,7 @@ describe('evaluation primitives', () => {
 
   it('sees no shots when there are no blots', () => {
     const s = fresh();
-    expect(blotRisk(toScratch(s, 'p0'), true)).toBe(0);
+    expect(blotExposure(toScratch(s, 'p0'))).toBe(0);
   });
 
   it('sees a direct shot on an exposed blot', () => {
@@ -75,7 +74,7 @@ describe('evaluation primitives', () => {
     s.points[23] = 1;
     s.points[20] = 1;
     s.points[12] = 4;
-    const risk = blotRisk(toScratch(s, 'p0'), true);
+    const risk = blotExposure(toScratch(s, 'p0'));
     expect(risk).toBeGreaterThan(0);
   });
 
@@ -84,9 +83,33 @@ describe('evaluation primitives', () => {
     const exposed = fresh();
     exposed.points[13] = 1; // a lone checker out in the open
     exposed.points[12] = 4;
-    expect(evaluate(toScratch(safe, 'p0'), true)).toBeGreaterThan(
-      evaluate(toScratch(exposed, 'p0'), true),
-    );
+    expect(evaluate(toScratch(safe, 'p0'))).toBeGreaterThan(evaluate(toScratch(exposed, 'p0')));
+  });
+
+  it('is symmetric: my score is exactly minus theirs', () => {
+    const s = fresh();
+    s.points[13] = 1;
+    s.points[12] = 4;
+    const b = toScratch(s, 'p0');
+    expect(evaluate(b, 'me') + evaluate(flip(b), 'them')).toBeCloseTo(0, 9);
+  });
+
+  it('flips borne-off counts correctly', () => {
+    const s = fresh();
+    s.points[5] = 2;
+    s.off = { p0: 3, p1: 0 };
+    const b = toScratch(s, 'p0');
+    expect(flip(flip(b))).toEqual(b);
+    expect(flip(b).oppBar).toBe(b.bar);
+  });
+
+  it('knows a race from a contact position', () => {
+    const s = fresh();
+    expect(inContact(toScratch(s, 'p0'))).toBe(true);
+    s.points = new Array<number>(24).fill(0);
+    s.points[3] = 15;
+    s.points[20] = -15;
+    expect(inContact(toScratch(s, 'p0'))).toBe(false);
   });
 });
 
@@ -168,63 +191,5 @@ describe('difficulty actually differs', () => {
     expect(hardWins).toBeGreaterThan(N * 0.6);
   }, 120_000);
 
-  it('never doubles on easy, and does double on hard', () => {
-    let easyDoubles = 0;
-    let hardDoubles = 0;
-    for (let i = 0; i < 12; i++) {
-      playMatch(500 + i, 'easy', 'easy', (_s, _seat, move) => {
-        if (move.kind === 'double') easyDoubles += 1;
-      });
-      playMatch(500 + i, 'hard', 'hard', (_s, _seat, move) => {
-        if (move.kind === 'double') hardDoubles += 1;
-      });
-    }
-    expect(easyDoubles).toBe(0);
-    expect(hardDoubles).toBeGreaterThan(0);
-  }, 120_000);
 });
 
-describe('cube policy', () => {
-  const racing = (myPips: number, theirPips: number): GameState => {
-    const s = fresh();
-    // A pure race: strip the board to two stacks whose pip counts we control.
-    s.points = new Array<number>(24).fill(0);
-    // Place p0 so the pip count works out, and p1 likewise, both all home.
-    s.points[Math.max(0, Math.min(5, Math.round(myPips / 15) - 1))] = 15;
-    s.points[23 - Math.max(0, Math.min(5, Math.round(theirPips / 15) - 1))] = -15;
-    s.phase = 'roll';
-    s.turn = 'p0';
-    s.turnUid = HOST;
-    return s;
-  };
-
-  it('never doubles on easy', () => {
-    expect(shouldDouble(racing(30, 90), 'p0', 'easy')).toBe(false);
-  });
-
-  it('doubles with a clear lead on medium', () => {
-    expect(shouldDouble(racing(45, 75), 'p0', 'medium')).toBe(true);
-  });
-
-  it('does not double from behind', () => {
-    expect(shouldDouble(racing(90, 30), 'p0', 'medium')).toBe(false);
-  });
-
-  it('respects the Crawford game', () => {
-    const s = racing(45, 75);
-    s.crawford = true;
-    expect(shouldDouble(s, 'p0', 'hard')).toBe(false);
-  });
-
-  it('takes a close double and drops a hopeless one', () => {
-    const close = racing(75, 70);
-    close.offer = { by: 'p1', value: 2 };
-    close.phase = 'doubled';
-    expect(shouldTake(close, 'p0', 'medium')).toBe(true);
-
-    const hopeless = racing(90, 20);
-    hopeless.offer = { by: 'p1', value: 2 };
-    hopeless.phase = 'doubled';
-    expect(shouldTake(hopeless, 'p0', 'medium')).toBe(false);
-  });
-});

@@ -44,21 +44,10 @@ describe('initialMatchState', () => {
     expect(seatOf(s, 'nobody')).toBeNull();
   });
 
-  it('centres the cube and is not a Crawford game in a 5-pointer', () => {
-    expect(s.cube).toEqual({ value: 1, owner: null });
-    expect(s.crawford).toBe(false);
-  });
-
-  it('makes a 1-point match Crawford from the very first game', () => {
-    const one = initialMatchState({
-      hostUid: HOST,
-      guestUid: GUEST,
-      hostName: 'H',
-      guestName: 'G',
-      target: 1,
-    });
-    expect(one.crawford).toBe(true);
+  it('has no doubling at all, even in a 1-point match (Tawleh)', () => {
+    const one = initialMatchState({ hostUid: HOST, guestUid: GUEST, hostName: 'H', guestName: 'G', target: 1 });
     expect(legalMoves({ ...one, phase: 'roll' }, HOST)).toEqual(['roll']);
+    expect('cube' in one).toBe(false);
   });
 });
 
@@ -87,15 +76,17 @@ describe('the opening roll', () => {
     expect(b.turn).toBe('p0');
   });
 
-  it('gives the winner the two opening dice as their first roll', () => {
+  it('lets the winner roll again for their first turn (Tawleh)', () => {
     const a = ok(applyMove(base, { kind: 'openingRoll', seed: seedForDie(2) }, HOST));
     const b = ok(applyMove(a, { kind: 'openingRoll', seed: seedForDie(5) }, GUEST));
     expect(b.turn).toBe('p1');
-    expect(b.phase).toBe('moving');
-    expect(b.dice.slice().sort()).toEqual([2, 5]);
+    expect(b.turnUid).toBe(GUEST);
+    expect(b.phase).toBe('roll');
+    expect(b.dice).toEqual([]);
     expect(b.opening).toBeNull();
-    // The rule gives a free invariant: an opening turn is never a double.
-    expect(b.dice[0]).not.toBe(b.dice[1]);
+    const c = ok(applyMove(b, { kind: 'roll', seed: [1, 2, 3] }, GUEST));
+    expect(c.phase).toBe('moving');
+    expect(c.dice).toHaveLength(2);
   });
 
   it('refuses a second die from the same player', () => {
@@ -211,7 +202,7 @@ describe('finishing a game', () => {
   });
 
   it('ends the match when the target is reached', () => {
-    const s = pos({ p0: { 0: 1 }, p1: { 5: 5 }, dice: [1, 1], target: 1, crawford: true });
+    const s = pos({ p0: { 0: 1 }, p1: { 5: 5 }, dice: [1, 1], target: 1 });
     const after = ok(applyMove(s, play([{ from: 0, to: -1 }]), HOST));
     expect(after.phase).toBe('matchOver');
     expect(after.matchResult).toMatchObject({ winner: 'p0', target: 1, shutout: true });
@@ -223,11 +214,9 @@ describe('nextGame and rematch', () => {
   over.gameResult = {
     winner: 'p0',
     multiplier: 1,
-    cube: 1,
     points: 1,
     how: 'single',
     scores: { p0: 2, p1: 0 },
-    crawford: false,
   };
 
   it('lets EITHER player start the next game', () => {
@@ -235,11 +224,10 @@ describe('nextGame and rematch', () => {
     expect(applyMove(over, { kind: 'nextGame' }, GUEST).ok).toBe(true);
   });
 
-  it('resets the board and the cube but keeps the score', () => {
+  it('resets the board but keeps the score', () => {
     const s = ok(applyMove(over, { kind: 'nextGame' }, GUEST));
     expect(s.phase).toBe('opening');
     expect(s.turn).toBe('p0');
-    expect(s.cube).toEqual({ value: 1, owner: null });
     expect(s.scores).toEqual({ p0: 2, p1: 0 });
     expect(s.game).toBe(2);
     expect(s.gameResult).toBeNull();
@@ -257,22 +245,15 @@ describe('nextGame and rematch', () => {
     expect(s.scores).toEqual({ p0: 0, p1: 0 });
     expect(s.game).toBe(1);
     expect(s.matchResult).toBeNull();
-    expect(s.crawfordDone).toBe(false);
   });
 });
 
 describe('legalMoves', () => {
-  it('offers doubling only to the player on roll who owns the cube', () => {
+  it('offers only a roll to the player on roll — no doubling in Tawleh', () => {
     const s = pos({ p0: { 10: 1 }, phase: 'roll', turn: 'p0' });
-    expect(legalMoves(s, HOST)).toEqual(['double', 'roll']);
+    expect(legalMoves(s, HOST)).toEqual(['roll']);
     expect(legalMoves(s, GUEST)).toEqual([]);
-  });
-
-  it('offers take/pass to the responder only', () => {
-    const s = pos({ p0: { 10: 1 }, phase: 'doubled', turn: 'p1' });
-    s.offer = { by: 'p0', value: 2 };
-    expect(legalMoves(s, GUEST)).toEqual(['take', 'pass']);
-    expect(legalMoves(s, HOST)).toEqual([]);
+    expect(applyMove(s, { kind: 'double' } as never, HOST).ok).toBe(false);
   });
 
   it('still offers play when the turn is forfeited — the empty turn must be submitted', () => {

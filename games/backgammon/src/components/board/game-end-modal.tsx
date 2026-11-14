@@ -6,23 +6,15 @@ import { accent, felt, text } from '@/theme/colors';
 
 const HEADLINE: Record<GameResult['how'], string> = {
   single: 'Game',
-  gammon: 'Gammon',
-  backgammon: 'Backgammon',
-  pass: 'Dropped',
+  mars: 'Mars!',
 };
 
 /** Plain English for what just happened, so the score is never a mystery. */
 export function describeResult(r: GameResult, winnerName: string): string {
-  switch (r.how) {
-    case 'pass':
-      return `${winnerName} doubled and the cube was dropped, for ${r.points}.`;
-    case 'gammon':
-      return `${winnerName} bore off before the other side got a single checker home — double the cube.`;
-    case 'backgammon':
-      return `${winnerName} bore off while the other side still had a checker on the bar or in ${winnerName}'s home board — triple the cube.`;
-    default:
-      return `${winnerName} bore off first.`;
+  if (r.how === 'mars') {
+    return `${winnerName} bore off everything before the other side took a single checker off — a mars, worth 2.`;
   }
+  return `${winnerName} bore off first.`;
 }
 
 export type GameEndModalProps = {
@@ -64,9 +56,7 @@ export function GameEndModal({
 
           <View style={styles.points}>
             <Text style={styles.pointsValue}>+{result.points}</Text>
-            <Text style={styles.pointsMath}>
-              cube {result.cube} × {result.multiplier}
-            </Text>
+            <Text style={styles.pointsMath}>{result.multiplier === 2 ? 'mars' : 'single game'}</Text>
           </View>
 
           <Text style={styles.body}>{describeResult(result, winnerName)}</Text>
@@ -76,8 +66,6 @@ export function GameEndModal({
             <Text style={styles.scoreTo}>to {target}</Text>
             <ScoreCell name={names.p1} value={result.scores.p1} />
           </View>
-
-          {result.crawford && <Text style={styles.note}>That was the Crawford game.</Text>}
 
           <Button
             title={requested ? 'Waiting for the next game…' : 'Next game'}

@@ -64,6 +64,12 @@ export function useBoardMotion(
     hits: number[];
     k: number;
   } | null>(null);
+  // The tumble is keyed by a counter, NOT by the faces array. The old effect
+  // depended on the faces it was itself updating, so every frame tore down and
+  // restarted the animation at frame 0: it never finished, and the board kept
+  // showing a made-up pair of dice instead of the real roll — while the rules
+  // (correctly) checked moves against the real one.
+  const [tumbleId, setTumbleId] = useState(0);
   const [tumble, setTumble] = useState<number[] | null>(null);
 
   useEffect(() => {
@@ -84,6 +90,7 @@ export function useBoardMotion(
 
     if ((lm.kind === 'roll' || lm.kind === 'openingRoll') && state.dice.length > 0) {
       setTumble(state.dice.map(() => 1));
+      setTumbleId((n) => n + 1);
       return;
     }
 
@@ -104,8 +111,12 @@ export function useBoardMotion(
   }, [replay]);
 
   // Cycle a few random faces, then let the real dice show through.
+  const diceRef = useRef(state.dice);
+  diceRef.current = state.dice;
+  const versionRef = useRef(state.version);
+  versionRef.current = state.version;
   useEffect(() => {
-    if (!tumble) return;
+    if (tumbleId === 0) return;
     let frame = 0;
     const id = setInterval(() => {
       frame += 1;
@@ -117,11 +128,15 @@ export function useBoardMotion(
       // Seeded on the version so BOTH clients tumble through identical faces —
       // a small thing, but it means two people watching the same game see the
       // same dice roll rather than two different ones.
-      const rng = makeRng([state.version, frame]);
-      setTumble(state.dice.map(() => 1 + Math.floor(rng() * 6)));
+      const rng = makeRng([versionRef.current, frame]);
+      setTumble(diceRef.current.map(() => 1 + Math.floor(rng() * 6)));
     }, TUMBLE_MS / TUMBLE_FRAMES);
-    return () => clearInterval(id);
-  }, [tumble, state.version, state.dice]);
+    // Whatever happens, the real dice show once this tumble is torn down.
+    return () => {
+      clearInterval(id);
+      setTumble(null);
+    };
+  }, [tumbleId]);
 
   if (replay && replay.k <= replay.steps.length) {
     const shown = replay.steps.slice(0, replay.k);

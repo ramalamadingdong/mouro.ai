@@ -59,6 +59,9 @@ export const Die = memo(function Die({ value, size, x, y, used = false }: DiePro
   return (
     <View
       pointerEvents="none"
+      accessible
+      accessibilityRole="image"
+      accessibilityLabel={`Die showing ${value}${used ? ', used' : ''}`}
       style={[
         styles.die,
         {

@@ -36,11 +36,6 @@
           },
           "target": {
             ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 25"
-          },
-          "cube": {
-            "value": {
-              ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 64"
-            }
           }
         },
         "presence": {

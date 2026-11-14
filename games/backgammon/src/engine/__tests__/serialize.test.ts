@@ -28,13 +28,11 @@ describe('round-tripping through RTDB', () => {
     // failure mode with no analogue in the gin rummy app.
     expect(wire.opening).toBeUndefined();
     expect(wire.dice).toBeUndefined();
-    expect(wire.offer).toBeUndefined();
     expect(normalize(wire)).toEqual(s);
   });
 
   it('survives a mid-game state', () => {
     const s = pos({ p0: { 10: 2, 5: 13 }, p1: { 8: 3, 5: 12 }, dice: [6, 3], turn: 'p1' });
-    s.cube = { value: 4, owner: 'p0' };
     s.lastMove = { by: HOST, seat: 'p0', kind: 'play', dice: [2, 1], steps: [{ from: 12, to: 10 }], at: 1 };
     expect(normalize(prune(s))).toEqual(s);
   });
@@ -46,6 +44,12 @@ describe('round-tripping through RTDB', () => {
     expect(back?.lastMove?.steps).toEqual([]);
   });
 
+  it('ignores cube fields left over from a pre-Tawleh snapshot', () => {
+    const s = fresh();
+    const wire = { ...(prune(s) as Record<string, unknown>), cube: { value: 2 }, crawford: true };
+    expect(normalize(wire)).toEqual(s);
+  });
+
   it('accepts an integer-keyed points object', () => {
     const s = pos({ p0: { 10: 2, 5: 13 }, p1: { 8: 3, 5: 12 } });
     const wire = prune(s) as Record<string, unknown>;
@@ -53,12 +57,6 @@ describe('round-tripping through RTDB', () => {
     expect(normalize(wire)?.points).toEqual(s.points);
   });
 
-  it('keeps a zero-valued cube owner distinction', () => {
-    const s = fresh();
-    expect(normalize(prune(s))?.cube).toEqual({ value: 1, owner: null });
-    s.cube = { value: 2, owner: 'p1' };
-    expect(normalize(prune(s))?.cube).toEqual({ value: 2, owner: 'p1' });
-  });
 
   it('does not mistake a legitimate 0 or -1 for a missing value', () => {
     // `from: 0` and `to: -1` are a real bear-off. `x || null` would eat both.
@@ -95,22 +93,12 @@ describe('rejecting snapshots that cannot exist', () => {
     expect(bad((s) => (s.dice = [0, 7]))).toBeNull();
   });
 
-  it('rejects a cube value that is not a power of two up to 64', () => {
-    expect(bad((s) => (s.cube = { value: 3, owner: null }))).toBeNull();
-    expect(bad((s) => (s.cube = { value: 128, owner: null }))).toBeNull();
-  });
 
   it('rejects the moving phase without dice', () => {
     expect(bad((s) => (s.dice = []))).toBeNull();
   });
 
-  it('rejects the doubled phase without an offer', () => {
-    expect(bad((s) => (s.phase = 'doubled'))).toBeNull();
-  });
 
-  it('rejects an offer outside the doubled phase', () => {
-    expect(bad((s) => (s.offer = { by: 'p0', value: 2 }))).toBeNull();
-  });
 
   it('rejects a finished phase with no result attached', () => {
     expect(bad((s) => (s.phase = 'gameOver'))).toBeNull();
@@ -121,14 +109,6 @@ describe('rejecting snapshots that cannot exist', () => {
     expect(bad((s) => (s.scores = { p0: 5, p1: 0 }))).toBeNull();
   });
 
-  it('rejects a game that is both Crawford and post-Crawford', () => {
-    expect(
-      bad((s) => {
-        s.crawford = true;
-        s.crawfordDone = true;
-      }),
-    ).toBeNull();
-  });
 
   it('rejects garbage outright', () => {
     expect(normalize(null)).toBeNull();

@@ -4,7 +4,6 @@ import * as Haptics from 'expo-haptics';
 
 import { BoardFrame } from '@/components/board/board-frame';
 import { ConfirmModal } from '@/components/board/confirm-modal';
-import { DoubleModal } from '@/components/board/double-modal';
 import { EmoteBubble } from '@/components/board/emote-bubble';
 import { EmoteTray } from '@/components/board/emote-tray';
 import { GameEndModal } from '@/components/board/game-end-modal';
@@ -13,7 +12,6 @@ import { MoveControls } from '@/components/board/move-controls';
 import { PlayerStrip } from '@/components/board/opponent-bar';
 import { TurnBanner } from '@/components/board/turn-banner';
 import { otherSeat, pipCount } from '@/engine/board';
-import { canDouble as engineCanDouble, nextCubeValue } from '@/engine/cube';
 import type { GameState, Move, Seat } from '@/engine/types';
 import { useBoardMetrics } from '@/hooks/use-board-metrics';
 import { useBoardMotion, useMotionEnabled } from '@/hooks/use-board-motion';
@@ -97,7 +95,6 @@ export function BackgammonBoard({
   const myTurn = mySeat !== null && state.turn === mySeat;
   const busy = pending || mySeat === null;
 
-  const canDouble = mySeat !== null && engineCanDouble(state, mySeat);
 
   // ── Actions ───────────────────────────────────────────────────────────────
   const doRoll = () => {
@@ -164,13 +161,6 @@ export function BackgammonBoard({
         thinking: true,
       };
     }
-  } else if (state.phase === 'doubled') {
-    banner = myTurn
-      ? {
-          label: `${opponentName} doubles to ${state.offer?.value ?? ''}`,
-          tone: 'alert',
-        }
-      : { label: 'Waiting for their decision…', tone: 'wait', thinking: true };
   } else if (!myTurn) {
     banner = { label: waitLabel, tone: 'wait', thinking: opponentThinking };
   } else if (state.phase === 'roll') {
@@ -277,9 +267,6 @@ export function BackgammonBoard({
           <TurnBanner label={banner.label} tone={banner.tone} thinking={banner.thinking} />
         </View>
 
-        {state.crawford && state.phase !== 'matchOver' && (
-          <Text style={styles.crawford}>Crawford game — no doubling</Text>
-        )}
         {!connected && <Text style={styles.warn}>Reconnecting…</Text>}
         {error && <Text style={styles.error}>{error}</Text>}
       </View>
@@ -287,17 +274,11 @@ export function BackgammonBoard({
       <View style={styles.controls}>
         <MoveControls
           mode={mode}
-          canDouble={canDouble}
-          cubeNext={nextCubeValue(state.cube.value)}
           canUndo={draft.canUndo}
           canConfirm={draft.canConfirm}
           forcedPass={draft.forcedPass}
           busy={busy}
           onRoll={doRoll}
-          onDouble={() => {
-            impact();
-            void send({ kind: 'double' });
-          }}
           onUndo={draft.undo}
           onUndoAll={draft.undoAll}
           onConfirm={doConfirm}
@@ -325,21 +306,6 @@ export function BackgammonBoard({
       />
 
       {/* ── Modals ─────────────────────────────────────────────────────────── */}
-      <DoubleModal
-        visible={state.phase === 'doubled' && myTurn && !!state.offer}
-        fromName={opponentName}
-        value={state.offer?.value ?? 2}
-        dropCost={state.cube.value}
-        myScore={state.scores[me]}
-        theirScore={state.scores[them]}
-        target={state.target}
-        busy={busy}
-        onTake={() => {
-          success();
-          void send({ kind: 'take' });
-        }}
-        onPass={() => void send({ kind: 'pass' })}
-      />
 
       {state.phase === 'gameOver' && state.gameResult && (
         <GameEndModal
@@ -395,13 +361,6 @@ const styles = StyleSheet.create({
   stack: { flex: 1, justifyContent: 'center' },
   boardArea: { alignItems: 'center', justifyContent: 'center' },
   bannerRow: { marginTop: 10, alignItems: 'center' },
-  crawford: {
-    color: accent.warn,
-    fontSize: 12,
-    textAlign: 'center',
-    marginTop: 6,
-    fontWeight: '600',
-  },
   warn: { color: accent.warn, fontSize: 13, textAlign: 'center', marginTop: 6 },
   error: { color: accent.bad, fontSize: 13, textAlign: 'center', marginTop: 6 },
   controls: { marginTop: 'auto', paddingTop: 12 },

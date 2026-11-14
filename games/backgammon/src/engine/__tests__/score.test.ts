@@ -1,4 +1,4 @@
-import { buildGameResult, buildMatchResult, buildPassResult, gameMultiplier } from '../score';
+import { buildGameResult, buildMatchResult, gameMultiplier } from '../score';
 import { applyMove } from '../reducer';
 import type { Seat } from '../types';
 import { HOST, ok, pos } from './helpers';
@@ -8,28 +8,23 @@ function won(p1: Record<number, number>, off: number, bar = 0) {
   return pos({ p0: {}, p1, off: { p0: 15, p1: off }, bar: { p1: bar } });
 }
 
-describe('gameMultiplier', () => {
+describe('gameMultiplier (Tawleh: 1, or 2 for a mars — never 3)', () => {
   it('is a single when the loser has borne off anything', () => {
     expect(gameMultiplier(won({ 5: 14 }, 1), 'p0')).toBe(1);
   });
 
-  it('is a gammon when the loser has borne off nothing', () => {
+  it('is a mars when the loser has borne off nothing', () => {
     expect(gameMultiplier(won({ 5: 15 }, 0), 'p0')).toBe(2);
   });
 
-  it('is a backgammon with a checker still on the bar', () => {
-    expect(gameMultiplier(won({ 5: 14 }, 0, 1), 'p0')).toBe(3);
+  it('is still only a mars with a checker on the bar — no triple game', () => {
+    expect(gameMultiplier(won({ 5: 14 }, 0, 1), 'p0')).toBe(2);
   });
 
-  it("is a backgammon with a checker in the winner's home board", () => {
-    // The loser's own-frame 18..23 IS the winner's home board (0..5 mirrored).
+  it("is still only a mars with a checker in the winner's home board", () => {
     for (let i = 18; i < 24; i++) {
-      expect(gameMultiplier(won({ [i]: 1, 5: 14 }, 0), 'p0')).toBe(3);
+      expect(gameMultiplier(won({ [i]: 1, 5: 14 }, 0), 'p0')).toBe(2);
     }
-  });
-
-  it('is only a gammon for a checker just outside the winner\'s home', () => {
-    expect(gameMultiplier(won({ 17: 1, 5: 14 }, 0), 'p0')).toBe(2);
   });
 
   it('is symmetric for p1', () => {
@@ -39,26 +34,20 @@ describe('gameMultiplier', () => {
 });
 
 describe('buildGameResult', () => {
-  it('multiplies the cube by the gammon factor', () => {
+  it('scores a mars as 2 points', () => {
     const s = won({ 5: 15 }, 0);
-    s.cube = { value: 4, owner: 'p0' };
-    const r = buildGameResult(s, 'p0');
-    expect(r).toMatchObject({ winner: 'p0', multiplier: 2, cube: 4, points: 8, how: 'gammon' });
-    expect(r.scores).toEqual({ p0: 8, p1: 0 });
+    s.scores = { p0: 1, p1: 3 };
+    expect(buildGameResult(s, 'p0')).toEqual({
+      winner: 'p0',
+      multiplier: 2,
+      points: 2,
+      how: 'mars',
+      scores: { p0: 3, p1: 3 },
+    });
   });
 
-  it('records whether it was the Crawford game', () => {
-    const s = won({ 5: 14 }, 1);
-    s.crawford = true;
-    expect(buildGameResult(s, 'p0').crawford).toBe(true);
-  });
-});
-
-describe('buildPassResult', () => {
-  it('never applies a gammon multiplier', () => {
-    const s = won({ 5: 15 }, 0);
-    s.cube = { value: 2, owner: 'p1' };
-    expect(buildPassResult(s, 'p0')).toMatchObject({ points: 2, multiplier: 1, how: 'pass' });
+  it('scores a plain win as 1 point', () => {
+    expect(buildGameResult(won({ 5: 10 }, 5), 'p0')).toMatchObject({ points: 1, how: 'single' });
   });
 });
 
@@ -74,68 +63,17 @@ describe('buildMatchResult', () => {
     expect(buildMatchResult(sc(5, 2), 5, 4)?.shutout).toBe(false);
   });
 
-  it('handles overshooting the target with a gammon', () => {
-    expect(buildMatchResult(sc(9, 1), 5, 4)).toMatchObject({ winner: 'p0', target: 5 });
+  it('handles overshooting the target with a mars', () => {
+    expect(buildMatchResult(sc(6, 1), 5, 4)).toMatchObject({ winner: 'p0', target: 5 });
   });
 });
 
-describe('match transcripts', () => {
-  /** Play out a scripted sequence of "someone wins n points" against the reducer. */
-  function runMatch(target: number, wins: { seat: Seat; cube: number; multiplier: 1 | 2 | 3 }[]) {
-    let s = pos({ p0: { 5: 5 }, p1: { 5: 5 }, phase: 'gameOver', target });
-    for (const w of wins) {
-      const points = w.cube * w.multiplier;
-      const scores = { ...s.scores };
-      scores[w.seat] += points;
-      s.gameResult = {
-        winner: w.seat,
-        multiplier: w.multiplier,
-        cube: w.cube,
-        points,
-        how: w.multiplier === 3 ? 'backgammon' : w.multiplier === 2 ? 'gammon' : 'single',
-        scores,
-        crawford: s.crawford,
-      };
-      s.scores = scores;
-      const match = buildMatchResult(scores, target, s.game);
-      if (match) {
-        s.matchResult = match;
-        s.phase = 'matchOver';
-        break;
-      }
-      s = ok(applyMove(s, { kind: 'nextGame' }, HOST));
-      s.phase = 'gameOver';
-    }
-    return s;
-  }
-
-  it('runs a 5-point match to a gammon finish', () => {
-    const s = runMatch(5, [
-      { seat: 'p0', cube: 1, multiplier: 1 },
-      { seat: 'p1', cube: 2, multiplier: 1 },
-      { seat: 'p0', cube: 2, multiplier: 2 },
-    ]);
-    expect(s.scores).toEqual({ p0: 5, p1: 2 });
-    expect(s.matchResult).toMatchObject({ winner: 'p0', target: 5, shutout: false });
-  });
-
-  it('marks the Crawford game exactly once in a 7-pointer', () => {
-    let s = runMatch(7, [{ seat: 'p0', cube: 2, multiplier: 3 }]); // 6 of 7
-    expect(s.crawford).toBe(true);
-    expect(s.crawfordDone).toBe(false);
-    // The Crawford game itself ends without deciding the match.
-    s.scores = { p0: 6, p1: 1 };
-    s.gameResult = {
-      winner: 'p1',
-      multiplier: 1,
-      cube: 1,
-      points: 1,
-      how: 'single',
-      scores: { p0: 6, p1: 1 },
-      crawford: true,
-    };
-    const post = ok(applyMove(s, { kind: 'nextGame' }, HOST));
-    expect(post.crawfordDone).toBe(true);
-    expect(post.crawford).toBe(false);
+describe('the last checker off', () => {
+  it('ends the match on a mars that reaches the target', () => {
+    const s = pos({ p0: { 0: 1 }, p1: { 10: 15 }, dice: [1, 2], scores: { p0: 3 }, target: 5 });
+    const after = ok(applyMove(s, { kind: 'play', steps: [{ from: 0, to: -1 }] }, HOST));
+    expect(after.gameResult).toMatchObject({ how: 'mars', points: 2 });
+    expect(after.scores.p0).toBe(5);
+    expect(after.phase).toBe('matchOver');
   });
 });

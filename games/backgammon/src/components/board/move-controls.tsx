@@ -52,14 +52,11 @@ function Action({
 export type MoveControlsProps = {
   /** 'roll' | 'moving' | 'waiting' — what the player can do right now. */
   mode: 'roll' | 'moving' | 'waiting';
-  canDouble: boolean;
-  cubeNext: number;
   canUndo: boolean;
   canConfirm: boolean;
   forcedPass: boolean;
   busy: boolean;
   onRoll: () => void;
-  onDouble: () => void;
   onUndo: () => void;
   onUndoAll: () => void;
   onConfirm: () => void;
@@ -68,14 +65,11 @@ export type MoveControlsProps = {
 /** The action row under the board. */
 export function MoveControls({
   mode,
-  canDouble,
-  cubeNext,
   canUndo,
   canConfirm,
   forcedPass,
   busy,
   onRoll,
-  onDouble,
   onUndo,
   onUndoAll,
   onConfirm,
@@ -85,16 +79,7 @@ export function MoveControls({
   if (mode === 'roll') {
     return (
       <View style={styles.row}>
-        {canDouble && (
-          <Action
-            label="Double"
-            sub={`to ${cubeNext}`}
-            tone="secondary"
-            disabled={busy}
-            onPress={onDouble}
-          />
-        )}
-        <Action label="Roll" tone="primary" disabled={busy} onPress={onRoll} flex={canDouble ? 1.4 : 1} />
+        <Action label="Roll" tone="primary" disabled={busy} onPress={onRoll} />
       </View>
     );
   }
