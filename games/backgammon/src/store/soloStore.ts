@@ -19,9 +19,18 @@ import { randomSeed } from '@/util/seed';
 export const HUMAN_UID = 'p0-local';
 export const CPU_UID = 'cpu';
 
-/** How long the computer "thinks" before each visible step. */
-const THINK_MIN_MS = 550;
-const THINK_JITTER_MS = 450;
+/**
+ * CPU pacing, in ms: [shortest, longest] pause before each visible step. Tuned
+ * to a quick human player: a beat to pick up the dice, then long enough after
+ * they land to read the roll before the checkers start moving. The same pacing
+ * applies in gin rummy (`../gin-rummy/src/store/soloStore.ts`).
+ */
+const CPU_PACE = {
+  /** Opening roll and ordinary rolls. */
+  roll: [900, 1500],
+  /** Playing the roll, counted from when the dice are shown. */
+  move: [1500, 2600],
+} as const;
 
 interface SoloStore {
   state: GameState | null;
@@ -71,7 +80,8 @@ export const useSoloStore = create<SoloStore>()((set, get) => {
     // Jitter from the position rather than Math.random, so a replay of the same
     // match feels the same. This is presentation only and never reaches the
     // engine, but keeping one source of randomness is simpler to reason about.
-    const delay = THINK_MIN_MS + Math.floor(makeRng([s.version, s.game, 11])() * THINK_JITTER_MS);
+    const [min, max] = s.phase === 'moving' ? CPU_PACE.move : CPU_PACE.roll;
+    const delay = min + Math.floor(makeRng([s.version, s.game, 11])() * (max - min));
     cpuTimer = setTimeout(() => {
       // Re-read: the human may have reset or left while we were "thinking".
       const cur = get().state;

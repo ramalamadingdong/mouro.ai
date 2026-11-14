@@ -20,9 +20,21 @@ export const HUMAN_UID = 'p0-local';
 export const CPU_UID = 'cpu';
 export const CPU_NAME = 'Computer';
 
-/** CPU "thinking" delay bounds (ms) so moves feel deliberate, not instant. */
-const CPU_MIN_DELAY = 600;
-const CPU_JITTER = 400;
+/**
+ * CPU pacing, in ms: [shortest, longest] pause before each visible step. Tuned
+ * to a quick human player — you can follow which pile it drew from and what it
+ * threw away, without waiting on it. A whole turn (draw + discard) lands
+ * around 2.5–4.5s. Picking up is quicker than deciding what to let go of, as
+ * it is for a person, and the jitter keeps it from feeling metronomic.
+ */
+const CPU_PACE = {
+  /** Take or pass the first upcard. */
+  upcard: [1200, 2000],
+  /** Reach for the stock or the discard pile. */
+  draw: [1100, 1900],
+  /** Choose a discard (or knock) with the new card in hand. */
+  discard: [1400, 2500],
+} as const;
 
 interface SoloStore {
   state: GameState | null;
@@ -55,8 +67,10 @@ function clearCpuTimer() {
   }
 }
 
-function cpuDelay(): number {
-  return CPU_MIN_DELAY + Math.floor(Math.random() * CPU_JITTER);
+function cpuDelay(phase: GameState['phase']): number {
+  const [min, max] =
+    phase === 'discard' ? CPU_PACE.discard : phase === 'draw' ? CPU_PACE.draw : CPU_PACE.upcard;
+  return min + Math.floor(Math.random() * (max - min));
 }
 
 function isCpuPlayPhase(s: GameState): boolean {
@@ -123,7 +137,7 @@ export const useSoloStore = create<SoloStore>()((set, get) => {
         // chooseMove is proven legal by tests; never reschedule on the off chance.
         set({ cpuThinking: false, error: r.error });
       }
-    }, cpuDelay());
+    }, cpuDelay(s.phase));
   };
 
   return {
