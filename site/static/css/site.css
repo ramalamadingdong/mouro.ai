@@ -629,3 +629,12 @@ ul {
         display: none;
     }
 }
+
+/* Games gallery: each card is a link. */
+.game-card {
+    color: inherit;
+}
+
+.game-card .link {
+    margin-top: auto;
+}

@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sudoku — mouro.ai</title>
+<meta name="description" content="A daily Sudoku, plus easy to expert puzzles on demand. Notes, hints, and your progress saved.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1117; --card: #141824; --text: #f5f7fb; --muted: #a9b0c0;
+    --accent: #4a9eff; --accent-soft: rgba(74,158,255,.16); --border: rgba(255,255,255,.08);
+    --thick: rgba(255,255,255,.45); --given: #f5f7fb; --entered: #7bb8ff; --bad: #ff6b6b;
+    --same: rgba(74,158,255,.30); --peer: rgba(255,255,255,.05);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { margin: 0; min-height: 100vh; font-family: "DM Sans", "Segoe UI", sans-serif; color: var(--text);
+    background: radial-gradient(circle at 10% 10%, rgba(74,158,255,.14), transparent 40%), linear-gradient(180deg, var(--bg), #0b0e14); }
+  main { max-width: 520px; margin: 0 auto; padding: 18px 14px 40px; display: flex; flex-direction: column; gap: 14px; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  header a { color: var(--muted); text-decoration: none; font-weight: 600; font-size: .95rem; }
+  h1 { margin: 0; font-size: 1.5rem; letter-spacing: -.01em; }
+  .bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; color: var(--muted); font-size: .92rem; }
+  .bar strong { color: var(--text); font-weight: 600; }
+  select, button { font: inherit; color: var(--text); background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px; cursor: pointer; }
+  button:hover, select:hover { border-color: rgba(74,158,255,.5); }
+  button.on { background: var(--accent-soft); border-color: var(--accent); color: var(--entered); }
+  .grid { display: grid; grid-template-columns: repeat(9, 1fr); aspect-ratio: 1; width: 100%;
+    border: 2px solid var(--thick); border-radius: 10px; overflow: hidden; background: var(--card); user-select: none; }
+  .cell { position: relative; display: flex; align-items: center; justify-content: center; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border);
+    font-size: clamp(1.1rem, 5.6vw, 1.75rem); font-weight: 600; color: var(--entered); cursor: pointer; }
+  .cell:nth-child(9n) { border-right: none; }
+  .cell:nth-child(n+73) { border-bottom: none; }
+  .cell.c2, .cell.c5 { border-right: 2px solid var(--thick); }
+  .cell.r2, .cell.r5 { border-bottom: 2px solid var(--thick); }
+  .cell.given { color: var(--given); font-weight: 700; }
+  .cell.peer { background: var(--peer); }
+  .cell.same { background: var(--same); }
+  .cell.sel { background: var(--accent-soft); box-shadow: inset 0 0 0 2px var(--accent); }
+  .cell.bad { color: var(--bad); }
+  .notes { position: absolute; inset: 2px; display: grid; grid-template-columns: repeat(3, 1fr); font-size: clamp(.5rem, 2.2vw, .72rem); color: var(--muted); font-weight: 500; }
+  .notes span { display: flex; align-items: center; justify-content: center; }
+  .pad { display: grid; grid-template-columns: repeat(9, 1fr); gap: 6px; }
+  .pad button { padding: 12px 0; font-size: 1.2rem; font-weight: 700; }
+  .pad button.done { opacity: .3; }
+  .tools { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .msg { text-align: center; min-height: 1.4em; color: var(--muted); }
+  .msg.win { color: #6ee7a8; font-weight: 700; }
+  .hint { color: var(--muted); font-size: .82rem; text-align: center; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Sudoku</h1>
+    <a href="/games/">← All games</a>
+  </header>
+
+  <div class="bar">
+    <label>Puzzle
+      <select id="mode" aria-label="Which puzzle">
+        <option value="daily">Today's daily</option>
+        <option value="easy">New · Easy</option>
+        <option value="medium">New · Medium</option>
+        <option value="hard">New · Hard</option>
+        <option value="expert">New · Expert</option>
+      </select>
+    </label>
+    <span><strong id="label"></strong> · <span id="time">0:00</span> · <span id="mistakes">0 mistakes</span></span>
+  </div>
+
+  <div class="grid" id="grid" role="grid" aria-label="Sudoku board"></div>
+
+  <div class="tools">
+    <button id="undo" type="button">Undo</button>
+    <button id="erase" type="button">Erase</button>
+    <button id="notes" type="button" aria-pressed="false">Notes</button>
+    <button id="hintBtn" type="button">Hint</button>
+  </div>
+  <div class="pad" id="pad"></div>
+  <div class="msg" id="msg" role="status" aria-live="polite"></div>
+  <p class="hint">Keyboard: arrows to move, 1–9 to fill, N for notes, Backspace to erase.</p>
+</main>
+
+<script>
+(() => {
+  // ── Seeded RNG (so the daily puzzle is the same for everyone) ───────────
+  function rngFrom(str) {
+    let h = 1779033703 ^ str.length;
+    for (let i = 0; i < str.length; i++) { h = Math.imul(h ^ str.charCodeAt(i), 3432918353); h = (h << 13) | (h >>> 19); }
+    let a = h >>> 0;
+    return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  }
+  const shuffle = (arr, rnd) => { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; };
+
+  // ── Solver: counts solutions up to `limit` (bitmask backtracking, MRV) ───
+  const BOX = (i) => Math.floor(Math.floor(i / 9) / 3) * 3 + Math.floor((i % 9) / 3);
+  function countSolutions(board, limit = 2, out = null) {
+    const g = board.slice(), rows = Array(9).fill(0), cols = Array(9).fill(0), boxes = Array(9).fill(0);
+    for (let i = 0; i < 81; i++) if (g[i]) { const b = 1 << g[i]; if ((rows[(i / 9) | 0] | cols[i % 9] | boxes[BOX(i)]) & b) return 0; rows[(i / 9) | 0] |= b; cols[i % 9] |= b; boxes[BOX(i)] |= b; }
+    let count = 0;
+    (function solve() {
+      let best = -1, bestMask = 0, bestN = 10;
+      for (let i = 0; i < 81; i++) if (!g[i]) {
+        const mask = ~(rows[(i / 9) | 0] | cols[i % 9] | boxes[BOX(i)]) & 0x3FE;
+        let n = 0; for (let m = mask; m; m &= m - 1) n++;
+        if (n < bestN) { best = i; bestMask = mask; bestN = n; if (n <= 1) break; }
+      }
+      if (best < 0) { count++; if (out && count === 1) out.splice(0, 81, ...g); return; }
+      for (let d = 1; d <= 9 && count < limit; d++) if (bestMask & (1 << d)) {
+        const b = 1 << d, r = (best / 9) | 0, c = best % 9, x = BOX(best);
+        g[best] = d; rows[r] |= b; cols[c] |= b; boxes[x] |= b;
+        solve();
+        g[best] = 0; rows[r] &= ~b; cols[c] &= ~b; boxes[x] &= ~b;
+      }
+    })();
+    return count;
+  }
+
+  // ── Generator: random full grid, then remove clues while still unique ───
+  const CLUES = { easy: 40, medium: 33, hard: 28, expert: 24 };
+  function generate(level, rnd) {
+    const full = Array(81).fill(0);
+    // Seed the diagonal boxes (independent), then let the solver fill the rest.
+    for (const b of [0, 4, 8]) { const ds = shuffle([1,2,3,4,5,6,7,8,9], rnd); let k = 0;
+      for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) full[(Math.floor(b / 3) * 3 + r) * 9 + (b % 3) * 3 + c] = ds[k++]; }
+    countSolutions(full, 1, full);
+    const puzzle = full.slice();
+    let clues = 81;
+    for (const i of shuffle([...Array(81).keys()], rnd)) {
+      if (clues <= CLUES[level]) break;
+      const keep = puzzle[i]; puzzle[i] = 0;
+      if (countSolutions(puzzle, 2) !== 1) puzzle[i] = keep; else clues--;
+    }
+    return { puzzle, solution: full };
+  }
+
+  // ── State ───────────────────────────────────────────────────────────────
+  const $ = (id) => document.getElementById(id);
+  const store = { get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
+                  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
+  const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+  const DAILY_LEVEL = ['medium', 'easy', 'medium', 'hard', 'medium', 'hard', 'expert']; // by weekday, Sun..Sat
+
+  let S = null; // { key, level, label, puzzle, solution, values, notes, mistakes, seconds, done, history }
+  let sel = null, notesMode = false;
+
+  function fresh(mode) {
+    if (mode === 'daily') {
+      const date = today(), level = DAILY_LEVEL[new Date().getDay()];
+      const { puzzle, solution } = generate(level, rngFrom('mouro-sudoku-' + date));
+      return { key: 'daily-' + date, level, label: `Daily · ${level[0].toUpperCase() + level.slice(1)}`, puzzle, solution };
+    }
+    const seed = String(Date.now()) + Math.random();
+    const { puzzle, solution } = generate(mode, rngFrom(seed));
+    return { key: 'free', level: mode, label: mode[0].toUpperCase() + mode.slice(1), puzzle, solution };
+  }
+
+  function load(mode, forceNew = false) {
+    const saved = store.get('mouro-sudoku-' + mode);
+    const wantKey = mode === 'daily' ? 'daily-' + today() : 'free';
+    if (!forceNew && saved && saved.key === wantKey && saved.puzzle) { S = saved; }
+    else {
+      const f = fresh(mode);
+      S = { ...f, values: f.puzzle.slice(), notes: Array.from({ length: 81 }, () => []), mistakes: 0, seconds: 0, done: false, history: [] };
+    }
+    S.mode = mode; sel = null; save(); render();
+  }
+  const save = () => store.set('mouro-sudoku-' + S.mode, S);
+
+  // ── Rendering ───────────────────────────────────────────────────────────
+  const grid = $('grid'), pad = $('pad');
+  for (let i = 0; i < 81; i++) {
+    const el = document.createElement('div');
+    el.className = `cell r${(i / 9) | 0} c${i % 9}`; el.setAttribute('role', 'gridcell'); el.dataset.i = i;
+    el.addEventListener('click', () => { sel = i; render(); });
+    grid.appendChild(el);
+  }
+  for (let d = 1; d <= 9; d++) { const b = document.createElement('button'); b.type = 'button'; b.textContent = d; b.addEventListener('click', () => input(d)); pad.appendChild(b); }
+
+  function peers(i, j) { return ((i / 9) | 0) === ((j / 9) | 0) || i % 9 === j % 9 || BOX(i) === BOX(j); }
+  function render() {
+    const selVal = sel !== null ? S.values[sel] : 0;
+    [...grid.children].forEach((el, i) => {
+      const v = S.values[i], given = S.puzzle[i] !== 0;
+      el.className = `cell r${(i / 9) | 0} c${i % 9}` + (given ? ' given' : '') +
+        (sel === i ? ' sel' : sel !== null && selVal && v === selVal ? ' same' : sel !== null && peers(i, sel) ? ' peer' : '') +
+        (v && !given && v !== S.solution[i] ? ' bad' : '');
+      if (v) { el.textContent = v; el.setAttribute('aria-label', `Row ${((i / 9) | 0) + 1} column ${(i % 9) + 1}, ${v}`); }
+      else {
+        el.textContent = '';
+        if (S.notes[i].length) { const n = document.createElement('div'); n.className = 'notes';
+          for (let d = 1; d <= 9; d++) { const s = document.createElement('span'); s.textContent = S.notes[i].includes(d) ? d : ''; n.appendChild(s); }
+          el.appendChild(n); }
+        el.setAttribute('aria-label', `Row ${((i / 9) | 0) + 1} column ${(i % 9) + 1}, empty`);
+      }
+    });
+    [...pad.children].forEach((b, k) => b.classList.toggle('done', S.values.filter((v, i) => v === k + 1 && v === S.solution[i]).length === 9));
+    $('label').textContent = S.label; $('mistakes').textContent = `${S.mistakes} mistake${S.mistakes === 1 ? '' : 's'}`; $('time').textContent = fmt(S.seconds);
+    $('notes').classList.toggle('on', notesMode); $('notes').setAttribute('aria-pressed', String(notesMode));
+    $('mode').value = S.mode;
+    const msg = $('msg');
+    if (S.done) { msg.textContent = `Solved in ${fmt(S.seconds)} with ${S.mistakes} mistake${S.mistakes === 1 ? '' : 's'}!`; msg.className = 'msg win'; }
+    else { msg.textContent = ''; msg.className = 'msg'; }
+  }
+  const fmt = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+
+  // ── Input ───────────────────────────────────────────────────────────────
+  function snapshot() { S.history.push({ values: S.values.slice(), notes: S.notes.map((n) => n.slice()) }); if (S.history.length > 200) S.history.shift(); }
+  function input(d) {
+    if (sel === null || S.done || S.puzzle[sel]) return;
+    snapshot();
+    if (notesMode) {
+      if (S.values[sel]) return;
+      const n = S.notes[sel]; const k = n.indexOf(d); if (k >= 0) n.splice(k, 1); else n.push(d);
+    } else {
+      S.values[sel] = S.values[sel] === d ? 0 : d;
+      if (S.values[sel] && S.values[sel] !== S.solution[sel]) S.mistakes++;
+      if (S.values[sel] === S.solution[sel]) {
+        // Clear this digit from the notes of every peer.
+        for (let j = 0; j < 81; j++) if (peers(j, sel)) S.notes[j] = S.notes[j].filter((x) => x !== d);
+      }
+      if (S.values.every((v, i) => v === S.solution[i])) S.done = true;
+    }
+    save(); render();
+  }
+  function erase() { if (sel === null || S.done || S.puzzle[sel]) return; snapshot(); S.values[sel] = 0; S.notes[sel] = []; save(); render(); }
+  function undo() { const h = S.history.pop(); if (!h || S.done) return; S.values = h.values; S.notes = h.notes; save(); render(); }
+  function hint() {
+    if (S.done) return;
+    let i = sel !== null && !S.puzzle[sel] && S.values[sel] !== S.solution[sel] ? sel : -1;
+    if (i < 0) { const open = [...Array(81).keys()].filter((k) => S.values[k] !== S.solution[k]); if (!open.length) return; i = open[Math.floor(Math.random() * open.length)]; }
+    snapshot(); S.values[i] = S.solution[i]; S.notes[i] = []; sel = i;
+    if (S.values.every((v, k) => v === S.solution[k])) S.done = true;
+    save(); render();
+  }
+
+  $('erase').addEventListener('click', erase);
+  $('undo').addEventListener('click', undo);
+  $('hintBtn').addEventListener('click', hint);
+  $('notes').addEventListener('click', () => { notesMode = !notesMode; render(); });
+  $('mode').addEventListener('change', (e) => load(e.target.value, e.target.value !== 'daily'));
+  document.addEventListener('keydown', (e) => {
+    if (e.target.tagName === 'SELECT') return;
+    if (e.key >= '1' && e.key <= '9') { input(Number(e.key)); return; }
+    if (e.key === 'Backspace' || e.key === 'Delete' || e.key === '0') { erase(); return; }
+    if (e.key === 'n' || e.key === 'N') { notesMode = !notesMode; render(); return; }
+    if ((e.key === 'z' || e.key === 'Z') && (e.ctrlKey || e.metaKey)) { undo(); return; }
+    const moves = { ArrowUp: -9, ArrowDown: 9, ArrowLeft: -1, ArrowRight: 1 };
+    if (moves[e.key] !== undefined) { e.preventDefault(); sel = sel === null ? 40 : Math.min(80, Math.max(0, sel + moves[e.key])); render(); }
+  });
+  setInterval(() => { if (S && !S.done && !document.hidden) { S.seconds++; $('time').textContent = fmt(S.seconds); if (S.seconds % 5 === 0) save(); } }, 1000);
+
+  // Exposed for automated checks only.
+  window.__sudoku = { countSolutions, generate, rngFrom, state: () => S };
+  load('daily');
+})();
+</script>
+</body>
+</html>
