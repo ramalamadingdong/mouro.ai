@@ -60,12 +60,19 @@ fi
 # catch-all `location /` proxy. Position does not affect behaviour — nginx picks
 # the longest prefix match and prefers regex locations regardless of order — but
 # a config nobody can follow is how these get broken later.
-ANCHOR_AWK=''
-if grep -qE '^[[:space:]]*location[[:space:]]*=[[:space:]]*/gin-rummey[[:space:]]*\{' "$CONFIG"; then
-  ANCHOR_AWK='/^[ \t]*location[ \t]*=[ \t]*\/gin-rummey[ \t]*\{/'
+#
+# The pattern uses POSIX classes and [{] rather than \s and \{ so it contains NO
+# BACKSLASHES. It travels through a shell variable and then through `awk -v`,
+# both of which process escape sequences, and an earlier version that used \t
+# and \{ was mangled into an awk syntax error by exactly that.
+ANCHOR_RE=''
+GIN_ANCHOR='^[[:space:]]*location[[:space:]]*=[[:space:]]*/gin-rummey[[:space:]]*[{]'
+ROOT_ANCHOR='^[[:space:]]*location[[:space:]]*/[[:space:]]*[{]'
+if grep -qE "$GIN_ANCHOR" "$CONFIG"; then
+  ANCHOR_RE="$GIN_ANCHOR"
   echo "▸ Anchoring before the gin-rummey block."
-elif grep -qE '^[[:space:]]*location[[:space:]]*/[[:space:]]*\{' "$CONFIG"; then
-  ANCHOR_AWK='/^[ \t]*location[ \t]*\/[ \t]*\{/'
+elif grep -qE "$ROOT_ANCHOR" "$CONFIG"; then
+  ANCHOR_RE="$ROOT_ANCHOR"
   echo "▸ Anchoring before the catch-all location / block."
 else
   echo "✗ Could not find an anchor in $CONFIG."
@@ -75,25 +82,36 @@ else
   exit 1
 fi
 
+# Clear any temp file left behind by a previous failed run.
+rm -f "$CONFIG".new.* 2>/dev/null || true
+
 BACKUP="$CONFIG.bak-$(date +%Y%m%d-%H%M%S)"
 cp -p "$CONFIG" "$BACKUP"
 echo "▸ Backed up $CONFIG → $BACKUP"
 
 TMP="$(mktemp "${CONFIG}.new.XXXXXX")"
-awk -v pfx="$PREFIX_BLOCK" -v dyn="$DYNAMIC_BLOCK" "
-  !injected $ANCHOR_AWK {
+# Remove the temp file however we leave, so a failure cannot litter
+# sites-available (as the first version of this script did).
+trap 'rm -f "$TMP"' EXIT
+
+# The anchor arrives as a VARIABLE and is applied with `$0 ~ anchor`, so the awk
+# program itself contains no interpolation — the previous version pasted the
+# pattern into the program text and produced `!injected /re/ {`, which is not
+# valid awk (it needs the &&) and failed before writing anything.
+awk -v pfx="$PREFIX_BLOCK" -v dyn="$DYNAMIC_BLOCK" -v anchor="$ANCHOR_RE" '
+  !injected && $0 ~ anchor {
     for (i = 1; i <= 2; i++) {
       f = (i == 1 ? pfx : dyn)
       while ((getline line < f) > 0) {
-        if (line == \"\") print \"\"; else print \"    \" line
+        if (line == "") print ""; else print "    " line
       }
       close(f)
-      print \"\"
+      print ""
     }
     injected = 1
   }
   { print }
-" "$CONFIG" > "$TMP"
+' "$CONFIG" > "$TMP"
 
 if ! grep -q 'location /backgammon/' "$TMP" || ! grep -q 'backgammon/(join|lobby|game)' "$TMP"; then
   rm -f "$TMP"
