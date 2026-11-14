@@ -5,7 +5,7 @@
 #
 # Idempotent: safe to re-run. What it does:
 #   - your login user (rami) with sudo, using root's authorized SSH keys
-#   - SSH: keys only, no root login
+#   - SSH: keys only, no root login (PERMIT_ROOT_LOGIN=prohibit-password keeps root via key)
 #   - firewall (22, 80, 443), fail2ban, automatic security updates, 2 GB swap
 #   - Node 24, Caddy, git, build tools, and Claude Code for rami
 #   - a `deploy` user that GitHub Actions uses: it may only write the web root
@@ -14,6 +14,10 @@
 set -euo pipefail
 
 LOGIN_USER="${LOGIN_USER:-rami}"
+# sshd PermitRootLogin. Default "no"; use "prohibit-password" to keep key-only
+# root SSH (e.g. for a tool that runs as root over SSH).
+PERMIT_ROOT_LOGIN="${PERMIT_ROOT_LOGIN:-no}"
+case "$PERMIT_ROOT_LOGIN" in no|prohibit-password) ;; *) echo "PERMIT_ROOT_LOGIN must be no or prohibit-password"; exit 1;; esac
 REPO_URL="${REPO_URL:-https://github.com/ramalamadingdong/mouro.ai.git}"
 # Seed config from the checkout this script lives in (works before the PR is
 # merged); fall back to cloning REPO_URL only if the script is run on its own.
@@ -26,6 +30,7 @@ seed() { # seed <file in infra/> <destination> [install args...]
 }
 
 [ "$(id -u)" = 0 ] || { echo "run as root"; exit 1; }
+[ "$LOGIN_USER" != root ] || { echo "LOGIN_USER must not be root (root SSH gets restricted)"; exit 1; }
 export DEBIAN_FRONTEND=noninteractive
 
 echo "▸ packages"
@@ -101,10 +106,10 @@ echo "▸ ssh hardening"
 # Never lock anyone out: only turn off passwords and root login once the login
 # user can actually get in with a key.
 if [ -s "/home/$LOGIN_USER/.ssh/authorized_keys" ]; then
-  cat > /etc/ssh/sshd_config.d/10-mouro.conf <<'EOF'
+  cat > /etc/ssh/sshd_config.d/10-mouro.conf <<EOF
 PasswordAuthentication no
 KbdInteractiveAuthentication no
-PermitRootLogin no
+PermitRootLogin $PERMIT_ROOT_LOGIN
 EOF
   sshd -t && { systemctl reload ssh || systemctl reload sshd || true; }
 else
