@@ -5,7 +5,7 @@ and the small realtime server the games play through. One repo, one VPS.
 
 | Path | What | URL |
 |---|---|---|
-| [`site/`](site/) | Personal site — static HTML + CSS, the games gallery, and Sudoku (self-contained page) | `/`, `/projects/`, `/games/`, `/games/sudoku/` |
+| [`site/`](site/) | Personal site (static HTML + CSS), plus the games hub and Sudoku — each a self-contained, installable page with its own look | `/`, `/projects/`, `/games/`, `/games/sudoku/` |
 | [`games/backgammon/`](games/backgammon/) | Two-player backgammon, Tawleh rules (Expo PWA, Expo Go on phones) | `/backgammon/` |
 | [`games/gin-rummy/`](games/gin-rummy/) | Two-player gin rummy (Expo PWA, Expo Go on phones) | `/gin-rummy/` |
 | [`games/yahtzee/`](games/yahtzee/) | 1–4 player Yahtzee (Vite PWA) | `/yahtzee/` |

@@ -4,85 +4,74 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Projects — Rami Mouro</title>
-    <meta name="description" content="Portfolio of Rami Mouro — embedded AI engineer at Qualcomm, FIRST Robotics mentor, and open-source contributor building tools for the next generation of roboticists.">
-    <meta property="og:title" content="Rami Mouro — Staff Software Engineer, Qualcomm">
-    <meta property="og:description" content="Portfolio of Rami Mouro — embedded AI engineer at Qualcomm, FIRST Robotics mentor, and open-source contributor building tools for the next generation of roboticists.">
+    <meta name="description" content="Write-ups of Rami Mouro's projects: FIRST Agentic CSA, FRC Shooter Selector, Rubik TFLite, military logistics automation, and Qualcomm talks and demos.">
+    <meta property="og:title" content="Projects — Rami Mouro">
+    <meta property="og:description" content="Write-ups of Rami Mouro's projects: FIRST Agentic CSA, FRC Shooter Selector, Rubik TFLite, military logistics automation, and Qualcomm talks and demos.">
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://mouro.ai/">
+    <meta property="og:url" content="https://mouro.ai/projects/">
     <meta property="og:site_name" content="Rami Mouro">
+    <meta name="theme-color" content="#0f1117">
+    <link rel="icon" href="/static/img/favicon.svg" type="image/svg+xml">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/site.css">
+    <script>document.documentElement.classList.add("js");</script>
+    <script src="/static/js/site.js" defer></script>
 </head>
 <body>
+    <a class="skip-link" href="#main">Skip to content</a>
     <header class="site-header">
         <div class="nav-wrap">
-            <a class="logo" href="/">Rami Mouro</a>
-            <nav class="nav-links">
-                <a class="nav-link" href="/projects/">Projects</a>
+            <a class="logo" href="/" aria-label="Rami Mouro — home">
+                <img class="logo-mark" src="/static/img/favicon.svg" alt="" width="28" height="28">
+                <span class="logo-text">Rami Mouro</span>
+            </a>
+            <nav class="nav-links" aria-label="Main">
+                <a class="nav-link" href="/">Home</a>
+                <a class="nav-link" href="/projects/" aria-current="page">Projects</a>
                 <a class="nav-link" href="/games/">Games</a>
-                <a class="nav-link" href="https://www.linkedin.com/in/rami-mouro/" target="_blank" rel="noreferrer">LinkedIn</a>
+                <a class="nav-link" href="https://www.linkedin.com/in/rami-mouro/" target="_blank" rel="noreferrer">LinkedIn<svg class="ext-icon" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 9l6-6M4.5 3H9v4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
             </nav>
         </div>
     </header>
-    <main class="page">
-        
+    <main class="page" id="main">
+
+
 <section class="section" data-reveal>
     <div class="section-heading">
         <p class="eyebrow">Projects</p>
         <h1 class="title">Deep dives on flagship work.</h1>
     </div>
-    <div class="two-col">
-        <div>
-            <p class="subtitle">
+    <div class="split">
+        <div class="prose">
+            <p class="lead">
                 Detailed write-ups on flagship builds, field automation, and applied research.
             </p>
             <p>
                 Use the index to jump to any project. Each section is built for longer, narrative writeups.
             </p>
         </div>
-        <div class="list-card project-index-card">
-            <h3>Project Index</h3>
-            <ul class="project-index-list">
-                <li class="project-index-item">
-                    <a class="link" href="#agentic-csa">FIRST Agentic CSA</a>
-                    <span class="project-index-meta">AI documentation search</span>
-                </li>
-                <li class="project-index-item">
-                    <a class="link" href="#shooter-selector">FRC Shooter Selector</a>
-                    <span class="project-index-meta">Ballistics optimization</span>
-                </li>
-                <li class="project-index-item">
-                    <a class="link" href="#rubik-tflite">Rubik TFLite</a>
-                    <span class="project-index-meta">TFLite + libQnn demo</span>
-                </li>
-                <li class="project-index-item">
-                    <a class="link" href="#military-service">Military Service Leadership</a>
-                    <span class="project-index-meta">Maintenance and logistics</span>
-                </li>
-                <li class="project-index-item">
-                    <a class="link" href="#auto-xo">Auto XO</a>
-                    <span class="project-index-meta">Signal-driven TOC automation</span>
-                </li>
-                <li class="project-index-item">
-                    <a class="link" href="#dd-1750">DD Form 1750 Automation</a>
-                    <span class="project-index-meta">Excel macro for packing lists</span>
-                </li>
-                <li class="project-index-item">
-                    <a class="link" href="#qualcomm-youtube">Content Creation</a>
-                    <span class="project-index-meta">Talks and demos</span>
-                </li>
-            </ul>
-        </div>
+        <nav class="card" aria-label="Project index">
+            <p class="card-label">Project index</p>
+            <ol class="project-index">
+                <li><a href="#agentic-csa"><span><strong>FIRST Agentic CSA</strong><span>AI documentation search</span></span></a></li>
+                <li><a href="#shooter-selector"><span><strong>FRC Shooter Selector</strong><span>Ballistics optimization</span></span></a></li>
+                <li><a href="#rubik-tflite"><span><strong>Rubik TFLite</strong><span>TFLite + libQnn demo</span></span></a></li>
+                <li><a href="#military-service"><span><strong>Military Service Leadership</strong><span>Maintenance and logistics</span></span></a></li>
+                <li><a href="#auto-xo"><span><strong>Auto XO</strong><span>Signal-driven TOC automation</span></span></a></li>
+                <li><a href="#dd-1750"><span><strong>DD Form 1750 Automation</strong><span>Excel macro for packing lists</span></span></a></li>
+                <li><a href="#qualcomm-youtube"><span><strong>Content Creation</strong><span>Talks and demos</span></span></a></li>
+            </ol>
+        </nav>
     </div>
 </section>
 
 <section class="section" id="agentic-csa" data-reveal>
-    <article class="project-card project-detail">
-        <div class="project-header">
+    <article class="card project-detail">
+        <div>
             <h2>FIRST Agentic CSA</h2>
-            <p class="project-subtitle">AI-powered FRC documentation search</p>
+            <p class="card-kicker">AI-powered FRC documentation search</p>
         </div>
         <p>
             FIRST Agentic CSA is an MCP server that gives FRC teams a single, trustworthy place to search across the
@@ -97,15 +86,15 @@
             answering. The result is faster onboarding, fewer wrong answers, and a shared resource for 3,600+ FRC teams
             under intense time pressure.
         </p>
-        <div class="project-meta">
-            <span>Stars: 9</span>
-            <span>Forks: 1</span>
-            <span>Releases: 16 (v0.3.12)</span>
-            <span>License: BSD-3-Clause</span>
-            <span>Language: Python</span>
-            <span>PulseMCP listing: 464+ visitors</span>
-            <span>Install: uvx first-agentic-csa</span>
-        </div>
+        <dl class="project-meta">
+            <div><dt>Stars</dt><dd>9</dd></div>
+            <div><dt>Forks</dt><dd>1</dd></div>
+            <div><dt>Releases</dt><dd>16 (v0.3.12)</dd></div>
+            <div><dt>License</dt><dd>BSD-3-Clause</dd></div>
+            <div><dt>Language</dt><dd>Python</dd></div>
+            <div><dt>PulseMCP listing</dt><dd>464+ visitors</dd></div>
+            <div><dt>Install</dt><dd><code>uvx first-agentic-csa</code></dd></div>
+        </dl>
         <div class="badge-row">
             <span class="badge">Python</span>
             <span class="badge">MCP Protocol</span>
@@ -113,15 +102,15 @@
             <span class="badge">PyPI</span>
             <span class="badge">VS Code Integration</span>
         </div>
-        <a class="link" href="https://github.com/ramalamadingdong/agentic-csa" target="_blank" rel="noreferrer">View on GitHub</a>
+        <a class="arrow-link out" href="https://github.com/ramalamadingdong/agentic-csa" target="_blank" rel="noreferrer">View on GitHub</a>
     </article>
 </section>
 
 <section class="section" id="shooter-selector" data-reveal>
-    <article class="project-card project-detail">
-        <div class="project-header">
+    <article class="card project-detail">
+        <div>
             <h2>FRC Shooter Selector</h2>
-            <p class="project-subtitle">Ballistics analysis and optimization tool</p>
+            <p class="card-kicker">Ballistics analysis and optimization tool</p>
         </div>
         <p>
             FRC Shooter Selector is a physics-first simulation toolkit for the 2026 REBUILT game that helps teams
@@ -135,12 +124,12 @@
             studies. Teams can use the browser-based app, a Django web interface, or the CLI for batch analysis.
             Outputs include Plotly charts, ready-to-copy RPM lookup tables, and PNG plots for design reviews.
         </p>
-        <div class="project-meta">
-            <span>Stars: 1</span>
-            <span>License: BSD-3-Clause</span>
-            <span>Languages: Python, HTML</span>
-            <span>Interfaces: Web, Django, CLI</span>
-        </div>
+        <dl class="project-meta">
+            <div><dt>Stars</dt><dd>1</dd></div>
+            <div><dt>License</dt><dd>BSD-3-Clause</dd></div>
+            <div><dt>Languages</dt><dd>Python, HTML</dd></div>
+            <div><dt>Interfaces</dt><dd>Web, Django, CLI</dd></div>
+        </dl>
         <div class="badge-row">
             <span class="badge">Python</span>
             <span class="badge">Django</span>
@@ -149,15 +138,15 @@
             <span class="badge">Physics Simulation</span>
             <span class="badge">GitHub Pages</span>
         </div>
-        <a class="link" href="https://github.com/ramalamadingdong/frc-shooter-selector" target="_blank" rel="noreferrer">View on GitHub</a>
+        <a class="arrow-link out" href="https://github.com/ramalamadingdong/frc-shooter-selector" target="_blank" rel="noreferrer">View on GitHub</a>
     </article>
 </section>
 
 <section class="section" id="rubik-tflite" data-reveal>
-    <article class="project-card project-detail">
-        <div class="project-header">
+    <article class="card project-detail">
+        <div>
             <h2>Rubik TFLite</h2>
-            <p class="project-subtitle">TFLite + libQnn on Qualcomm NPU</p>
+            <p class="card-kicker">TFLite + libQnn on Qualcomm NPU</p>
         </div>
         <p>
             Rubik TFLite is a hands-on demo that calls TensorFlow Lite using the libQnn delegate as an external
@@ -174,12 +163,12 @@
             inputs and outputs. Supported input formats include JPEG, PNG, TGA, BMP, PSD, GIF, HDR, PIC, and PNM, with
             PNG output for easy inspection.
         </p>
-        <div class="project-meta">
-            <span>License: MIT</span>
-            <span>Interfaces: C, Python</span>
-            <span>Delegate: libQnn (HTP backend)</span>
-            <span>Models: TFLite image transformations</span>
-        </div>
+        <dl class="project-meta">
+            <div><dt>License</dt><dd>MIT</dd></div>
+            <div><dt>Interfaces</dt><dd>C, Python</dd></div>
+            <div><dt>Delegate</dt><dd>libQnn (HTP backend)</dd></div>
+            <div><dt>Models</dt><dd>TFLite image transformations</dd></div>
+        </dl>
         <div class="badge-row">
             <span class="badge">C++</span>
             <span class="badge">C</span>
@@ -188,15 +177,15 @@
             <span class="badge">QNN</span>
             <span class="badge">Qualcomm NPU</span>
         </div>
-        <a class="link" href="https://github.com/ramalamadingdong/rubik-tflite" target="_blank" rel="noreferrer">View on GitHub</a>
+        <a class="arrow-link out" href="https://github.com/ramalamadingdong/rubik-tflite" target="_blank" rel="noreferrer">View on GitHub</a>
     </article>
 </section>
 
 <section class="section" id="military-service" data-reveal>
-    <article class="project-card project-detail">
-        <div class="project-header">
+    <article class="card project-detail">
+        <div>
             <h2>Military Service Leadership</h2>
-            <p class="project-subtitle">Maintenance, logistics, and mission support</p>
+            <p class="card-kicker">Maintenance, logistics, and mission support</p>
         </div>
         <p>
             Deployed overseas with a HIMARS maintenance company and served as a local interpreter across multiple
@@ -211,11 +200,11 @@
             Partnered with the Designing for Defense program on Navy equipment tracking, consolidating data from
             multiple systems into commander-ready reports.
         </p>
-        <div class="project-meta">
-            <span>Award: Army Commendation Medal</span>
-            <span>Roles: Platoon Leader, 91B Mechanic, Logistics, Interpreter</span>
-            <span>Focus: HIMARS maintenance, readiness automation</span>
-        </div>
+        <dl class="project-meta">
+            <div><dt>Award</dt><dd>Army Commendation Medal</dd></div>
+            <div><dt>Roles</dt><dd>Platoon Leader, 91B Mechanic, Logistics, Interpreter</dd></div>
+            <div><dt>Focus</dt><dd>HIMARS maintenance, readiness automation</dd></div>
+        </dl>
         <div class="badge-row">
             <span class="badge">Platoon Leadership</span>
             <span class="badge">Field Maintenance</span>
@@ -224,9 +213,9 @@
             <span class="badge">Interpreter</span>
         </div>
         <div class="project-subsection" id="auto-xo">
-            <div class="project-header">
+            <div>
                 <h3>Auto XO</h3>
-                <p class="project-subtitle">Signal-driven TOC task automation</p>
+                <p class="card-kicker">Signal-driven TOC task automation</p>
             </div>
             <p>
                 Auto XO started as a joke about automating the XO role inside the TOC truck with text messages. I built a
@@ -237,23 +226,23 @@
                 The system normalizes Signal messages into a log and writes updates into a spreadsheet for fast
                 situational awareness. It cut manual copy-paste and kept the XO workflow moving in high-tempo ops.
             </p>
-            <div class="project-meta">
-                <span>Context: TOC/XO automation</span>
-                <span>Role: E4 91B, platoon leader duties</span>
-                <span>Interface: Signal to spreadsheet</span>
-            </div>
+            <dl class="project-meta">
+                <div><dt>Context</dt><dd>TOC/XO automation</dd></div>
+                <div><dt>Role</dt><dd>E4 91B, platoon leader duties</dd></div>
+                <div><dt>Interface</dt><dd>Signal to spreadsheet</dd></div>
+            </dl>
             <div class="badge-row">
                 <span class="badge">Python</span>
                 <span class="badge">Signal API</span>
                 <span class="badge">Automation</span>
                 <span class="badge">Ops Workflows</span>
             </div>
-            <a class="link" href="https://github.com/ramalamadingdong/auto_xo" target="_blank" rel="noreferrer">View on GitHub</a>
+            <a class="arrow-link out" href="https://github.com/ramalamadingdong/auto_xo" target="_blank" rel="noreferrer">View on GitHub</a>
         </div>
         <div class="project-subsection" id="dd-1750">
-            <div class="project-header">
+            <div>
                 <h3>DD Form 1750 Automation</h3>
-                <p class="project-subtitle">Excel macro for packing lists</p>
+                <p class="card-kicker">Excel macro for packing lists</p>
             </div>
             <p>
                 While building DD Form 1750 packing lists, I was copying items from BOMs into long multi-page forms.
@@ -263,18 +252,18 @@
                 Supports quick conversions from MALs, SIs, and property book exports. Handles large payloads across many
                 pages while keeping labels consistent.
             </p>
-            <div class="project-meta">
-                <span>Use cases: MAL to 1750, SI to 1750, Property Book to 1750</span>
-                <span>Interface: Excel VBA macro</span>
-            </div>
+            <dl class="project-meta">
+                <div><dt>Use cases</dt><dd>MAL to 1750, SI to 1750, Property Book to 1750</dd></div>
+                <div><dt>Interface</dt><dd>Excel VBA macro</dd></div>
+            </dl>
             <div class="badge-row">
                 <span class="badge">Excel VBA</span>
                 <span class="badge">Logistics</span>
                 <span class="badge">Process Automation</span>
                 <span class="badge">Forms</span>
             </div>
-            <a class="link" href="https://drive.google.com/file/d/1dKxFEAz4nOSq5AKoMH2BpfUpxAhmWSVo/view?usp=sharing" target="_blank" rel="noreferrer">View sample usage</a>
-            <a class="link" href="https://buymeacoffee.com/?via=ramalamadingdon" target="_blank" rel="noreferrer">Buy me a coffee</a>
+            <a class="arrow-link out" href="https://drive.google.com/file/d/1dKxFEAz4nOSq5AKoMH2BpfUpxAhmWSVo/view?usp=sharing" target="_blank" rel="noreferrer">View sample usage</a>
+            <a class="arrow-link out" href="https://buymeacoffee.com/?via=ramalamadingdon" target="_blank" rel="noreferrer">Buy me a coffee</a>
         </div>
     </article>
 </section>
@@ -284,37 +273,37 @@
         <p class="eyebrow">Content Creation</p>
         <h2>Selected talks and demos.</h2>
     </div>
-    <div class="video-grid">
-        <article class="video-card" data-reveal>
-            <a class="video-thumb" href="https://www.youtube.com/watch?v=1LRJVeAd1aU" target="_blank" rel="noreferrer" style="background-image: url('https://i.ytimg.com/vi/1LRJVeAd1aU/hqdefault.jpg');">
-                <span class="video-play">Play</span>
+    <div class="grid-2">
+        <article class="card video-card">
+            <a class="video-thumb" aria-label="Watch “Edge AI in action” on YouTube" href="https://www.youtube.com/watch?v=1LRJVeAd1aU" target="_blank" rel="noreferrer" style="background-image: url('https://i.ytimg.com/vi/1LRJVeAd1aU/hqdefault.jpg');">
+                <span class="video-play" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="M5 3l12 7-12 7z"/></svg></span>
             </a>
             <div class="video-copy">
                 <h3>Edge AI in action</h3>
                 <p>Hands-on walkthrough showing how Qualcomm edge AI tools unlock faster on-device inference.</p>
             </div>
         </article>
-        <article class="video-card" data-reveal>
-            <a class="video-thumb" href="https://www.youtube.com/watch?v=oIpFH2HKsCE" target="_blank" rel="noreferrer" style="background-image: url('https://i.ytimg.com/vi/oIpFH2HKsCE/hqdefault.jpg');">
-                <span class="video-play">Play</span>
+        <article class="card video-card">
+            <a class="video-thumb" aria-label="Watch “Developer workflow focus” on YouTube" href="https://www.youtube.com/watch?v=oIpFH2HKsCE" target="_blank" rel="noreferrer" style="background-image: url('https://i.ytimg.com/vi/oIpFH2HKsCE/hqdefault.jpg');">
+                <span class="video-play" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="M5 3l12 7-12 7z"/></svg></span>
             </a>
             <div class="video-copy">
                 <h3>Developer workflow focus</h3>
                 <p>Overview of developer tooling priorities and how they map to real robotics deployments.</p>
             </div>
         </article>
-        <article class="video-card" data-reveal>
-            <a class="video-thumb" href="https://www.youtube.com/watch?v=Mhm1wlb7qc0" target="_blank" rel="noreferrer" style="background-image: url('https://i.ytimg.com/vi/Mhm1wlb7qc0/hqdefault.jpg');">
-                <span class="video-play">Play</span>
+        <article class="card video-card">
+            <a class="video-thumb" aria-label="Watch “Edge AI + vision pipeline” on YouTube" href="https://www.youtube.com/watch?v=Mhm1wlb7qc0" target="_blank" rel="noreferrer" style="background-image: url('https://i.ytimg.com/vi/Mhm1wlb7qc0/hqdefault.jpg');">
+                <span class="video-play" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="M5 3l12 7-12 7z"/></svg></span>
             </a>
             <div class="video-copy">
                 <h3>Edge AI + vision pipeline</h3>
                 <p>Practical demo of vision workloads optimized for real-time robotics use cases.</p>
             </div>
         </article>
-        <article class="video-card" data-reveal>
-            <a class="video-thumb" href="https://www.youtube.com/watch?v=EqmYnCqdnqw" target="_blank" rel="noreferrer" style="background-image: url('https://i.ytimg.com/vi/EqmYnCqdnqw/hqdefault.jpg');">
-                <span class="video-play">Play</span>
+        <article class="card video-card">
+            <a class="video-thumb" aria-label="Watch “Qualcomm priorities” on YouTube" href="https://www.youtube.com/watch?v=EqmYnCqdnqw" target="_blank" rel="noreferrer" style="background-image: url('https://i.ytimg.com/vi/EqmYnCqdnqw/hqdefault.jpg');">
+                <span class="video-play" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="M5 3l12 7-12 7z"/></svg></span>
             </a>
             <div class="video-copy">
                 <h3>Qualcomm priorities</h3>
@@ -324,108 +313,26 @@
     </div>
 </section>
 
-<footer class="footer" data-reveal>
-    <div>
+<footer class="footer">
+    <div class="footer-cta">
         <h2>Connect</h2>
         <p>Open to collaboration, mentoring, and conversations about edge AI in robotics.</p>
-        <div class="hero-links">
+        <div class="button-row">
             <a class="button" href="https://www.linkedin.com/in/rami-mouro/" target="_blank" rel="noreferrer">LinkedIn</a>
             <a class="button ghost" href="https://github.com/ramalamadingdong" target="_blank" rel="noreferrer">GitHub</a>
         </div>
     </div>
     <div class="footer-meta">
-        <p>Copyright 2026 Rami Mouro</p>
+        <nav class="footer-nav" aria-label="Footer">
+            <a href="/">Home</a>
+            <a href="/projects/">Projects</a>
+            <a href="/games/">Games</a>
+        </nav>
+        <p>© 2026 Rami Mouro</p>
         <p>Static HTML, hosted on our own VPS</p>
     </div>
 </footer>
 
     </main>
-    <script>
-        const revealTargets = document.querySelectorAll("[data-reveal]");
-        const revealObserver = new IntersectionObserver(
-            (entries) => {
-                entries.forEach((entry) => {
-                    if (entry.isIntersecting) {
-                        entry.target.classList.add("is-visible");
-                        revealObserver.unobserve(entry.target);
-                    }
-                });
-            },
-            { threshold: 0.2 }
-        );
-        revealTargets.forEach((target) => revealObserver.observe(target));
-
-        const carousels = document.querySelectorAll("[data-carousel]");
-        carousels.forEach((carousel) => {
-            const track = carousel.querySelector("[data-carousel-track]");
-            const prevButton = carousel.querySelector(".carousel-button.prev");
-            const nextButton = carousel.querySelector(".carousel-button.next");
-
-            if (!track || !prevButton || !nextButton) {
-                return;
-            }
-
-            const getScrollAmount = () => {
-                const card = track.querySelector(".project-card");
-                if (!card) {
-                    return 320;
-                }
-                const styles = window.getComputedStyle(track);
-                const gap = parseFloat(styles.gap || styles.columnGap || "0");
-                return card.getBoundingClientRect().width + gap;
-            };
-
-            const scrollTrack = (direction) => {
-                track.scrollBy({ left: direction * getScrollAmount(), behavior: "smooth" });
-            };
-
-            const atEnd = () => {
-                const maxScrollLeft = track.scrollWidth - track.clientWidth;
-                return track.scrollLeft >= maxScrollLeft - 2;
-            };
-
-            prevButton.addEventListener("click", () => scrollTrack(-1));
-            nextButton.addEventListener("click", () => scrollTrack(1));
-
-            let autoAdvanceId = null;
-            const startAutoAdvance = () => {
-                if (autoAdvanceId) {
-                    return;
-                }
-                autoAdvanceId = window.setInterval(() => {
-                    if (document.hidden) {
-                        return;
-                    }
-                    if (atEnd()) {
-                        track.scrollTo({ left: 0, behavior: "smooth" });
-                        return;
-                    }
-                    scrollTrack(1);
-                }, 6000);
-            };
-
-            const stopAutoAdvance = () => {
-                if (!autoAdvanceId) {
-                    return;
-                }
-                window.clearInterval(autoAdvanceId);
-                autoAdvanceId = null;
-            };
-
-            startAutoAdvance();
-
-            carousel.addEventListener("mouseenter", stopAutoAdvance);
-            carousel.addEventListener("mouseleave", startAutoAdvance);
-            carousel.addEventListener("focusin", stopAutoAdvance);
-            carousel.addEventListener("focusout", startAutoAdvance);
-            document.addEventListener("visibilitychange", () => {
-                if (document.hidden) {
-                    stopAutoAdvance();
-                } else {
-                    startAutoAdvance();
-                }
-            });
-        });
-    </script>
 </body>
 </html>

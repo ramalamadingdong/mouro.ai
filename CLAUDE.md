@@ -7,6 +7,10 @@ are working in — those hold each project's non-negotiables.
 ## Layout
 
 - `site/` — static HTML/CSS. No build step. Edit the HTML directly.
+  `site/games/` (the games hub) and `site/games/sudoku/` are deliberately
+  separate from the portfolio: self-contained pages with their own styles,
+  manifest and icons — they must not load `static/css/site.css`. Their icon
+  PNGs come from the SVGs beside them via `scripts/render-icons.mjs`.
 - `games/<game>/` — independent apps with their own `package.json` and lockfile.
   Run npm inside the game folder. Never introduce npm workspaces or hoisting.
 - `server/` — Node ≥22.13, plain ESM JavaScript, `ws` + built-in `node:sqlite`.
