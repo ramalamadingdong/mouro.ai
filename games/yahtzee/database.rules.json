@@ -1,0 +1,205 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "rooms": {
+      "$code": {
+        ".read": "auth != null && (!data.exists() || data.child('meta/host').val() === auth.uid || data.child('seats').hasChild(auth.uid) || data.child('meta/status').val() === 'waiting')",
+
+        ".write": "auth != null && (($code.matches(/^[A-HJKMNP-Z2-9]{5}$/) && !data.exists() && newData.child('meta/host').val() === auth.uid && newData.child('meta').hasChildren(['host', 'status', 'createdAt', 'updatedAt']) && !newData.hasChild('state') && !newData.hasChild('presence') && !newData.hasChild('holds') && !newData.hasChild('rematch')) || (!newData.exists() && (data.child('meta/host').val() === auth.uid || (data.child('meta/createdAt').isNumber() && data.child('meta/updatedAt').isNumber() && now - data.child('meta/createdAt').val() > 86400000 && now - data.child('meta/updatedAt').val() > 86400000))))",
+
+        ".validate": "$code.matches(/^[A-HJKMNP-Z2-9]{5}$/)",
+
+        "meta": {
+          ".validate": "newData.hasChildren(['host', 'status', 'createdAt', 'updatedAt'])",
+
+          "host": {
+            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 128 && (!data.exists() || newData.val() === data.val())",
+            "$deep": { ".validate": false }
+          },
+
+          "status": {
+            ".write": "auth != null && $code.matches(/^[A-HJKMNP-Z2-9]{5}$/) && root.child('rooms').child($code).child('meta/host').val() === auth.uid && newData.isString() && data.exists() && data.val() === 'waiting' && newData.val() === 'playing'",
+            ".validate": "newData.isString() && (data.exists() ? (data.val() === 'waiting' && newData.val() === 'playing') : newData.val() === 'waiting')",
+            "$deep": { ".validate": false }
+          },
+
+          "createdAt": {
+            ".validate": "newData.isNumber() && (data.exists() ? newData.val() === data.val() : (newData.val() <= now + 86400000 && newData.val() > now - 86400000))",
+            "$deep": { ".validate": false }
+          },
+
+          "updatedAt": {
+            ".write": "auth != null && $code.matches(/^[A-HJKMNP-Z2-9]{5}$/) && newData.isNumber() && newData.val() <= now + 3600000 && newData.val() > now - 3600000 && root.child('rooms').child($code).child('meta').exists() && (root.child('rooms').child($code).child('meta/status').val() === 'waiting' || root.child('rooms').child($code).child('seats').hasChild(auth.uid) || root.child('rooms').child($code).child('meta/host').val() === auth.uid)",
+            ".validate": "newData.isNumber() && newData.val() <= now + 86400000 && (data.exists() ? newData.val() > now - 3600000 : newData.val() > now - 86400000)",
+            "$deep": { ".validate": false }
+          },
+
+          "$other": { ".validate": false }
+        },
+
+        "seats": {
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid && $code.matches(/^[A-HJKMNP-Z2-9]{5}$/) && (!newData.exists() || (root.child('rooms').child($code).child('meta').exists() && root.child('rooms').child($code).child('meta/status').val() === 'waiting' && newData.isString() && newData.val().length >= 3 && newData.val().length <= 120 && newData.val().matches(/^[0-9]{1,15}[|]/)))",
+            ".validate": "$uid === auth.uid && $uid.length <= 128 && newData.isString() && newData.val().length >= 3 && newData.val().length <= 120 && newData.val().matches(/^[0-9]{1,15}[|]/)",
+            "$deep": { ".validate": false }
+          }
+        },
+
+        "state": {
+          ".write": "auth != null && $code.matches(/^[A-HJKMNP-Z2-9]{5}$/) && newData.hasChildren(['version', 'players', 'phase', 'turn', 'turnUid', 'round', 'rollsUsed']) && newData.child('version').isNumber() && newData.child('version').val() >= 0 && newData.child('version').val() <= 100000 && ((newData.child('turn').val() === 0 && newData.child('turnUid').val() === newData.child('players/0/uid').val()) || (newData.child('turn').val() === 1 && newData.child('turnUid').val() === newData.child('players/1/uid').val()) || (newData.child('turn').val() === 2 && newData.child('turnUid').val() === newData.child('players/2/uid').val()) || (newData.child('turn').val() === 3 && newData.child('turnUid').val() === newData.child('players/3/uid').val())) && (root.child('rooms').child($code).child('seats').hasChild(auth.uid) || root.child('rooms').child($code).child('meta/host').val() === auth.uid) && (!data.exists() ? root.child('rooms').child($code).child('meta/host').val() === auth.uid : (data.child('turnUid').val() === auth.uid || (data.child('phase').val() === 'over' && (data.child('players/0/uid').val() === auth.uid || data.child('players/1/uid').val() === auth.uid || data.child('players/2/uid').val() === auth.uid || data.child('players/3/uid').val() === auth.uid) && newData.child('lastMove/kind').val() === 'rematch' && newData.child('round').val() === 1 && newData.child('rollsUsed').val() === 0 && !newData.hasChild('result')))) && (!data.exists() ? (!newData.hasChild('lastMove') || newData.child('lastMove/by').val() === auth.uid) : newData.child('lastMove/by').val() === auth.uid) && (!data.exists() || newData.child('version').val() > data.child('version').val())",
+
+          ".validate": "newData.hasChildren(['version', 'players', 'phase', 'turn', 'turnUid', 'round', 'rollsUsed'])",
+
+          "version": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000",
+            "$deep": { ".validate": false }
+          },
+          "turnUid": {
+            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 128",
+            "$deep": { ".validate": false }
+          },
+          "phase": {
+            ".validate": "newData.isString() && (newData.val() === 'roll' || newData.val() === 'decide' || newData.val() === 'over')",
+            "$deep": { ".validate": false }
+          },
+          "turn": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 3",
+            "$deep": { ".validate": false }
+          },
+          "round": {
+            ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 14",
+            "$deep": { ".validate": false }
+          },
+          "rollsUsed": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 3",
+            "$deep": { ".validate": false }
+          },
+
+          "dice": {
+            ".validate": "newData.hasChildren()",
+            "$i": {
+              ".validate": "$i.matches(/^[0-4]$/) && newData.isNumber() && newData.val() >= 1 && newData.val() <= 6",
+              "$deep": { ".validate": false }
+            }
+          },
+
+          "players": {
+            ".validate": "newData.hasChildren()",
+            "$seat": {
+              ".validate": "$seat.matches(/^[0-3]$/) && newData.hasChildren(['uid', 'name'])",
+              "uid": {
+                ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 128",
+                "$deep": { ".validate": false }
+              },
+              "name": {
+                ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 24",
+                "$deep": { ".validate": false }
+              },
+              "$other": { ".validate": false }
+            }
+          },
+
+          "cards": {
+            ".validate": "newData.hasChildren()",
+            "$seat": {
+              ".validate": "$seat.matches(/^[0-3]$/) && newData.hasChildren()",
+              "$category": {
+                ".validate": "$category.matches(/^(ones|twos|threes|fours|fives|sixes|threeKind|fourKind|fullHouse|smallStraight|largeStraight|yahtzee|chance)$/) && newData.isNumber() && newData.val() >= 0 && newData.val() <= 50",
+                "$deep": { ".validate": false }
+              }
+            }
+          },
+
+          "yahtzeeBonus": {
+            ".validate": "newData.hasChildren()",
+            "$seat": {
+              ".validate": "$seat.matches(/^[0-3]$/) && newData.isNumber() && newData.val() >= 0 && newData.val() <= 13",
+              "$deep": { ".validate": false }
+            }
+          },
+
+          "result": {
+            ".validate": "newData.hasChildren(['scores', 'winners'])",
+            "scores": {
+              ".validate": "newData.hasChildren()",
+              "$seat": {
+                ".validate": "$seat.matches(/^[0-3]$/) && newData.hasChildren()",
+                "$field": {
+                  ".validate": "$field.matches(/^(upper|bonus|lower|yahtzeeBonus|total)$/) && newData.isNumber() && newData.val() >= 0 && newData.val() <= 2000",
+                  "$deep": { ".validate": false }
+                }
+              }
+            },
+            "winners": {
+              ".validate": "newData.hasChildren()",
+              "$i": {
+                ".validate": "$i.matches(/^[0-3]$/) && newData.isNumber() && newData.val() >= 0 && newData.val() <= 3",
+                "$deep": { ".validate": false }
+              }
+            },
+            "$other": { ".validate": false }
+          },
+
+          "lastMove": {
+            ".validate": "newData.hasChildren(['by', 'kind'])",
+            "by": {
+              ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 128",
+              "$deep": { ".validate": false }
+            },
+            "kind": {
+              ".validate": "newData.isString() && (newData.val() === 'roll' || newData.val() === 'score' || newData.val() === 'rematch')",
+              "$deep": { ".validate": false }
+            },
+            "seat": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 3",
+              "$deep": { ".validate": false }
+            },
+            "category": {
+              ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 24",
+              "$deep": { ".validate": false }
+            },
+            "points": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 50",
+              "$deep": { ".validate": false }
+            },
+            "at": {
+              ".validate": "newData.isNumber()",
+              "$deep": { ".validate": false }
+            },
+            "$other": { ".validate": false }
+          },
+
+          "$other": { ".validate": false }
+        },
+
+        "presence": {
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid && $code.matches(/^[A-HJKMNP-Z2-9]{5}$/) && (!newData.exists() || (root.child('rooms').child($code).child('meta').exists() && (root.child('rooms').child($code).child('seats').hasChild($uid) || root.child('rooms').child($code).child('meta/host').val() === $uid) && newData.isNumber() && newData.val() > 0))",
+            ".validate": "$uid === auth.uid && $uid.length <= 128 && newData.isNumber() && newData.val() > 0",
+            "$deep": { ".validate": false }
+          }
+        },
+
+        "holds": {
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid && $code.matches(/^[A-HJKMNP-Z2-9]{5}$/) && (!newData.exists() || (root.child('rooms').child($code).child('meta').exists() && (root.child('rooms').child($code).child('seats').hasChild($uid) || root.child('rooms').child($code).child('meta/host').val() === $uid) && newData.isNumber() && newData.val() >= 0 && newData.val() <= 31))",
+            ".validate": "$uid === auth.uid && $uid.length <= 128 && newData.isNumber() && newData.val() >= 0 && newData.val() <= 31",
+            "$deep": { ".validate": false }
+          }
+        },
+
+        "rematch": {
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid && $code.matches(/^[A-HJKMNP-Z2-9]{5}$/) && (!newData.exists() || (root.child('rooms').child($code).child('meta').exists() && (root.child('rooms').child($code).child('seats').hasChild($uid) || root.child('rooms').child($code).child('meta/host').val() === $uid) && newData.isBoolean() && newData.val() === true))",
+            ".validate": "$uid === auth.uid && $uid.length <= 128 && newData.isBoolean() && newData.val() === true",
+            "$deep": { ".validate": false }
+          }
+        },
+
+        "$other": { ".validate": false }
+      }
+    }
+  }
+}

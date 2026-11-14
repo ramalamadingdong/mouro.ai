@@ -1,0 +1,5 @@
+[
+  { "name": "gin-rummy", "rules": "games/gin-rummy/database.rules.json", "reap": ["rooms"] },
+  { "name": "backgammon", "rules": "games/backgammon/database.rules.json", "reap": ["bgRooms"] },
+  { "name": "yahtzee", "rules": "games/yahtzee/database.rules.json", "reap": ["rooms"] }
+]

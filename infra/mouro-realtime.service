@@ -1,0 +1,28 @@
+# systemd unit for the realtime server. Installed by provision.sh.
+[Unit]
+Description=mouro.ai realtime server (games backend)
+After=network.target
+
+[Service]
+Type=simple
+User=mouro-rt
+Group=mouro-rt
+WorkingDirectory=/opt/mouro/realtime/server
+Environment=NODE_ENV=production
+Environment=PORT=8787
+Environment=HOST=127.0.0.1
+Environment=DATA_DIR=/var/lib/mouro-realtime
+ExecStart=/usr/bin/node --disable-warning=ExperimentalWarning src/main.js
+Restart=always
+RestartSec=2
+
+# Hardening: the service only needs its own data directory.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/mouro-realtime
+StateDirectory=mouro-realtime
+
+[Install]
+WantedBy=multi-user.target

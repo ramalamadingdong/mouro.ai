@@ -1,0 +1,63 @@
+name: CI
+
+# Runs on pull requests, and on the default branch as the first stage of deploy.yml.
+on:
+  pull_request:
+  workflow_call:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  server:
+    name: realtime server + client
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - run: npm ci --prefix server
+      - run: npx -y -p typescript@5.9 tsc -p packages/realtime
+      # End-to-end against a live server, using every game's real rules file.
+      - run: npm test --prefix server
+
+  game:
+    name: ${{ matrix.game }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        game: [backgammon, gin-rummy, yahtzee]
+    defaults:
+      run:
+        working-directory: games/${{ matrix.game }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: games/${{ matrix.game }}/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - name: Build
+        run: |
+          if [ "${{ matrix.game }}" = yahtzee ]; then npm run build; else npx expo export --platform web; fi
+      - name: Guard the sub-path build
+        run: |
+          case "${{ matrix.game }}" in
+            yahtzee) grep -q '/yahtzee/assets/' dist/index.html ;;
+            *)       grep -q '/${{ matrix.game }}/_expo/' dist/index.html ;;
+          esac || { echo "dist is not sub-path aware"; exit 1; }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.game }}
+          path: games/${{ matrix.game }}/dist
+          retention-days: 3

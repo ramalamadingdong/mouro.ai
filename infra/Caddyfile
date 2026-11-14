@@ -1,0 +1,87 @@
+# mouro.ai — every route on the box, in one place.
+#
+#   /                  the personal site            /srv/mouro.ai/site
+#   /backgammon/       backgammon PWA (Expo)        /srv/mouro.ai/backgammon
+#   /gin-rummy/        gin rummy PWA (Expo)         /srv/mouro.ai/gin-rummy
+#   /gin-rummey/*      301 → /gin-rummy/* (old invite links keep working)
+#   /yahtzee/          yahtzee SPA (Vite)           /srv/mouro.ai/yahtzee
+#   /rt                realtime server (WebSocket)  127.0.0.1:8787
+#
+# Deploys rsync each build into /srv/mouro.ai/<app>.new and swap it into place
+# with a rename, so a request never sees a half-copied directory.
+#
+# Caddy obtains and renews the TLS certificate itself. If the domain is proxied
+# through Cloudflare, set SSL/TLS mode to "Full (strict)".
+
+{
+	email {$ACME_EMAIL:admin@mouro.ai}
+}
+
+www.mouro.ai {
+	redir https://mouro.ai{uri} permanent
+}
+
+{$SITE_ADDRESS:mouro.ai} {
+	encode zstd gzip
+	root * /srv/mouro.ai
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+
+	# Content-hashed build output can be cached forever.
+	@hashed path_regexp hashed ^/(backgammon|gin-rummy)/_expo/static/|^/yahtzee/assets/
+	header @hashed Cache-Control "public, max-age=31536000, immutable"
+
+	# ── realtime server ─────────────────────────────────────────────────────
+	handle /rt* {
+		reverse_proxy 127.0.0.1:8787
+	}
+
+	# ── old spelling ────────────────────────────────────────────────────────
+	@oldgin path_regexp oldgin ^/gin-rummey(/.*)?$
+	redir @oldgin /gin-rummy{re.oldgin.1} permanent
+
+	# ── Expo games ──────────────────────────────────────────────────────────
+	# Expo prerenders dynamic routes to files literally named `[code].html`.
+	# Map /<game>/(join|lobby|game)/<CODE> onto that shell so hydration matches;
+	# a malformed code falls through to the SPA fallback and its friendly
+	# "that link didn't contain a valid room code" screen.
+	@expoRedirect path /backgammon /gin-rummy
+	redir @expoRedirect {path}/ permanent
+
+	@expoDynamic path_regexp dyn ^/(backgammon|gin-rummy)/(join|lobby|game)/[A-HJKMNP-Z2-9]{5}/?$
+	handle @expoDynamic {
+		rewrite * /{re.dyn.1}/{re.dyn.2}/[code].html
+		file_server
+	}
+
+	@backgammon path /backgammon/*
+	handle @backgammon {
+		try_files {path} {path}.html {path}/index.html /backgammon/index.html
+		file_server
+	}
+
+	@gin path /gin-rummy/*
+	handle @gin {
+		try_files {path} {path}.html {path}/index.html /gin-rummy/index.html
+		file_server
+	}
+
+	# ── Vite game ───────────────────────────────────────────────────────────
+	redir /yahtzee /yahtzee/ permanent
+	handle /yahtzee/* {
+		try_files {path} /yahtzee/index.html
+		file_server
+	}
+
+	# ── personal site ───────────────────────────────────────────────────────
+	handle {
+		root * /srv/mouro.ai/site
+		try_files {path} {path}/index.html {path}.html
+		file_server
+	}
+}

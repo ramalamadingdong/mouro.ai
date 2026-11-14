@@ -1,0 +1,214 @@
+/*
+ * The play surface.
+ *
+ * screen.css is imported here rather than assumed: the table renders `.btn` and
+ * `.notice`, and today every route that mounts it happens to import screen.css
+ * itself. "Happens to" is not a contract — a future route that forgets would get
+ * an unstyled Leave button and a wall-of-text error panel. Vite dedupes the
+ * repeated import, so the only cost is this comment.
+ */
+@import '../routes/screen.css';
+
+.table {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--space-md) var(--space-sm) var(--space-xl);
+}
+
+.table__inner {
+  width: 100%;
+  max-width: var(--table-max-width);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.table__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.table__round {
+  font-size: var(--size-sm);
+  font-weight: var(--weight-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+/* ── Seat strip ─────────────────────────────────────────────────────────── */
+
+.table__seats {
+  display: flex;
+  gap: var(--space-sm);
+  /* Four players on a narrow phone: scroll the strip rather than crushing the
+     names to three characters each. */
+  overflow-x: auto;
+  /* The focus ring on a seat would otherwise be clipped by the overflow. */
+  padding: 2px;
+}
+
+.table__seat {
+  flex: 1 1 0;
+  min-width: 5.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  background: var(--felt-raised);
+  border: 1px solid transparent;
+}
+
+/* Whose turn it is, marked with a border AND a brighter total — never with
+   colour alone, so it survives a colourblind or monochrome reading. */
+.table__seat[data-turn='true'] {
+  border-color: var(--accent);
+  background: var(--surface);
+}
+
+.table__seat[data-mine='true'] .table__seat-name::after {
+  content: ' (you)';
+  color: var(--text-hint);
+  font-weight: var(--weight-medium);
+}
+
+.table__seat-name {
+  font-size: var(--size-sm);
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.table__seat-total {
+  font-size: var(--size-lg);
+  font-weight: var(--weight-bold);
+  color: var(--text);
+}
+
+.table__seat-away {
+  font-size: var(--size-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--bad);
+}
+
+/* ── Turn banner ────────────────────────────────────────────────────────── */
+
+.table__banner {
+  text-align: center;
+  font-size: var(--size-md);
+  font-weight: var(--weight-medium);
+  color: var(--text-muted);
+  /* Reserve the line's height so the layout does not jump by one line every
+     time the wording changes between turns. */
+  min-height: 1.6em;
+}
+
+.table__banner[data-mine='true'] {
+  color: var(--good);
+  font-weight: var(--weight-bold);
+}
+
+/* Last roll: no rolls left, so the only move is to commit a box — the one
+   moment in a turn with no way out. --warn (9.41:1 on --felt) rather than
+   --bad, because it is pressure, not an error.
+
+   Ordered AFTER the data-mine rule and matching on both attributes so it wins
+   on specificity as well as on source order: a last roll is always our own
+   turn, so both attributes are set and a single-attribute selector here would
+   depend on the rules staying in this order. */
+.table__banner[data-mine='true'][data-last-roll='true'] {
+  color: var(--warn);
+}
+
+.table__error {
+  /* Errors on the table are transient and usually about the move just tried, so
+     they sit directly under the scorecard where the tap happened. */
+  margin-top: var(--space-sm);
+}
+
+/* ── Game over ──────────────────────────────────────────────────────────
+ *
+ * The overlay, panel, focus trap and Escape handling all belong to Modal
+ * (modal.css) — this app's game-over sheet is a native <dialog>, not a
+ * hand-rolled overlay. What is left here is only the results list inside it.
+ */
+
+.table__results {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.table__result {
+  display: grid;
+  /* Name and detail share a column so a long name and a long breakdown line
+     wrap independently of the total, which stays hard-right and aligned. */
+  grid-template-columns: 1fr auto;
+  grid-template-areas:
+    'name total'
+    'detail total';
+  align-items: center;
+  gap: 0 var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  background: var(--felt-raised);
+  border: 1px solid transparent;
+}
+
+.table__result[data-won='true'] {
+  border-color: var(--accent);
+}
+
+.table__result-name {
+  grid-area: name;
+  font-size: var(--size-md);
+  font-weight: var(--weight-medium);
+  color: var(--text);
+}
+
+.table__result-detail {
+  grid-area: detail;
+  font-size: var(--size-xs);
+  color: var(--text-hint);
+}
+
+/* The final score is the payoff of the whole game and gets the type size the
+   ramp reserves for it (--size-display, "final score"), not the --size-xxl
+   used for the running totals in the seat strip. The two were the same size,
+   which made the end sheet read as just another row of in-progress numbers. */
+.table__result-total {
+  grid-area: total;
+  font-size: var(--size-display);
+  font-weight: var(--weight-heavy);
+  line-height: 1;
+  color: var(--text);
+  /* The digits are the widest thing in this column; tabular figures stop the
+     column width jumping between a 1-heavy and an 8-heavy score. */
+  font-variant-numeric: tabular-nums;
+}
+
+/* The winner's total, at the one size above everything else in the app. */
+.table__result[data-won='true'] .table__result-total {
+  font-size: var(--size-giant);
+  color: var(--accent);
+}
+
+/* Small phones: 96px of tabular digits plus a name does not fit 320px of
+   viewport, and the name would be ellipsised to nothing. Step both back one
+   rung rather than letting the row overflow the modal. */
+@media (max-width: 24rem) {
+  .table__result-total {
+    font-size: var(--size-xl);
+  }
+
+  .table__result[data-won='true'] .table__result-total {
+    font-size: var(--size-xxl);
+  }
+}

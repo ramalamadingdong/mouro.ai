@@ -1,0 +1,17 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: monthly }
+  - package-ecosystem: npm
+    directories: [/server, /games/yahtzee]
+    schedule: { interval: weekly }
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+  # The Expo apps are pinned to SDK 54 for Expo Go on iPhone (see their
+  # AGENTS.md), so only security updates are wanted there.
+  - package-ecosystem: npm
+    directories: [/games/backgammon, /games/gin-rummy]
+    schedule: { interval: weekly }
+    open-pull-requests-limit: 0

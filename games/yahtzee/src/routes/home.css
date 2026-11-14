@@ -1,0 +1,33 @@
+/* Home screen. Only what screen.css does not already cover. */
+
+.home {
+  /* Narrower than the game table: this is a form, and a 720px-wide text input
+     with a 44px height reads as a search bar rather than a name field. */
+  max-width: 26rem;
+  gap: var(--space-xl);
+}
+
+.home__header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  align-items: center;
+}
+
+.home__wordmark {
+  font-size: var(--size-xl);
+  font-weight: var(--weight-heavy);
+  /* Negative tracking at display sizes: system UI faces are spaced for body
+     text and look loose once they get this large. */
+  letter-spacing: -0.03em;
+  color: var(--accent);
+  text-align: center;
+}
+
+.home__actions {
+  gap: var(--space-md);
+}
+
+.home__resume {
+  border-color: var(--accent-dim);
+}

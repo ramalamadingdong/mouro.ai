@@ -1,0 +1,52 @@
+{
+  "expo": {
+    "name": "Gin Rummy",
+    "slug": "gin-rummy",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/cats-icon.png",
+    "scheme": "ginrummy",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.ramimouro.ginrummy",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "com.ramimouro.ginrummy",
+      "adaptiveIcon": {
+        "backgroundColor": "#0d271e",
+        "foregroundImage": "./assets/images/cats-icon.png"
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "output": "static",
+      "favicon": "./assets/images/cats-icon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#12362a",
+          "dark": {
+            "backgroundColor": "#0d271e"
+          }
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true,
+      "baseUrl": "/gin-rummy"
+    }
+  }
+}

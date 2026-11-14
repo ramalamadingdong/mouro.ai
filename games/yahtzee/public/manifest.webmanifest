@@ -1,0 +1,48 @@
+{
+  "_comment_paths": "start_url, scope and every icon src are RELATIVE ('./'). A manifest's relative URLs resolve against the manifest's own URL, which is /yahtzee/manifest.webmanifest, so they land on /yahtzee/ with no build-time substitution and no per-deployment edit. Absolute paths here would have to be kept in step with Vite's `base` by hand, and the failure is silent: the app still installs, but launches to the wrong scope.",
+  "_comment_no_sw": "There is deliberately NO service worker registered anywhere in this app, so it will not launch offline. That is the trade: a site redeployed this often is far more likely to strand a player on a stale cached bundle than to be opened with no network. Home-screen install, standalone display and the icons below all work without one.",
+  "name": "Yahtzee",
+  "short_name": "Yahtzee",
+  "description": "Play Yahtzee online with friends — no sign-up. Share a five-character room code, or pass one phone around the table.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#151828",
+  "background_color": "#151828",
+  "categories": ["games"],
+
+  "_comment_links": "The two members below exist for ONE flow: someone is sent an invite link (/yahtzee/join/ABCDE) and already has the app installed. 'handle_links: preferred' asks the browser to route in-scope links INTO the installed app rather than a browser tab, and 'navigate-existing' says that if the app is already open, point THAT window at the invite instead of opening a second copy — otherwise a player with the game open in the background gets a duplicate window and two live listeners on the same room. Both are Chromium-only (Android install, desktop Chrome/Edge). iOS ignores them: deep-linking into a home-screen web app is not possible at all, so an invite opened on iOS lands in Safari, which has SEPARATE storage from the installed app and therefore a different anonymous uid. Nothing in a manifest can change that — it is why the shared message carries the room code as text too, so an iOS user can open their app and type it.",
+  "handle_links": "preferred",
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
+  "icons": [
+    {
+      "_comment": "purpose 'any' — drawn as-is, so the artwork may run to the edges.",
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "_comment": "purpose 'maskable' — Android crops these to the launcher's shape, so the artwork must keep its subject inside the middle 80% safe zone. Listed as separate entries rather than 'any maskable' on one icon: a single icon claiming both makes the platform pick one interpretation, and it usually picks the one that gets padded twice.",
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
