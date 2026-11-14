@@ -166,3 +166,37 @@ export function sanitizeRoomCode(raw: string): string {
   // back to the whole string so trimming can never do worse than not trimming.
   return fromTail.length > 0 ? fromTail : keepAlphabetChars(s);
 }
+
+/**
+ * Pull a room code out of whatever landed in the code field: keystrokes, a
+ * whole pasted invite message, an invite link, or a code the phone's keyboard
+ * offers from a text message.
+ *
+ * `sanitizeRoomCode` already copes with a label or a link on ONE line, by
+ * cutting at the last separator. A full invite is three lines ending in
+ * `@host #CODE`, and other apps wrap it in their own text, so look for the
+ * code itself first:
+ *
+ *   1. after an explicit marker — "#AB3CD", ".../join/AB3CD", "code AB3CD";
+ *   2. otherwise a standalone five-character word that is a valid code AND
+ *      contains a digit, which is what tells a code from an ordinary word and
+ *      is something every generated code has (see `hasDigit`).
+ *
+ * Anything else is plain typing and goes to `sanitizeRoomCode` — unless it is
+ * far too long to be someone typing a code, in which case there is no code in
+ * it and an empty field is more honest than a guess.
+ */
+export function extractRoomCode(raw: string): string {
+  const upper = raw.toUpperCase();
+
+  const marked = /(?:#|\/JOIN\/|\bCODE\b[\s:=]*)([A-Z0-9]{5})(?![A-Z0-9])/g;
+  for (let m = marked.exec(upper); m !== null; m = marked.exec(upper)) {
+    if (isRoomCode(m[1]) && hasDigit(m[1])) return m[1];
+  }
+
+  for (const word of upper.split(/[^A-Z0-9]+/)) {
+    if (isRoomCode(word) && hasDigit(word)) return word;
+  }
+
+  return upper.trim().length > CODE_LENGTH * 3 ? '' : sanitizeRoomCode(raw);
+}

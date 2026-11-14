@@ -61,3 +61,40 @@ export function sanitizeCode(raw: string): string {
   }
   return out;
 }
+
+/**
+ * Pull a room code out of whatever landed in the code field.
+ *
+ * The field does not only receive keystrokes. It receives a whole pasted
+ * invite, an invite link, and whatever the phone's keyboard decides to offer
+ * from a text message — and `sanitizeCode` on its own turns all of those into
+ * the WRONG code, silently: filtering "Join my game — code AB3CD" keeps the
+ * first five alphabet characters it meets and yields "JNMYG", and a pasted link
+ * yields "HTTPS". So before filtering, look for the code itself:
+ *
+ *   1. after an explicit marker — "#AB3CD" (the autofill line of the invite),
+ *      ".../join/AB3CD", or "code AB3CD" / "code: AB3CD";
+ *   2. otherwise, a standalone five-character word that is a valid code AND
+ *      contains a digit. The digit test is what tells a code from an ordinary
+ *      five-letter word like "RUMMY", and every generated code has one (see
+ *      `hasDigit`).
+ *
+ * Only when neither is found is this plain typing, which falls through to
+ * `sanitizeCode` — unless the text is far too long to be someone typing a
+ * code, in which case there is no code in it and guessing would be worse than
+ * leaving the boxes empty.
+ */
+export function extractCode(raw: string): string {
+  const upper = raw.toUpperCase();
+
+  const marked = /(?:#|\/JOIN\/|\bCODE\b[\s:=]*)([A-Z0-9]{5})(?![A-Z0-9])/g;
+  for (let m = marked.exec(upper); m !== null; m = marked.exec(upper)) {
+    if (isRoomCode(m[1]) && hasDigit(m[1])) return m[1];
+  }
+
+  for (const word of upper.split(/[^A-Z0-9]+/)) {
+    if (isRoomCode(word) && hasDigit(word)) return word;
+  }
+
+  return upper.trim().length > CODE_LENGTH * 3 ? '' : sanitizeCode(raw);
+}
