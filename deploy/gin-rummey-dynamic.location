@@ -21,8 +21,14 @@
 # nginx checks exact (`=`) matches, then remembers the longest PREFIX match, then
 # tries regex locations in order — and the first matching regex WINS over the
 # remembered prefix. So this block takes precedence over `location /gin-rummey/`
-# without that block having to change at all. There are no other regex locations
-# in this server block, so there is no ordering hazard to reason about.
+# without that block having to change at all.
+#
+# The backgammon app (mouro.ai/backgammon) now installs an identical block for
+# its own prefix, so this is no longer the only regex location in the server
+# block. Order between them still does not matter, but for a stronger reason
+# than "there is only one": the two patterns are DISJOINT — one matches only
+# paths under /gin-rummey/, the other only under /backgammon/ — so no request
+# can match both, whichever is tried first.
 #
 # The pattern matches the ROOM-CODE SHAPE rather than a bare `.+` on purpose: a
 # malformed or truncated code then does NOT match here, falls through to the
