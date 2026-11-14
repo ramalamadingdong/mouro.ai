@@ -31,7 +31,7 @@ export default function RulesScreen() {
 
       <Section title="The goal">
         <P>
-          Move all fifteen of your checkers into your home board — the bottom-right quadrant on
+          Move all fifteen of your checkers into your home board — the bottom-left quadrant on
           your screen — then bear them off. First to take all fifteen off wins the game.
         </P>
       </Section>

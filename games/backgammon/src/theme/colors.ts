@@ -43,7 +43,7 @@ export const board = {
   pointDark: '#1b4d3e',
   /** Even-index points. */
   pointLight: '#c9bfa4',
-  /** Frame, bar and right rail. */
+  /** Frame, bar and tray rail. */
   frame: '#0d271e',
   /** Frame border / inlay. */
   inlay: '#9c8020',

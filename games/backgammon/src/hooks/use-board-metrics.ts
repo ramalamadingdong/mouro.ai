@@ -13,14 +13,17 @@
  * height, rather than picked and hoped for.
  *
  * ── The layout, in the viewer's own frame ────────────────────────────────────
- * You are always at the bottom. Own index 0 is the bottom-right point (what a
- * player calls their 1 point) and 23 is the top-right, so the path runs
- * anticlockwise: down the right side, along the top... and bears off into the
- * bottom-right tray. That is a real board, not a mirror of one.
+ * You are always at the bottom, and the board is laid out the way Tawleh is
+ * played: own index 0 is the bottom-LEFT point (what a player calls their 1
+ * point) and 23 is the top-left, so the path runs clockwise — along the top
+ * from left to right, down the right side, back along the bottom — and bears
+ * off into the bottom-left tray. The tray rail therefore sits on the LEFT edge,
+ * next to the home board. (Western backgammon apps usually draw the mirror
+ * image of this; do not "fix" it back.)
  *
- *   columns 0..5   left half      columns 6..11  right half
- *   bottom row     own 11..0      (column = 11 - own)
- *   top row        own 12..23     (column = own - 12)
+ *   rail | columns 0..5  left half | bar | columns 6..11  right half
+ *   bottom row     own 0..11      (column = own)
+ *   top row        own 23..12     (column = 23 - own)
  */
 import { useWindowDimensions } from 'react-native';
 
@@ -65,9 +68,13 @@ export interface BoardMetrics {
   barW: number;
   railW: number;
   ch: number;
+  /** Left edge of the play field (the rail sits to its left). */
+  fieldX: number;
+  /** Width of the play field: 12 points plus the bar. */
+  fieldW: number;
   /** Left edge of the bar column. */
   barX: number;
-  /** Left edge of the right rail. */
+  /** Left edge of the tray rail, which runs down the left side of the board. */
   railX: number;
   /** Vertical centre of the play field. */
   midY: number;
@@ -117,8 +124,10 @@ export function buildMetrics(scale: number, stretch = 1): BoardMetrics {
 
   const boardW = ptW * 12 + barW + railW;
   const boardH = triH * 2 + midH;
-  const barX = ptW * 6;
-  const railX = boardW - railW;
+  const railX = 0;
+  const fieldX = railW;
+  const fieldW = ptW * 12 + barW;
+  const barX = fieldX + ptW * 6;
   const midY = triH + midH / 2;
   const trayBarH = Math.max(3, 4 * scale);
   const cubeSize = Math.min(railW - 4 * scale, 22 * scale);
@@ -129,8 +138,8 @@ export function buildMetrics(scale: number, stretch = 1): BoardMetrics {
 
   const pointXY = (own: number): PointGeom => {
     const up = own < 12;
-    const col = up ? 11 - own : own - 12;
-    const x = col * ptW + (col >= 6 ? barW : 0);
+    const col = up ? own : 23 - own;
+    const x = fieldX + col * ptW + (col >= 6 ? barW : 0);
     const y = up ? boardH - triH : 0;
     return { x, y, col, up };
   };
@@ -188,6 +197,8 @@ export function buildMetrics(scale: number, stretch = 1): BoardMetrics {
     barW,
     railW,
     ch,
+    fieldX,
+    fieldW,
     barX,
     railX,
     midY,

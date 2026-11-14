@@ -108,14 +108,14 @@ export function BoardFrame({
       {/* Play field */}
       <View
         pointerEvents="none"
-        style={[styles.field, { width: m.barX + m.barW + m.ptW * 6, height: m.boardH }]}
+        style={[styles.field, { left: m.fieldX, width: m.fieldW, height: m.boardH }]}
       />
       {/* Bar */}
       <View
         pointerEvents="none"
         style={[styles.bar, { left: m.barX, width: m.barW, height: m.boardH }]}
       />
-      {/* Right rail */}
+      {/* Tray rail (left edge, beside the home board) */}
       <View
         pointerEvents="none"
         style={[styles.rail, { left: m.railX, width: m.railW, height: m.boardH }]}
@@ -345,7 +345,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     overflow: 'hidden',
   },
-  field: { position: 'absolute', left: 0, top: 0, backgroundColor: board.field },
+  field: { position: 'absolute', top: 0, backgroundColor: board.field },
   bar: { position: 'absolute', top: 0, backgroundColor: felt.tableDeep },
   rail: { position: 'absolute', top: 0, backgroundColor: felt.tableDeep },
   trayCount: {

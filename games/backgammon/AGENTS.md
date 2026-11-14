@@ -47,6 +47,10 @@ The game plays Middle-Eastern Tawleh, not American backgammon: **no doubling
 cube and no Crawford rule**; a win scores 1, a **mars** (loser bore off nothing)
 scores 2, and there is **no triple game**; the winner of the opening roll
 **rolls again** for the first turn. Movement rules are otherwise standard.
+The board is drawn the Tawleh way round: your home board is the bottom-LEFT
+quadrant, checkers travel clockwise, and the bear-off tray is on the left
+(`src/hooks/use-board-metrics.ts`). That is the mirror image of most Western
+apps and is intentional.
 `src/engine/__tests__/reference.test.ts` checks move generation against an
 independent implementation — keep it passing.
 
