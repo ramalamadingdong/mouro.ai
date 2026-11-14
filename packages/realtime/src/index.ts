@@ -206,7 +206,9 @@ export class RealtimeClient {
     if (this.wanted) {
       const delay = this.backoff;
       this.backoff = Math.min(this.backoff * 2, 15_000);
-      setTimeout(() => void this.open(), delay);
+      setTimeout(() => {
+        if (this.wanted) void this.open();
+      }, delay);
     }
   }
 
@@ -286,6 +288,18 @@ export class RealtimeClient {
     return () => {
       if (this.subs.delete(sid)) this.raw({ op: 'unsub', sid });
     };
+  }
+
+  /** Disconnect for good: no reconnects, pending requests rejected. */
+  close(): void {
+    this.wanted = false;
+    const ws = this.ws;
+    this.ws = null;
+    this.connected = false;
+    for (const p of this.pending.values()) p.reject(new RealtimeError('closed', 'Client closed'));
+    this.pending.clear();
+    this.subs.clear();
+    ws?.close();
   }
 
   watchConnected(cb: (c: boolean) => void): Unsubscribe {

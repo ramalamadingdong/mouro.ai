@@ -26,6 +26,7 @@ const repo = resolve(import.meta.dirname, '../..');
 const rules = (p) => new Rules(JSON.parse(readFileSync(join(repo, p), 'utf8')));
 
 let server;
+const clients = [];
 let url;
 let dir;
 
@@ -45,6 +46,7 @@ before(async () => {
 });
 
 after(() => {
+  for (const c of clients) c.close();
   server.close();
   rmSync(dir, { recursive: true, force: true });
 });
@@ -56,6 +58,7 @@ const memStorage = () => {
 
 async function player(database, storage = memStorage()) {
   const rt = initializeRealtime({ database, url, storage });
+  clients.push(rt.client);
   const { user } = await signInAnonymously(rt.auth);
   return { ...rt, uid: user.uid, storage };
 }
