@@ -33,7 +33,7 @@ www.mouro.ai {
 	}
 
 	# Content-hashed build output can be cached forever.
-	@hashed path_regexp hashed ^/(backgammon|gin-rummy)/_expo/static/|^/yahtzee/assets/
+	@hashed path_regexp hashed ^/(backgammon|gin-rummy)/_expo/static/|^/(yahtzee|holdem)/assets/
 	header @hashed Cache-Control "public, max-age=31536000, immutable"
 
 	# ── realtime server ─────────────────────────────────────────────────────
@@ -71,10 +71,16 @@ www.mouro.ai {
 		file_server
 	}
 
-	# ── Vite game ───────────────────────────────────────────────────────────
+	# ── Vite games ──────────────────────────────────────────────────────────
 	redir /yahtzee /yahtzee/ permanent
 	handle /yahtzee/* {
 		try_files {path} /yahtzee/index.html
+		file_server
+	}
+
+	redir /holdem /holdem/ permanent
+	handle /holdem/* {
+		try_files {path} /holdem/index.html
 		file_server
 	}
 

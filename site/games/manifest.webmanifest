@@ -1,10 +1,10 @@
 {
-  "_comment_scope": "The hub starts at /games/ but its scope is the whole origin. That is on purpose: the games live at /backgammon/, /gin-rummy/ and /yahtzee/, outside /games/, and with a narrower scope every tap on a game would bounce the installed hub into a browser overlay. Each game still has its own manifest and installs as its own app from its own page.",
+  "_comment_scope": "The hub starts at /games/ but its scope is the whole origin. That is on purpose: the games live at /backgammon/, /gin-rummy/, /yahtzee/ and /holdem/, outside /games/, and with a narrower scope every tap on a game would bounce the installed hub into a browser overlay. Each game still has its own manifest and installs as its own app from its own page.",
   "_comment_no_sw": "No service worker, same as the games: the hub will not launch offline, and in exchange nobody is ever stranded on a stale cached page.",
   "id": "/games/",
   "name": "Mouro Games",
   "short_name": "Games",
-  "description": "Backgammon, gin rummy, Yahtzee and Sudoku for family game night. No accounts, no ads.",
+  "description": "Texas Hold'em, backgammon, gin rummy, Yahtzee and Sudoku for family game night. No accounts, no ads.",
   "start_url": "/games/",
   "scope": "/",
   "display": "standalone",

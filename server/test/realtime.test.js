@@ -39,6 +39,7 @@ before(async () => {
       { name: 'gin-rummy', rules: rules('games/gin-rummy/database.rules.json'), reap: ['rooms'] },
       { name: 'backgammon', rules: rules('games/backgammon/database.rules.json'), reap: ['bgRooms'] },
       { name: 'yahtzee', rules: rules('games/yahtzee/database.rules.json'), reap: ['rooms'] },
+      { name: 'holdem', rules: rules('games/holdem/database.rules.json'), reap: ['rooms'] },
     ],
   });
   await new Promise((r) => server.http.listen(0, '127.0.0.1', r));
@@ -188,6 +189,112 @@ describe('yahtzee rules', () => {
     // you cannot seat someone else
     const other = await player('yahtzee');
     await denied(update(ref(other.db, `rooms/${code}`), { [`seats/${guest.uid}`]: `${now}|Imposter` }));
+  });
+});
+
+describe('holdem rules', () => {
+  // A structurally valid GameState for `uids`, as the engine would write it.
+  // The rules bound shape and authority, not poker, so the cards are arbitrary.
+  const holdemState = (uids, { version, toAct = null, by, kind }) => ({
+    version,
+    config: { startingStack: 2000, baseBigBlind: 20, blindUpEvery: 6 },
+    players: uids.map((uid, i) => ({
+      uid, name: `P${i}`, isHuman: true, stack: 1980, bet: 20, committed: 20, hole: [i * 2, i * 2 + 1],
+      inHand: true, folded: false, allIn: false, acted: false, sitOut: false,
+    })),
+    phase: 'preflop',
+    handNo: 1,
+    button: 0,
+    smallBlind: 10,
+    bigBlind: 20,
+    deck: [40, 41, 42, 43, 44],
+    currentBet: 20,
+    minRaise: 20,
+    ...(toAct === null ? { turnUid: '*' } : { toAct, turnUid: uids[toAct] }),
+    lastMove: { by, kind, seat: 0 },
+  });
+
+  async function table(code, seats = 3) {
+    const players = [];
+    for (let i = 0; i < seats; i++) players.push(await player('holdem'));
+    const [host] = players;
+    const now = Date.now();
+    await set(ref(host.db, `rooms/${code}`), {
+      meta: { host: host.uid, status: 'waiting', createdAt: now, updatedAt: now },
+      seats: { [host.uid]: `${now}|Host` },
+    });
+    for (const p of players.slice(1)) {
+      await update(ref(p.db, `rooms/${code}`), { [`seats/${p.uid}`]: `${now}|Guest`, 'meta/updatedAt': serverTimestamp() });
+    }
+    const uids = players.map((p) => p.uid);
+    const state = (p) => ref(p.db, `rooms/${code}/state`);
+    return { players, uids, state };
+  }
+
+  test('only the host deals the first hand; a room cannot be created with a state in it', async () => {
+    const { players: [host, guest], uids, state } = await table('HMD22');
+    await denied(set(state(guest), holdemState(uids, { version: 1, toAct: 1, by: guest.uid, kind: 'deal' })));
+    // the first write must be a deal stamped by the host
+    await denied(set(state(host), holdemState(uids, { version: 1, toAct: 1, by: host.uid, kind: 'fold' })));
+    await denied(set(state(host), holdemState(uids, { version: 1, toAct: 1, by: guest.uid, kind: 'deal' })));
+    await set(state(host), holdemState(uids, { version: 1, toAct: 1, by: host.uid, kind: 'deal' }));
+
+    const now = Date.now();
+    await denied(set(ref(host.db, 'rooms/HMD33'), {
+      meta: { host: host.uid, status: 'waiting', createdAt: now, updatedAt: now },
+      state: holdemState([host.uid, guest.uid], { version: 1, toAct: 0, by: host.uid, kind: 'deal' }),
+    }));
+  });
+
+  test('only the player on turn may move; version must rise; lastMove.by must be the writer', async () => {
+    const { players: [host, a, b], uids, state } = await table('HMD44');
+    await set(state(host), holdemState(uids, { version: 1, toAct: 1, by: host.uid, kind: 'deal' }));
+    // seat 2 and the host are seated but it is seat 1's turn
+    await denied(set(state(b), holdemState(uids, { version: 2, toAct: 2, by: b.uid, kind: 'call' })));
+    await denied(set(state(host), holdemState(uids, { version: 2, toAct: 2, by: host.uid, kind: 'call' })));
+    // seat 1: no replaying a version, no claiming someone else moved,
+    // no turnUid that disagrees with players[toAct]
+    await denied(set(state(a), holdemState(uids, { version: 1, toAct: 2, by: a.uid, kind: 'call' })));
+    await denied(set(state(a), holdemState(uids, { version: 2, toAct: 2, by: b.uid, kind: 'call' })));
+    await denied(set(state(a), { ...holdemState(uids, { version: 2, toAct: 2, by: a.uid, kind: 'call' }), turnUid: a.uid }));
+    await denied(set(state(a), { ...holdemState(uids, { version: 2, toAct: 2, by: a.uid, kind: 'call' }), junk: 1 }));
+    await set(state(a), holdemState(uids, { version: 2, toAct: 2, by: a.uid, kind: 'call' }));
+    // a deep write cannot slip past: version does not move
+    await denied(set(ref(b.db, 'rooms/HMD44/state/players/2/stack'), 999999));
+    // an outsider cannot read the hole cards of a game in progress, or write
+    const outsider = await player('holdem');
+    await denied(set(state(outsider), holdemState(uids, { version: 3, toAct: 0, by: outsider.uid, kind: 'call' })));
+    await update(ref(host.db, 'rooms/HMD44/meta'), { status: 'playing', updatedAt: serverTimestamp() });
+    await denied(get(state(outsider)));
+  });
+
+  test('between rounds (turnUid "*") any seated player may deal, but only deal', async () => {
+    const { players: [host, a, b], uids, state } = await table('HMD55');
+    await set(state(host), holdemState(uids, { version: 1, toAct: 0, by: host.uid, kind: 'deal' }));
+    await set(state(host), holdemState(uids, { version: 2, by: host.uid, kind: 'check' })); // round closed
+    // the open window is for dealer moves, not for betting on someone's behalf
+    await denied(set(state(b), holdemState(uids, { version: 3, toAct: 1, by: b.uid, kind: 'raise' })));
+    await set(state(b), holdemState(uids, { version: 3, toAct: 1, by: b.uid, kind: 'next' }));
+    // someone who gave up their seat has no say
+    await set(state(a), holdemState(uids, { version: 4, by: a.uid, kind: 'check' }));
+    await remove(ref(b.db, `rooms/HMD55/seats/${b.uid}`));
+    await denied(set(state(b), holdemState(uids, { version: 5, toAct: 0, by: b.uid, kind: 'next' })));
+    await set(state(a), holdemState(uids, { version: 5, toAct: 0, by: a.uid, kind: 'next' }));
+  });
+
+  test('away: another player may act for the one on turn only while their presence is gone', async () => {
+    const { players: [host, a, b], uids, state } = await table('HMD66');
+    await set(state(host), holdemState(uids, { version: 1, toAct: 1, by: host.uid, kind: 'deal' }));
+    const presence = ref(a.db, `rooms/HMD66/presence/${a.uid}`);
+    await set(presence, serverTimestamp());
+    // seat 1 is connected: nobody may act for them
+    await denied(set(state(b), holdemState(uids, { version: 2, toAct: 2, by: b.uid, kind: 'away' })));
+    await remove(presence);
+    // gone: allowed, but only as an `away` move, and only by a player at the table
+    await denied(set(state(b), holdemState(uids, { version: 2, toAct: 2, by: b.uid, kind: 'fold' })));
+    const outsider = await player('holdem');
+    await denied(set(state(outsider), holdemState(uids, { version: 2, toAct: 2, by: outsider.uid, kind: 'away' })));
+    await set(state(b), holdemState(uids, { version: 2, toAct: 2, by: b.uid, kind: 'away' }));
   });
 });
 

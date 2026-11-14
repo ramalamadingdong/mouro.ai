@@ -33,7 +33,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        game: [backgammon, gin-rummy, yahtzee]
+        game: [backgammon, gin-rummy, yahtzee, holdem]
     defaults:
       run:
         working-directory: games/${{ matrix.game }}
@@ -49,11 +49,14 @@ jobs:
       - run: npm test
       - name: Build
         run: |
-          if [ "${{ matrix.game }}" = yahtzee ]; then npm run build; else npx expo export --platform web; fi
+          case "${{ matrix.game }}" in
+            yahtzee|holdem) npm run build ;;
+            *)              npx expo export --platform web ;;
+          esac
       - name: Guard the sub-path build
         run: |
           case "${{ matrix.game }}" in
-            yahtzee) grep -q '/yahtzee/assets/' dist/index.html ;;
+            yahtzee|holdem) grep -q '/${{ matrix.game }}/assets/' dist/index.html ;;
             *)       grep -q '/${{ matrix.game }}/_expo/' dist/index.html ;;
           esac || { echo "dist is not sub-path aware"; exit 1; }
       - uses: actions/upload-artifact@v4

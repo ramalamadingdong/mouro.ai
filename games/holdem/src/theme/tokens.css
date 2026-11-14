@@ -1,0 +1,141 @@
+/*
+ * Design tokens — the canonical list. Every other stylesheet uses these names
+ * and invents no colours, sizes or durations of its own.
+ *
+ * Names state INTENT (`--wood-raised`, `--text-muted`), never value, so a
+ * palette change stays a one-file edit. The non-colour scales (space, radius,
+ * type, motion) are deliberately the same names and steps as the yahtzee app:
+ * the shared screens (join, lobby, code input) were ported from it and read
+ * these tokens unchanged.
+ *
+ * The palette is a card room at night, taken from the painting on the app
+ * icon: dark walnut for the page and panels, green baize for the table only,
+ * brass for anything you can press or that marks the action, cream for text.
+ *
+ * CONTRAST (WCAG: 4.5:1 body text, 3:1 large text). Ratios are measured
+ * against `--wood` (page), `--surface` (panels) and `--felt` (the table).
+ * The table is the hard case: mid-green is a poor background for coloured
+ * text, so ON THE FELT only `--text` is used bare; everything else sits on a
+ * dark plate (`--plate`).
+ */
+
+:root {
+  /* ---- Room surfaces --------------------------------------------------- */
+  /* The page background. Everything else is measured against this. */
+  --wood: #24160d;
+  /* A panel resting on the page: lobby rows, notices. */
+  --wood-raised: #33200f;
+  /* Recessed wells: inputs, the slider track. */
+  --wood-deep: #170d07;
+  /* Panels and modals. */
+  --surface: #3d2716;
+  /* Hover/selected surface, secondary buttons. */
+  --surface-raised: #4c321c;
+  /* Hairlines. 2.31:1 on --wood: DECORATION ONLY, never text. */
+  --border: #6e4d2c;
+
+  /* ---- The table ------------------------------------------------------- */
+  /* Baize. --text on it is 5.69:1; nothing else is legible enough bare. */
+  --felt: #1e6a45;
+  /* The centre of the cloth is lit by the lamp; the edge falls into shadow. */
+  --felt-light: #26805a;
+  --felt-dark: #134a30;
+  /* The padded wooden rail around the cloth. */
+  --rail: #5b351b;
+  --rail-light: #7a4a26;
+  /* Dark translucent plate behind any small text on the felt (names, stacks,
+     bets). Over --felt it composites to roughly #0f2a1d; --text on that is
+     ~13:1 and --accent ~7:1. */
+  --plate: rgb(10 8 6 / 0.62);
+
+  /* ---- Accent ---------------------------------------------------------- */
+  /* Brass. 8.12:1 on --wood, 6.47:1 on --surface, 3.03:1 on --felt (so on
+     the felt it is rings and borders, not text). */
+  --accent: #dba848;
+  /* Worn brass for borders and secondary accent text. 5.09:1 on --wood,
+     4.06:1 on --surface: large text or decoration there. */
+  --accent-dim: #b08232;
+  /* Polished brass: hover on the primary button, the "your turn" glow. */
+  --accent-bright: #f2c96a;
+
+  /* ---- Status ---------------------------------------------------------- */
+  /* Winners, confirmations. 10.13:1 on --wood. */
+  --good: #84d6a0;
+  /* Warnings, "away". 11.16:1 on --wood. */
+  --warn: #f2c96a;
+  /* Errors, the Fold button's text. 7.51:1 on --wood, 5.98:1 on --surface. */
+  --bad: #f28f78;
+
+  /* ---- Text ------------------------------------------------------------ */
+  /* Cream. 15.24:1 on --wood, 12.14:1 on --surface, 5.69:1 on --felt. */
+  --text: #f7eedc;
+  /* Secondary content. 10.66:1 on --wood, 8.5:1 on --surface. */
+  --text-muted: #d8c8a8;
+  /* Hints and helper prose. 7.59:1 on --wood, 6.05:1 on --surface. */
+  --text-hint: #bba888;
+  /* 4.1:1 on --wood, 3.27:1 on --surface. FAILS AA for body text —
+     DECORATION ONLY: placeholders, disabled glyphs. */
+  --text-faint: #8c775a;
+  /* Text on --accent. 8.19:1. */
+  --text-on-accent: #241505;
+
+  /* ---- Playing cards --------------------------------------------------- */
+  --card-face: #fbf6ea;
+  /* Hearts and diamonds. 5.48:1 on --card-face — a deep red, so it still
+     reads as "the red suits" for most colour-blind players by LIGHTNESS
+     against the near-black suits, not by hue alone. */
+  --card-red: #c0262b;
+  /* Spades and clubs. 16.24:1 on --card-face. */
+  --card-black: #1b1918;
+  /* Card backs: burgundy with a brass frame, like the painting. */
+  --card-back: #7c1f25;
+  --card-back-dark: #5a1419;
+
+  /* ---- Space (rem, so --ui-scale scales layout with type) -------------- */
+  --space-xs: 0.25rem; /* 4px */
+  --space-sm: 0.5rem; /* 8px */
+  --space-md: 0.75rem; /* 12px */
+  --space-lg: 1rem; /* 16px */
+  --space-xl: 1.5rem; /* 24px */
+  --space-xxl: 2rem; /* 32px */
+  --space-section: 3rem; /* 48px */
+
+  /* ---- Radius ---------------------------------------------------------- */
+  --radius-sm: 4px; /* small cards, chips of text */
+  --radius-md: 8px; /* buttons, inputs, cards */
+  --radius-lg: 14px; /* panels */
+  --radius-xl: 22px; /* modals */
+  --radius-pill: 999px;
+
+  /* ---- Type ------------------------------------------------------------ */
+  --size-xs: 0.6875rem; /* 11px — seat stacks, badges */
+  --size-sm: 0.8125rem; /* 13px — secondary text */
+  --size-body: 0.9375rem; /* 15px */
+  --size-label: 1rem; /* 16px — inputs and buttons; iOS zooms inputs under 16px */
+  --size-md: 1.125rem; /* 18px */
+  --size-lg: 1.375rem; /* 22px — section headings */
+  --size-title: 1.75rem; /* 28px — page titles */
+  --size-xl: 2.125rem; /* 34px — the wordmark */
+  --size-hero: 4.5rem; /* 72px — the room code in the lobby */
+
+  --weight-medium: 500;
+  --weight-bold: 700;
+  --weight-heavy: 800;
+  /* Headings use a serif: it is most of what makes the room feel like brass
+     plates and old wood instead of an app. System fonts only — no webfont
+     request on a page that should paint instantly. */
+  --font-display: 'Iowan Old Style', 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif;
+
+  /* ---- Motion ---------------------------------------------------------- */
+  --dur-fast: 120ms; /* press feedback */
+  --dur-base: 220ms; /* cards arriving, badges */
+  --dur-slow: 420ms; /* modal entrance, chips to the winner */
+  --ease: cubic-bezier(0.2, 0.8, 0.25, 1);
+
+  /* ---- Layout ---------------------------------------------------------- */
+  /* Kept for parity with the ported screens; nothing writes it here, the
+     table sizes itself from the viewport with CSS alone. */
+  --ui-scale: 1;
+  /* Forms and the table never get wider than this; on desktop they centre. */
+  --table-max-width: 560px;
+}

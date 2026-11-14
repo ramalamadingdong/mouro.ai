@@ -3,13 +3,14 @@
   "private": true,
   "description": "mouro.ai — personal site, family games, and the realtime server behind them",
   "scripts": {
-    "setup": "npm ci --prefix server && npm ci --prefix games/backgammon && npm ci --prefix games/gin-rummy && npm ci --prefix games/yahtzee",
-    "build": "npm run build:backgammon && npm run build:gin-rummy && npm run build:yahtzee",
+    "setup": "npm ci --prefix server && npm ci --prefix games/backgammon && npm ci --prefix games/gin-rummy && npm ci --prefix games/yahtzee && npm ci --prefix games/holdem",
+    "build": "npm run build:backgammon && npm run build:gin-rummy && npm run build:yahtzee && npm run build:holdem",
     "build:backgammon": "cd games/backgammon && npx expo export --platform web",
     "build:gin-rummy": "cd games/gin-rummy && npx expo export --platform web",
     "build:yahtzee": "npm run build --prefix games/yahtzee",
-    "typecheck": "npx -y -p typescript@5.9 tsc -p packages/realtime && npm run typecheck --prefix games/backgammon && npm run typecheck --prefix games/gin-rummy && npm run typecheck --prefix games/yahtzee",
-    "test": "npm test --prefix server && npm test --prefix games/backgammon && npm test --prefix games/gin-rummy && npm test --prefix games/yahtzee",
+    "build:holdem": "npm run build --prefix games/holdem",
+    "typecheck": "npx -y -p typescript@5.9 tsc -p packages/realtime && npm run typecheck --prefix games/backgammon && npm run typecheck --prefix games/gin-rummy && npm run typecheck --prefix games/yahtzee && npm run typecheck --prefix games/holdem",
+    "test": "npm test --prefix server && npm test --prefix games/backgammon && npm test --prefix games/gin-rummy && npm test --prefix games/yahtzee && npm test --prefix games/holdem",
     "preview": "node --disable-warning=ExperimentalWarning scripts/preview.mjs",
     "server": "npm start --prefix server"
   },

@@ -24,6 +24,7 @@ const dirs = {
   backgammon: join(repo, 'games/backgammon/dist'),
   'gin-rummy': join(repo, 'games/gin-rummy/dist'),
   yahtzee: join(repo, 'games/yahtzee/dist'),
+  holdem: join(repo, 'games/holdem/dist'),
   site: join(repo, 'site'),
 };
 
@@ -63,13 +64,14 @@ function firstFile(root, candidates) {
 }
 
 function resolveFile(pathname) {
-  const m = pathname.match(/^\/(backgammon|gin-rummy|yahtzee)(\/.*)?$/);
+  const m = pathname.match(/^\/(backgammon|gin-rummy|yahtzee|holdem)(\/.*)?$/);
   if (m) {
     const [, app, rest = '/'] = m;
     const root = dirs[app];
     const dyn = rest.match(/^\/(join|lobby|game)\/[A-HJKMNP-Z2-9]{5}\/?$/);
-    if (dyn && app !== 'yahtzee') return firstFile(root, [`/${dyn[1]}/[code].html`, '/index.html']);
-    if (app === 'yahtzee') return firstFile(root, [rest, '/index.html']);
+    const vite = app === 'yahtzee' || app === 'holdem';
+    if (dyn && !vite) return firstFile(root, [`/${dyn[1]}/[code].html`, '/index.html']);
+    if (vite) return firstFile(root, [rest, '/index.html']);
     return firstFile(root, [rest, `${rest}.html`, `${rest}/index.html`, '/index.html']);
   }
   return firstFile(dirs.site, [pathname, `${pathname}/index.html`, `${pathname}.html`]);
@@ -88,7 +90,7 @@ const server = createServer((req, res) => {
   }
   const old = p.match(/^\/gin-rummey(\/.*)?$/);
   if (old) return res.writeHead(301, { location: `/gin-rummy${old[1] ?? '/'}${url.search}` }).end();
-  if (/^\/(backgammon|gin-rummy|yahtzee)$/.test(p)) return res.writeHead(301, { location: `${p}/` }).end();
+  if (/^\/(backgammon|gin-rummy|yahtzee|holdem)$/.test(p)) return res.writeHead(301, { location: `${p}/` }).end();
   const file = resolveFile(p);
   if (!file) return res.writeHead(404).end('not found');
   res.writeHead(200, { 'content-type': types[extname(file)] ?? 'application/octet-stream' });
@@ -107,4 +109,5 @@ server.on('upgrade', (req, socket, head) => {
   socket.on('error', () => up.destroy());
 });
 
-server.listen(port, () => console.log(`preview on http://localhost:${port}`));
+// Loopback only: this serves a throwaway realtime server with a fixed secret.
+server.listen(port, '127.0.0.1', () => console.log(`preview on http://localhost:${port}`));
