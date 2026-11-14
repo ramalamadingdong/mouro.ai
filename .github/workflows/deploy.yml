@@ -1,25 +1,81 @@
 name: Deploy
 
+# Every push to main is tested by CI, then deployed to the VPS:
+#   site/ and each game's dist/  → /srv/mouro.ai/<app>        (static, via Caddy)
+#   infra/                       → /srv/mouro.ai/infra        (Caddyfile, unit)
+#   server/ + rules files        → /opt/mouro/realtime         (systemd service)
+# Uploads land in *.new directories; infra/activate.sh swaps them into place.
+
 on:
   push:
-    branches:
-      - master
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
 
 jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
   deploy:
+    needs: ci
     runs-on: ubuntu-latest
+    environment: production
     steps:
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.0.3
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
         with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          port: ${{ secrets.SSH_PORT || 22 }}
-          script: |
-            set -e
-            cd /home/rami/mouro.ai
-            git checkout master
-            git pull --ff-only origin master
-            sudo systemctl restart gunicorn
-            sudo systemctl restart nginx
+          pattern: dist-*
+
+      - name: Assemble upload
+        run: |
+          set -euo pipefail
+          mkdir -p out/web out/rt/server out/rt/games
+          cp -r site out/web/site
+          for g in backgammon gin-rummy yahtzee; do
+            cp -r "dist-$g" "out/web/$g"
+            mkdir -p "out/rt/games/$g"
+            cp "games/$g/database.rules.json" "out/rt/games/$g/"
+          done
+          cp -r infra out/web/infra
+          cp -r server/src server/games.json server/package.json server/package-lock.json out/rt/server/
+
+      - name: SSH setup
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_deploy && chmod 600 ~/.ssh/id_deploy
+          # Pinned host key (ssh-keyscan output captured once, by hand) — never
+          # trust-on-first-use from CI.
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      - name: Upload
+        env:
+          HOST: ${{ secrets.DEPLOY_HOST }}
+        run: |
+          set -euo pipefail
+          SSH="ssh -i ~/.ssh/id_deploy -o BatchMode=yes"
+          for d in out/web/*; do
+            app=$(basename "$d")
+            rsync -rlz --delete --chmod=D755,F644 -e "$SSH" "$d/" "deploy@$HOST:/srv/mouro.ai/$app.new/"
+          done
+          rsync -rlz --delete --chmod=D755,F644 -e "$SSH" out/rt/ "deploy@$HOST:/opt/mouro/realtime.new/"
+
+      - name: Activate
+        env:
+          HOST: ${{ secrets.DEPLOY_HOST }}
+        run: ssh -i ~/.ssh/id_deploy -o BatchMode=yes "deploy@$HOST" 'bash /srv/mouro.ai/infra.new/activate.sh'
+
+      - name: Smoke test
+        run: |
+          set -euo pipefail
+          for u in / /backgammon/ /gin-rummy/ /yahtzee/ /rt/health; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "https://mouro.ai$u")
+            echo "$u → $code"; [ "$code" = 200 ]
+          done
+          [ "$(curl -s -o /dev/null -w '%{http_code}' https://mouro.ai/gin-rummey/)" = 301 ]

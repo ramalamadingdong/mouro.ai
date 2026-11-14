@@ -5,7 +5,7 @@ A no-signup online Yahtzee, shipped as a static PWA at
 
 - **Online, 1–4 players.** The host creates a room and shares a five-character
   code or an invite link. No account, no email — identity is an anonymous
-  Firebase uid held in the browser.
+  uid held in the browser.
 - **Pass-and-play.** One device, 1–4 seats, no network at all. It runs the same
   reducer and the same screens as an online game.
 - **Installable.** Add it to your home screen and it opens standalone. There is
@@ -14,10 +14,10 @@ A no-signup online Yahtzee, shipped as a static PWA at
   redeployed often.
 
 Stack: Vite + React 19 + TypeScript (strict), React Router v7, zustand v5,
-Firebase JS SDK v12 (Realtime Database + Anonymous Auth, Spark plan), plain CSS
+the mouro.ai realtime server via `@mouro/realtime`, plain CSS
 custom properties, Vitest. No native app, no Expo, no React Native, no CSS-in-JS.
 
-`src/engine/` is pure TypeScript with zero React / Firebase / DOM imports, and
+`src/engine/` is pure TypeScript with zero React / network / DOM imports, and
 it is where the tests live — including a 2,000-game fuzz suite. See `AGENTS.md`
 for the project's non-negotiables and `DESIGN.md` for the data model.
 
@@ -40,25 +40,21 @@ Because `base` is `/yahtzee/`, the app lives at
 `http://localhost:5173/yahtzee/` in dev too. Vite 302-redirects the bare root
 there for you, so either URL works.
 
-### Online play needs a `.env`
+### Online play
 
-```bash
-cp .env.example .env    # then paste your Firebase web config
-```
+Online play runs on the mouro.ai realtime server (`../../server`) through
+`@mouro/realtime` — a Firebase-shaped API (`ref`, `runTransaction`, `onValue`,
+`onDisconnect`, anonymous auth) over a WebSocket, stored in SQLite. There is no
+third-party backend and nothing to sign up for.
 
-Restart `npm run dev` afterwards — Vite reads `.env` at server start, not per
-request. `.env.example` documents every variable and which two actually gate
-connectivity.
+- **Web:** nothing to configure — the page talks to `/rt` on its own host.
+- **Locally:** `npm start` in `../../server`, then point the URL at
+  `ws://localhost:8787/rt` via `VITE_REALTIME_URL`. Or build everything and run
+  `npm run preview` at the repo root to get the whole site on one port.
 
-**Without a `.env` the app still builds and runs.** `isFirebaseConfigured` is
-false, online play is disabled in the UI, and **pass-and-play works exactly as
-normal** because it never touches the network. An unconfigured build is a real,
-shippable thing — just probably not the one you meant.
-
-The Firebase web config is **not a secret**. It ships inside every client bundle
-by definition; security is enforced by `firebase/database.rules.json`. `.env` is
-git-ignored so the repo doesn't point at a live backend, not because leaking it
-would be a breach.
+The security rules are `database.rules.json` in this folder (Firebase rules
+syntax). The server evaluates them on every read and write; they ship with the
+server, so there is no separate rules deploy.
 
 ### Testing the PWA install
 
@@ -121,82 +117,21 @@ returns HTTP 200.
 
 ## Deploying
 
-Two paths, same result. Neither touches DNS, TLS or Cloudflare — the tunnel
-already covers every path under mouro.ai, so a new sub-path needs zero
-certificate work.
-
-**Manual, from your working tree** (no commit or push needed):
-
-```bash
-npm run deploy                          # = bash scripts/deploy-web.sh
-bash scripts/deploy-web.sh --skip-typecheck
-```
-
-It typechecks, tests, builds, then tars `dist/` over SSH to the NUC and swaps it
-into `/home/rami/yahtzee/` with a single `mv`, so the live directory is never
-half-written. It probes several addresses for the NUC because the box has no one
-stable address; override with `NUC_SSH=user@host`.
-
-**Automatic, on push:** `.github/workflows/deploy-web.yml` runs on every push to
-`master` (and on `workflow_dispatch`), builds with the `VITE_FIREBASE_*` repo
-secrets, and rsyncs `dist/` to the same directory. If a secret is unset the
-build still succeeds and ships with online play disabled.
-
-### One-time nginx install
-
-Before the first-ever deploy, the nginx location block has to exist on the NUC.
-Copy the whole `deploy/` directory to the box and run it there, once:
-
-```bash
-sudo bash install-nginx.sh
-```
-
-It injects `deploy/yahtzee.location` ahead of the Django catch-all proxy,
-validates with `nginx -t`, and automatically restores its backup if validation
-fails, so a bad edit cannot take mouro.ai down. It is idempotent — a second run
-detects the existing block and exits cleanly. After it succeeds, deploys are
-pure file syncs and never touch nginx again.
-
-If a deploy reports the site returning something other than 200, this is the
-first thing to check.
-
-### Database rules deploy SEPARATELY
-
-Neither deploy path ships `firebase/database.rules.json`. Nothing in this repo
-does. Rules go up on their own:
-
-```bash
-firebase deploy --only database
-```
-
-**Until you run that, every write the rules are supposed to authorise is
-denied — and mostly silently.** The default rules on a new project reject the
-whole game path, and RTDB reports that asynchronously: presence, dice holds,
-rematch votes and room cleanup swallow the rejection by design (they are
-cosmetic and must never interrupt a game), so the symptom is not an error
-message. It is a room that never appears, an opponent who never shows as online,
-and a move that appears to land and then reverts. If online play is inexplicably
-inert against a correctly configured project, deploy the rules.
-
-`firebase/RULES.md` explains what every rule enforces and why — RTDB rules files
-reject comments, so the reasoning lives next door. Read changes critically:
-there is no emulator run in this project, and a broken rule fails as permission
-denied everywhere, which looks exactly like a bug in the app.
+Pushing to `main` deploys: the repo's GitHub Actions workflow builds every app
+and the server, and rsyncs the result to the VPS. See the root README.
 
 ## Layout
 
 ```
 src/
-  engine/     pure TS — no React, no Firebase, no DOM. All the tests live here.
-  fb/         config, firebase, auth, rooms, presence
+  engine/     pure TS — no React, no network, no DOM. All the tests live here.
+  net/        config, realtime, auth, rooms, presence
   store/      gameStore (online), localStore (pass-and-play), settingsStore
   theme/      tokens.css (:root custom properties) + tokens.ts (as const mirror)
   util/       seed.ts — crypto.getRandomValues, room codes
 public/       manifest.webmanifest, favicon.svg, icons/
-firebase/     database.rules.json + RULES.md
-scripts/      deploy-web.sh, make-icons.mjs
-deploy/       one-time nginx block + installer (run on the NUC)
-.github/workflows/deploy-web.yml
+database.rules.json + RULES.md   security rules, enforced by ../../server
+scripts/      make-icons.mjs
 ```
 
 `src/theme/tokens.css` and `src/theme/tokens.ts` are mirrored **by hand** and

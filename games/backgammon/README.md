@@ -3,9 +3,9 @@
 Two-player online backgammon with no sign-up, plus a computer opponent that
 works offline. Live at **https://mouro.ai/backgammon**.
 
-A sibling of the gin rummy app at `../gin-rummey`, built to the same
-architecture: a pure TypeScript rules engine, Firebase Realtime Database for
-sync, and an Expo Go-compatible PWA served from a home NUC.
+A sibling of the gin rummy app at `../gin-rummy`, built to the same
+architecture: a pure TypeScript rules engine, the mouro.ai realtime server for
+sync, and an Expo Go-compatible PWA.
 
 Full match play: the doubling cube, gammons and backgammons, matches to a set
 number of points, and the Crawford rule.
@@ -14,19 +14,19 @@ number of points, and the Crawford rule.
 
 ```bash
 npm install
-cp .env.example .env     # paste your Firebase web config (see below)
+cp .env.example .env     # only needed for native builds (see below)
 npx expo start
 ```
 
 Playing the computer works without any of that — solo mode is entirely offline
-and never touches Firebase.
+and never touches the network.
 
 ## Layout
 
 ```
-src/engine/      the rules. Pure TypeScript, no React/Firebase/Expo. 148 tests.
+src/engine/      the rules. Pure TypeScript, no React/network/Expo. 148 tests.
 src/ai/          the computer opponent. Pure TypeScript, no Math.random.
-src/fb/          Firebase singletons, anonymous auth, presence, room lifecycle.
+src/net/         realtime singletons, anonymous auth, presence, room lifecycle.
 src/store/       zustand: gameStore (online), soloStore (offline), settings.
 src/components/  board/ is the table; ui/ is buttons, screens, the code input.
 src/hooks/       board geometry, the staged turn, motion, reduced-motion.
@@ -65,41 +65,30 @@ That check lives in `normalize()` on both clients.
 
 **The dice are client-authoritative.** Each roll carries a seed supplied by the
 player rolling it, so a modified client could grind seeds for good rolls and the
-other side could not tell. This is accepted, not overlooked: it is the only
-model compatible with a free Spark-plan backend and no Cloud Functions, and the
-app is for casual games between friends. A commit-reveal scheme (both sides
+other side could not tell. This is accepted, not overlooked: it was the only
+model compatible with the original serverless backend, and the app is for casual
+games between friends. Now that the realtime server exists, server-side rolls
+would be the clean fix. A commit-reveal scheme (both sides
 commit `hash(nonce)` before the roll, dice derived from both) would close it at
 the cost of two extra writes per turn, and would make a good opt-in "fair dice"
 room setting.
 
-## Firebase
+## Online play
 
-This app **shares the `gin-rummey` Firebase project** with the gin rummy app,
-under new top-level nodes `bgRooms/` and `bgMatches/`. The same eight
-`EXPO_PUBLIC_FIREBASE_*` values go in `.env`.
+Online play runs on the mouro.ai realtime server (`../../server`) through
+`@mouro/realtime` — a Firebase-shaped API (`ref`, `runTransaction`, `onValue`,
+`onDisconnect`, anonymous auth) over a WebSocket, stored in SQLite. There is no
+third-party backend and nothing to sign up for.
 
-The rules file that is actually deployed lives in the gin rummy repo. See
-[firebase/README.md](firebase/README.md) — in short: edit
-`../gin-rummey/firebase/database.rules.json`, deploy from there, and copy it
-back here. `npm run check:rules` fails if the mirror drifts. There is
-deliberately no `firebase.json` in this repo.
+- **Web:** nothing to configure — the page talks to `/rt` on its own host.
+- **Native (Expo Go / EAS):** set `EXPO_PUBLIC_REALTIME_URL` (see `.env.example`).
+- **Locally:** `npm start` in `../../server`, then point the URL at
+  `ws://<your-LAN-ip>:8787/rt`. Or build everything and run
+  `npm run preview` at the repo root to get the whole site on one port.
 
-Data model:
-
-```
-bgRooms/<CODE>
-  meta      { host, hostName, guest?, guestName?, status, createdAt, updatedAt, target? }
-  presence  { <uid>: { online, lastSeen } }
-  state     <GameState>            written whole, by transaction
-  rematch   { <uid>: true }
-  emotes    { <uid>: { emoji, n } }
-
-bgMatches/<CODE-createdAt>         archive, outside the 24h room reaper
-  meta / players / initial / log: { <version>: { seat, move } }
-```
-
-`initial` plus the ordered `log` replays a whole match exactly: the opening
-position is fixed and every random event rides inside a move.
+The security rules are `database.rules.json` in this folder (Firebase rules
+syntax). The server evaluates them on every read and write; they ship with the
+server, so there is no separate rules deploy.
 
 ## Web / PWA
 
@@ -111,23 +100,13 @@ There is deliberately **no service worker**, so there is no stale-cache class of
 bug. `metro.config.js` disables Metro package exports on purpose; removing that
 line breaks the web build. Both are explained in place.
 
-Dynamic routes (`/join/<CODE>`) need a small nginx regex block, because Expo
-prerenders them to files literally named `[code].html`. See `deploy/`.
+Dynamic routes (`/join/<CODE>`) need a small rewrite, because Expo prerenders
+them to files literally named `[code].html`. It lives in `../../infra/Caddyfile`.
 
 ## Deploying
 
-```bash
-bash scripts/deploy-web.sh
-```
-
-Builds, typechecks, and atomically swaps the export into `/home/rami/backgammon`
-on the NUC. Pushing to `master` does the same through GitHub Actions.
-
-First time on a fresh box, once, after the first deploy:
-
-```bash
-sudo bash /home/rami/deploy-backgammon/install-nginx.sh
-```
+Pushing to `main` deploys: the repo's GitHub Actions workflow builds every app
+and the server, and rsyncs the result to the VPS. See the root README.
 
 ## Rules that are deliberately not implemented
 

@@ -11,9 +11,9 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { isFirebaseConfigured } from '@/fb/config';
-import { retryAuth, useAuth } from '@/fb/auth';
-import { joinRoom } from '@/fb/rooms';
+import { isOnlineConfigured } from '@/net/config';
+import { retryAuth, useAuth } from '@/net/auth';
+import { joinRoom } from '@/net/rooms';
 import { useSettingsStore } from '@/store/settingsStore';
 import { isRoomCode, sanitizeRoomCode, CODE_LENGTH } from '@/util/seed';
 import { CodeInput } from '@/components/code-input';
@@ -88,8 +88,8 @@ export function JoinRoute() {
     void join(linkCode);
   }, [linkCode, uid, join]);
 
-  const connecting = isFirebaseConfigured && uid === null && !authError;
-  const ready = isFirebaseConfigured && uid !== null;
+  const connecting = isOnlineConfigured && uid === null && !authError;
+  const ready = isOnlineConfigured && uid !== null;
   const canSubmit = ready && !joining && isRoomCode(sanitizeRoomCode(code));
 
   return (
@@ -157,14 +157,14 @@ export function JoinRoute() {
           </div>
         )}
 
-        {!isFirebaseConfigured && (
+        {!isOnlineConfigured && (
           <p className="notice">
             Online play is not available in this build, so there is no room to join.{' '}
             <strong>Pass and play</strong> on the home screen works without a connection.
           </p>
         )}
 
-        {isFirebaseConfigured && authError && (
+        {isOnlineConfigured && authError && (
           <div className="notice notice--bad">
             <p>{authError}</p>
             <div className="notice__actions">

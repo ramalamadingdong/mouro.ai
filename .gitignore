@@ -1,13 +1,16 @@
-.venv/
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-*.sqlite3
+node_modules/
+dist/
+.expo/
+coverage/
+web-build/
 *.log
 .env
 .env.*
-staticfiles/
-media/
-.vscode/
+!.env.example
 .DS_Store
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# realtime server state (local dev)
+server/data/

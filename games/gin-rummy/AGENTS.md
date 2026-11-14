@@ -9,13 +9,17 @@ before writing any code.
   Store **Expo Go**, which currently supports SDK 54; there is no Mac to fall
   back on for a custom native build.
 - **Expo Go compatible only.** No custom native code, no config plugins that add
-  native modules. For Firebase use ONLY the JS Web SDK (`firebase@^12`,
-  modular API). NEVER `@react-native-firebase/*`.
-- **Backend = Firebase Realtime Database + Anonymous Auth**, free Spark plan, no
-  Cloud Functions. Client-authoritative game logic (casual play between friends).
+  native modules.
+- **Backend = the mouro.ai realtime server** (`../../server`), reached through
+  `@mouro/realtime` (`../../packages/realtime`): a Firebase-RTDB-shaped API —
+  `ref`, `get`, `set`, `update`, `onValue`, `runTransaction`, `onDisconnect`,
+  anonymous auth — over a WebSocket, backed by SQLite on the VPS. Firebase is
+  gone; do NOT re-add the `firebase` package or `@react-native-firebase/*`.
+  Client-authoritative game logic (casual play between friends); the server
+  enforces `database.rules.json` (same syntax as Firebase rules).
 - **Path alias:** `@/*` → `./src/*`. Source lives under `src/`; routes under
   `src/app/` (expo-router v6).
-- **The engine (`src/engine/`) is pure TypeScript** — no React/Firebase/Expo
+- **The engine (`src/engine/`) is pure TypeScript** — no React/network/Expo
   imports — and is unit-tested with Jest (`npm test`).
 
 ## Verify before finishing

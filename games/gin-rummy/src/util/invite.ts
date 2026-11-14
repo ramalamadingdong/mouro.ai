@@ -10,7 +10,7 @@ import { Platform } from 'react-native';
  * constant most). So the coupling is manual: change one, change the other. It is
  * also called out in the README's invite-link section.
  */
-export const WEB_BASE_PATH = '/gin-rummey';
+export const WEB_BASE_PATH = '/gin-rummy';
 
 /** Where the PWA lives publicly — the fallback origin for native shares. */
 export const SITE_ORIGIN = 'https://mouro.ai';
@@ -18,7 +18,7 @@ export const SITE_ORIGIN = 'https://mouro.ai';
 /**
  * An absolute https URL that opens the join screen with `code` prefilled.
  *
- * Deliberately NOT a `ginrummey://` deep link, even though the recipient USUALLY
+ * Deliberately NOT a `ginrummy://` deep link, even though the recipient USUALLY
  * DOES have the app — a scheme link would only help a device with a native build
  * registered for it, and there is no native build (Expo Go only, see AGENTS.md).
  * What people actually have installed is the PWA, and for that an https URL is

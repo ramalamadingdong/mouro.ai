@@ -1,11 +1,11 @@
 {
   "expo": {
     "name": "Gin Rummy",
-    "slug": "gin-rummey",
+    "slug": "gin-rummy",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/cats-icon.png",
-    "scheme": "ginrummey",
+    "scheme": "ginrummy",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "ios": {
@@ -46,7 +46,7 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true,
-      "baseUrl": "/gin-rummey"
+      "baseUrl": "/gin-rummy"
     }
   }
 }

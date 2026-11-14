@@ -12,9 +12,9 @@ import { useRouter } from 'expo-router';
 import { CardBack } from '@/components/card-back';
 import { Button } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
-import { retryAuth, useAuth } from '@/fb/auth';
-import { isFirebaseConfigured } from '@/fb/config';
-import { createRoom } from '@/fb/rooms';
+import { retryAuth, useAuth } from '@/net/auth';
+import { isOnlineConfigured } from '@/net/config';
+import { createRoom } from '@/net/rooms';
 import { useSettingsStore } from '@/store/settingsStore';
 import { accent, felt, text } from '@/theme/colors';
 import { mono } from '@/theme/typography';
@@ -45,7 +45,7 @@ export default function HomeScreen() {
     return trimmed.length > 0 ? trimmed : 'Player';
   };
 
-  const ready = isFirebaseConfigured && uid !== null;
+  const ready = isOnlineConfigured && uid !== null;
   const actionsDisabled = !ready || creating;
 
   const handleCreate = async () => {
@@ -89,7 +89,7 @@ export default function HomeScreen() {
       <Text style={styles.title}>Gin Rummy</Text>
       <Text style={styles.subtitle}>Two-player online · or vs computer</Text>
 
-      {!isFirebaseConfigured && (
+      {!isOnlineConfigured && (
         <View style={styles.notice}>
           <Text style={styles.noticeTitle}>Firebase not configured</Text>
           <Text style={styles.noticeBody}>
@@ -200,14 +200,14 @@ export default function HomeScreen() {
         </View>
       )}
 
-      {isFirebaseConfigured && uid === null && !authError && (
+      {isOnlineConfigured && uid === null && !authError && (
         <View style={styles.connecting}>
           <ActivityIndicator size="small" color={accent.gold} />
           <Text style={styles.connectingText}>connecting…</Text>
         </View>
       )}
 
-      {isFirebaseConfigured && authError && (
+      {isOnlineConfigured && authError && (
         <View style={styles.authError}>
           <Text style={styles.authErrorTitle}>Can’t connect</Text>
           <Text style={styles.authErrorBody}>{authError}</Text>

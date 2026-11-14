@@ -8,7 +8,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 // worklets — every animation in this app is plain RN `Animated`.
 import 'react-native-reanimated';
 
-import { ensureAnonymousAuth } from '@/fb/auth';
+import { ensureAnonymousAuth } from '@/net/auth';
 import { felt } from '@/theme/colors';
 
 const navTheme = {

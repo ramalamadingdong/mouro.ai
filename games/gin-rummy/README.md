@@ -2,11 +2,11 @@
 
 A cross-platform (Android, iOS, and **web**) online **2-player gin rummy** game
 built with Expo / React Native. No sign-up: one player creates a game and gets a
-short room code, the other enters it. Real-time play runs on Firebase's free
-tier — there is no server for you to run or pay for.
+short room code, the other enters it. Real-time play runs on the mouro.ai
+realtime server (`../../server`), which lives on the same VPS as the site.
 
 - **Framework:** Expo SDK 54 + expo-router + TypeScript
-- **Backend:** Firebase Realtime Database + Anonymous Auth (free Spark plan)
+- **Backend:** the mouro.ai realtime server via `@mouro/realtime` (SQLite on the VPS)
 - **Testing on iPhone:** the Expo Go app (no Mac required)
 - **Web:** the same app exports to a static, installable PWA (see §6)
 
@@ -16,7 +16,6 @@ tier — there is no server for you to run or pay for.
 
 - Node.js (LTS recommended) and npm
 - An Android emulator (via Android Studio) **or** the **Expo Go** app on your phone
-- A free Google account for Firebase
 
 Install JS dependencies:
 
@@ -24,45 +23,22 @@ Install JS dependencies:
 npm install
 ```
 
-## 2. Firebase setup (one-time, ~5 minutes) — REQUIRED for online play
+## 2. Online play
 
-The app cannot connect until you create a Firebase project and paste its config.
-Everything here stays on the **free Spark plan** — never enter a credit card.
+Online play runs on the mouro.ai realtime server (`../../server`) through
+`@mouro/realtime` — a Firebase-shaped API (`ref`, `runTransaction`, `onValue`,
+`onDisconnect`, anonymous auth) over a WebSocket, stored in SQLite. There is no
+third-party backend and nothing to sign up for.
 
-1. Go to <https://console.firebase.google.com> → **Add project** → name it
-   `gin-rummy` (Google Analytics: off). Finish.
-2. In the project: **Build → Authentication → Get started → Sign-in method →**
-   enable **Anonymous**.
-3. **Build → Realtime Database → Create database →** location **United States
-   (us-central1)** → start in **Locked mode**.
-4. **Project settings** (gear icon) **→ Your apps → Web (`</>`)** → register an
-   app (any nickname) → copy the `firebaseConfig` object it shows you.
-5. Copy [`.env.example`](.env.example) to `.env` and paste those values,
-   replacing the `PASTE_ME` placeholders. **Make sure `databaseURL` is filled
-   in** — it looks like `https://gin-rummy-default-rtdb.firebaseio.com`. Then
-   restart the dev server with a cleared cache: `npx expo start -c`.
+- **Web:** nothing to configure — the page talks to `/rt` on its own host.
+- **Native (Expo Go / EAS):** set `EXPO_PUBLIC_REALTIME_URL` (see `.env.example`).
+- **Locally:** `npm start` in `../../server`, then point the URL at
+  `ws://<your-LAN-ip>:8787/rt`. Or build everything and run
+  `npm run preview` at the repo root to get the whole site on one port.
 
-   > `.env` is git-ignored and stays on your machine. The config is read from
-   > `EXPO_PUBLIC_*` variables in [`src/fb/config.ts`](src/fb/config.ts); the
-   > repo ships only placeholders.
-
-### Deploy the security rules
-
-The database rules (who can read/write which room) live in
-[`firebase/database.rules.json`](firebase/database.rules.json). Deploy them once:
-
-```bash
-npm install -g firebase-tools
-firebase login
-firebase use --add           # pick your gin-rummy project, alias it "default"
-firebase deploy --only database
-```
-
-> The Firebase web config values are **not secrets** — they're public
-> identifiers that ship inside every client anyway. Security is enforced by the
-> database rules, not by hiding the config. This repo keeps them in a
-> git-ignored `.env` only so a fork brings its own Firebase project rather than
-> writing to mine.
+The security rules are `database.rules.json` in this folder (Firebase rules
+syntax). The server evaluates them on every read and write; they ship with the
+server, so there is no separate rules deploy.
 
 ## 3. Run the app
 
@@ -104,15 +80,11 @@ eas login
 eas init            # links this project to your Expo account
 ```
 
-Because `.env` is git-ignored, EAS builds don't receive it — register the same
-Firebase values as **EAS environment variables** (they're public identifiers,
-so plaintext visibility is fine) for the `preview` and `production` profiles:
+Native builds have no page host to talk to, so tell EAS where the server is:
 
 ```bash
 eas env:create --environment preview --environment production \
-  --visibility plaintext --name EXPO_PUBLIC_FIREBASE_API_KEY --value "…"
-# …repeat for AUTH_DOMAIN, DATABASE_URL, PROJECT_ID, STORAGE_BUCKET,
-#   MESSAGING_SENDER_ID, APP_ID, MEASUREMENT_ID (same names as in .env)
+  --visibility plaintext --name EXPO_PUBLIC_REALTIME_URL --value "wss://mouro.ai/rt"
 ```
 
 ### Android — shareable APK (free)
@@ -169,10 +141,8 @@ pieces come from two committed files:
 There is deliberately **no service worker**, so there's no stale-cache class of
 bugs — the site always loads fresh. (Online play needs a connection anyway.)
 
-> The Firebase config must be present at export time the same way it is for the
-> dev server: fill in `.env` (§2). Because those `EXPO_PUBLIC_*` values are
-> baked into the JS bundle, whoever you hand the built `dist/` to can play
-> online without any further setup.
+> The web export needs no configuration: it talks to `/rt` on whatever host
+> serves it, which in production is the realtime server behind Caddy.
 
 ### Host it locally (your own machine)
 
@@ -198,32 +168,10 @@ point them at your machine's LAN IP (e.g. `http://192.168.1.20:3000`).
 - **Android / desktop Chrome:** an **Install** icon appears in the address bar
   (or menu → *Install app*).
 
-### Deploy to mouro.ai/gin-rummey (automatic)
+### Deploy to mouro.ai/gin-rummy (automatic)
 
-The public site is hosted at **<https://mouro.ai/gin-rummey>** on a home server
-(nginx; mouro.ai itself is a Django app). Two pieces make the **sub-path** work:
-
-- [`app.json`](app.json) sets `experiments.baseUrl: "/gin-rummey"` so Expo
-  prefixes every asset URL. [`src/app/+html.tsx`](src/app/+html.tsx) prefixes its
-  hand-written `<link>` tags with `process.env.EXPO_BASE_URL`, and
-  [`public/manifest.json`](public/manifest.json) uses **relative** paths — so the
-  same export works at a domain root or any sub-path.
-- An nginx `location /gin-rummey/` block (`root /home/rami`, SPA fallback to
-  `index.html`) serves `/home/rami/gin-rummey/`, ahead of the site's `/` proxy.
-
-**Auto-deploy:** [`.github/workflows/deploy-web.yml`](.github/workflows/deploy-web.yml)
-runs on every push to `master` — it typechecks, tests, runs
-`expo export --platform web`, then rsyncs `dist/` to the server. Required repo
-**secrets**:
-
-| Secret(s) | Value |
-| --- | --- |
-| `SSH_HOST`, `SSH_USER`, `SSH_KEY`, `SSH_PORT` | Same SSH access the mouro.ai repo uses |
-| `EXPO_PUBLIC_FIREBASE_*` (all 8) | The same public values as your `.env` |
-
-The one-time nginx block is installed on the server with
-`sudo bash /home/rami/deploy-gin-rummey/install-nginx.sh` (backs up the config,
-injects the block, runs `nginx -t`, reloads, and auto-rolls-back on failure).
+Pushing to `main` deploys: the repo's GitHub Actions workflow builds every app
+and the server, and rsyncs the result to the VPS. See the root README.
 
 ### Invite links
 
@@ -231,7 +179,7 @@ The lobby's **Share invite link** button (and tapping the big room code) shares 
 link instead of making your friend retype five characters:
 
 ```
-https://mouro.ai/gin-rummey/join/ABCDE
+https://mouro.ai/gin-rummy/join/ABCDE
 ```
 
 Opening it lands on `src/app/join/[code].tsx`, which prefills the code and shows
@@ -255,7 +203,7 @@ does with a normal web URL:
   opens inside the installed app.
 - **iOS:** home-screen web apps do **not** capture links. The invite opens in
   **Safari**, and Safari has **separate storage** from the installed web app —
-  therefore a **different anonymous Firebase uid**. Consequence, plainly: *a game
+  therefore a **different anonymous uid**. Consequence, plainly: *a game
   joined from a link in Safari will not appear in the installed app.* An iPhone
   user who has added the app to their home screen should open the app and type
   the code, or just keep playing in the Safari tab they joined from.
@@ -287,8 +235,8 @@ account is remembered) and the **Resume** banner on Home takes you back in.
 
 ```
 src/
-  engine/      Pure TS gin rummy rules engine (no React/Firebase) + Jest tests
-  fb/          Firebase: config, firebase (singleton), auth, rooms, presence
+  engine/      Pure TS gin rummy rules engine (no React/network) + Jest tests
+  net/         realtime: config, realtime (singleton), auth, rooms, presence
   store/       Zustand state (gameStore = live game, settingsStore = prefs)
   util/        seed.ts (crypto seed + room code), invite.ts (invite link URLs)
   components/  Cards + hand, and table/ (piles, opponent bar, action controls,
@@ -299,23 +247,19 @@ src/
                plus +html.tsx (web-only <head>: PWA manifest + iOS meta tags)
   theme/       Felt-table color palette
 public/        Static web assets copied to the site root: manifest.json + icons/
-firebase/      database.rules.json, firebase.json, .firebaserc
+database.rules.json  security rules, enforced by ../../server
 ```
 
 The game rules live entirely in `src/engine` as a pure, framework-free module
 with a full Jest suite (including a 2,000-game fuzz test). Both players run the
-same reducer; a move is written to Realtime Database inside a transaction, and
+same reducer; a move is written to the realtime server inside a transaction, and
 the security rules enforce turn order and membership.
 
 ## Troubleshooting
 
-- **"Firebase not configured" / can't connect:** finish step 2 (paste config,
-  including `databaseURL`).
-- **`Component auth has not been registered yet` / Firebase assertion at
-  runtime:** open [`metro.config.js`](metro.config.js) and uncomment the
-  `unstable_enablePackageExports = false` line, then restart with
-  `npx expo start -c`.
+- **"Online play is not configured" on a phone:** set `EXPO_PUBLIC_REALTIME_URL`
+  (see §2) and restart with `npx expo start -c`.
 - **iPhone can't load the app over Wi-Fi:** use `npx expo start --tunnel`.
 - **Keep Expo Go working on iPhone:** stay on **SDK 54** and never add native
-  modules (`@react-native-firebase/*`, etc.) — the App Store Expo Go supports
+  modules — the App Store Expo Go supports
   SDK 54, and there's no Mac fallback for a custom native build.

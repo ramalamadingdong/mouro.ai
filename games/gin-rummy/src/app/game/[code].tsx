@@ -11,7 +11,7 @@ import { GameTable } from '@/components/table/game-table';
 import { Button } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
 import { otherSeat } from '@/engine';
-import { voteRematch } from '@/fb/rooms';
+import { voteRematch } from '@/net/rooms';
 import { useGameStore } from '@/store/gameStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { text } from '@/theme/colors';

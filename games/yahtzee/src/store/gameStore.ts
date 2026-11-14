@@ -12,12 +12,12 @@
  * single table component can be driven by either and the two cannot drift.
  */
 import { create } from 'zustand';
-import { onAuthStateChanged } from 'firebase/auth';
-import { onValue, ref } from 'firebase/database';
-import { auth, db } from '@/fb/firebase';
-import { isFirebaseConfigured } from '@/fb/config';
-import { ensureAnonymousAuth, getAuthError, getCurrentUid } from '@/fb/auth';
-import { attachPresence, type PresenceHandle } from '@/fb/presence';
+import { onAuthStateChanged } from '@mouro/realtime';
+import { onValue, ref } from '@mouro/realtime';
+import { auth, db } from '@/net/realtime';
+import { isOnlineConfigured } from '@/net/config';
+import { ensureAnonymousAuth, getAuthError, getCurrentUid } from '@/net/auth';
+import { attachPresence, type PresenceHandle } from '@/net/presence';
 import {
   deleteRoomIfStale,
   isRoomStale,
@@ -30,7 +30,7 @@ import {
   type RoomMeta,
   type RoomSeat,
   type RoomSnapshot,
-} from '@/fb/rooms';
+} from '@/net/rooms';
 import { seatOf, type GameState, type Move, type Seat } from '@/engine';
 
 /** The data half of the store — everything a snapshot can replace wholesale. */
@@ -183,7 +183,7 @@ export const useGameStore = create<GameStore>()((set, get) => ({
     boundCode = code;
     set({ ...EMPTY, code });
 
-    if (!isFirebaseConfigured) {
+    if (!isOnlineConfigured) {
       set({
         error:
           'Online play is not configured on this build. Copy .env.example to .env, paste in your Firebase project config, and restart the dev server. Pass-and-play works without it.',

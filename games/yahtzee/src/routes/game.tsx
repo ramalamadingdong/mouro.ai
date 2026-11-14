@@ -12,7 +12,7 @@ import { Table } from '@/components/table';
 import { useGameStore } from '@/store/gameStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
-import { leaveRoom } from '@/fb/rooms';
+import { leaveRoom } from '@/net/rooms';
 import { randomSeed, sanitizeRoomCode } from '@/util/seed';
 import type { Category } from '@/engine';
 import './screen.css';

@@ -5,7 +5,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { MatchLengthPicker } from '@/components/match-length-picker';
 import { Button } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
-import { getCurrentUid } from '@/fb/auth';
+import { getCurrentUid } from '@/net/auth';
 import { useGameStore } from '@/store/gameStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { accent, felt, text } from '@/theme/colors';

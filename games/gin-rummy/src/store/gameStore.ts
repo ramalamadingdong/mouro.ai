@@ -4,14 +4,14 @@
  * select the slices they need. Derived helpers (mySeat, connected) are computed
  * on each snapshot to keep re-renders cheap.
  */
-import { onAuthStateChanged } from 'firebase/auth';
-import { onValue, ref, remove } from 'firebase/database';
+import { onAuthStateChanged } from '@mouro/realtime';
+import { onValue, ref, remove } from '@mouro/realtime';
 import { create } from 'zustand';
 import { seatOf } from '@/engine';
 import type { GameState, Move, Seat } from '@/engine/types';
-import { getCurrentUid } from '@/fb/auth';
-import { auth, db } from '@/fb/firebase';
-import { attachPresence } from '@/fb/presence';
+import { getCurrentUid } from '@/net/auth';
+import { auth, db } from '@/net/realtime';
+import { attachPresence } from '@/net/presence';
 import {
   matchIdFor,
   sendEmote as fbSendEmote,
@@ -23,7 +23,7 @@ import {
   type EmoteEntry,
   type PresenceEntry,
   type RoomMeta,
-} from '@/fb/rooms';
+} from '@/net/rooms';
 import { useSettingsStore } from '@/store/settingsStore';
 
 /** Min gap between reactions (ms) — a light client-side anti-spam throttle. */

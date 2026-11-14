@@ -26,7 +26,7 @@ import {
 // TYPE-ONLY, and it must stay that way: a value import from '@/fb' here would
 // pull Firebase into the pass-and-play bundle and break offline play. With
 // `verbatimModuleSyntax` this line is erased entirely at compile time.
-import type { PresenceEntry } from '@/fb/rooms';
+import type { PresenceEntry } from '@/net/rooms';
 import { DiceTray } from '@/components/dice-tray';
 import { Scorecard } from '@/components/scorecard';
 import { Modal } from '@/components/modal';

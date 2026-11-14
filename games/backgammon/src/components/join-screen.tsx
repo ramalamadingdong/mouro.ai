@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import { Button } from '@/components/ui/button';
 import { CodeInput, CODE_LENGTH } from '@/components/ui/code-input';
 import { Screen } from '@/components/ui/screen';
-import { joinRoom } from '@/fb/rooms';
+import { joinRoom } from '@/net/rooms';
 import { useSettingsStore } from '@/store/settingsStore';
 import { accent, text } from '@/theme/colors';
 import { mono } from '@/theme/typography';

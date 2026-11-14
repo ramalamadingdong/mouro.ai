@@ -4,9 +4,9 @@ import { useRouter } from 'expo-router';
 
 import { Button } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
-import { isFirebaseConfigured } from '@/fb/config';
-import { retryAuth, useAuth } from '@/fb/auth';
-import { createRoom } from '@/fb/rooms';
+import { isOnlineConfigured } from '@/net/config';
+import { retryAuth, useAuth } from '@/net/auth';
+import { createRoom } from '@/net/rooms';
 import { useSettingsStore } from '@/store/settingsStore';
 import { accent, felt, text } from '@/theme/colors';
 import { mono } from '@/theme/typography';
@@ -33,7 +33,7 @@ export default function Home() {
   const [showSettings, setShowSettings] = useState(false);
 
   const nameFor = () => (playerName.trim().length > 0 ? playerName.trim() : 'Player');
-  const online = isFirebaseConfigured;
+  const online = isOnlineConfigured;
   const ready = online && !!uid;
 
   const handleCreate = async () => {

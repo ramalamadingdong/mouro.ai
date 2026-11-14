@@ -13,10 +13,10 @@ import { type PropsWithChildren } from 'react';
  */
 export default function Root({ children }: PropsWithChildren) {
   // Expo inlines EXPO_BASE_URL (from app.json → experiments.baseUrl) at web
-  // export time: a leading-slash / no-trailing-slash prefix like "/gin-rummey",
+  // export time: a leading-slash / no-trailing-slash prefix like "/gin-rummy",
   // or "" when the site is hosted at the domain root. Expo auto-prefixes its OWN
   // <script>/<link> tags with it, but NOT the hand-written asset links below, so
-  // we prefix them ourselves — otherwise a sub-path deploy (mouro.ai/gin-rummey)
+  // we prefix them ourselves — otherwise a sub-path deploy (mouro.ai/gin-rummy)
   // would request them from the domain root and miss.
   const baseUrl = process.env.EXPO_BASE_URL ?? '';
   return (

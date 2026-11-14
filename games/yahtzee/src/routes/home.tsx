@@ -12,9 +12,9 @@
  */
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { isFirebaseConfigured } from '@/fb/config';
-import { retryAuth, useAuth } from '@/fb/auth';
-import { createRoom } from '@/fb/rooms';
+import { isOnlineConfigured } from '@/net/config';
+import { retryAuth, useAuth } from '@/net/auth';
+import { createRoom } from '@/net/rooms';
 import { useSettingsStore } from '@/store/settingsStore';
 import { InstallPrompt } from '@/components/install-prompt';
 import './screen.css';
@@ -40,11 +40,11 @@ export function HomeRoute() {
   // identity to talk as. `uid === null` covers the cold-start window before the
   // persisted anonymous session is restored, which is under a second but is
   // exactly when an impatient player taps Create.
-  const onlineReady = isFirebaseConfigured && uid !== null;
+  const onlineReady = isOnlineConfigured && uid !== null;
   // "Still trying" is distinct from "failed": one shows a spinner, the other
   // shows prose and a Retry. Without the `!authError` term a failed sign-in
   // would spin forever.
-  const connecting = isFirebaseConfigured && uid === null && !authError;
+  const connecting = isOnlineConfigured && uid === null && !authError;
 
   async function handleCreate(): Promise<void> {
     if (creating) return;
@@ -172,7 +172,7 @@ export function HomeRoute() {
           </div>
         )}
 
-        {!isFirebaseConfigured && (
+        {!isOnlineConfigured && (
           <p className="notice">
             Online play is not available in this build — it ships without a Firebase project,
             so there is no server to host a room on. <strong>Pass and play</strong> works
@@ -183,7 +183,7 @@ export function HomeRoute() {
         {/* Only when Firebase IS configured: otherwise auth reports the missing
             config as an error too, and the player would read two paragraphs
             saying the same thing, one of them with a Retry that cannot help. */}
-        {isFirebaseConfigured && authError && (
+        {isOnlineConfigured && authError && (
           <div className="notice notice--bad">
             <p>{authError}</p>
             <div className="notice__actions">

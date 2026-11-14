@@ -5,7 +5,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { BackgammonBoard } from '@/components/board/backgammon-board';
 import { Button } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
-import { voteRematch } from '@/fb/rooms';
+import { voteRematch } from '@/net/rooms';
 import { useGameStore } from '@/store/gameStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { accent, text } from '@/theme/colors';

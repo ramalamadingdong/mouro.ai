@@ -65,22 +65,20 @@ no dice on the table, so there is nothing to shuffle.
 
 ```
 src/
-  engine/            pure TS — no React, no Firebase, no DOM   ✅ built
+  engine/            pure TS — no React, no network, no DOM   ✅ built
     types.ts         contract + RULES tunables + category tables
     rng.ts           cyrb128 → sfc32, seeded, engine-agnostic
     scoring.ts       what each box is worth for a set of dice
     reducer.ts       applyMove / legalMoves / legalCategories / initialGameState
     serialize.ts     normalize(raw: unknown): GameState | null
     __tests__/       scoring, reducer, serialize, fuzz            64 tests
-  fb/                config.ts, firebase.ts, auth.ts, rooms.ts, presence.ts
+  net/               config.ts, realtime.ts, auth.ts, rooms.ts, presence.ts
   store/             gameStore.ts (online), localStore.ts (pass-and-play), settingsStore.ts
   theme/             tokens.ts (as const) + tokens.css (:root custom properties)
   components/        dice, scorecard, room code input, modals
   routes/            Home, Lobby, Game, Local, Join
   util/              seed.ts (crypto.getRandomValues + room codes)
-firebase/database.rules.json
-scripts/deploy-web.sh
-.github/workflows/deploy-web.yml
+database.rules.json   (enforced by ../../server)
 ```
 
 ## What's built and verified

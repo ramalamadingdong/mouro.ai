@@ -13,7 +13,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { TargetPicker, DEFAULT_TARGET } from '@/components/target-picker';
 import { Button } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
-import { getCurrentUid } from '@/fb/auth';
+import { getCurrentUid } from '@/net/auth';
 import { useGameStore } from '@/store/gameStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { accent, felt, text } from '@/theme/colors';

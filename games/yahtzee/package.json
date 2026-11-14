@@ -10,11 +10,10 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
     "test": "vitest run",
-    "test:watch": "vitest",
-    "deploy": "bash scripts/deploy-web.sh"
+    "test:watch": "vitest"
   },
   "dependencies": {
-    "firebase": "^12.16.0",
+    "@mouro/realtime": "file:../../packages/realtime",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-router-dom": "^7.18.1",

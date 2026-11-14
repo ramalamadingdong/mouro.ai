@@ -11,10 +11,13 @@ A no-signup online Yahtzee, shipped as a static PWA at
   `'/yahtzee/'` — the two conventions differ (trailing slash vs none) and
   getting them out of step yields a blank page whose assets load fine.
 - **zustand v5** for state; `persist` on `localStorage` for preferences only.
-- **Firebase JS Web SDK v12** (modular API) — Realtime Database + Anonymous
-  Auth, free **Spark plan, no Cloud Functions**. Client-authoritative logic;
-  `firebase/database.rules.json` does the real enforcement. NEVER add a paid
-  service or anything needing a long-running server process.
+- **Backend = the mouro.ai realtime server** (`../../server`), reached through
+  `@mouro/realtime` (`../../packages/realtime`): a Firebase-RTDB-shaped API —
+  `ref`, `get`, `set`, `update`, `onValue`, `runTransaction`, `onDisconnect`,
+  anonymous auth — over a WebSocket, backed by SQLite on the VPS. Firebase is
+  gone; do NOT re-add the `firebase` package or `@react-native-firebase/*`.
+  Client-authoritative game logic (casual play between friends); the server
+  enforces `database.rules.json` (same syntax as Firebase rules).
 - **Plain CSS with custom properties.** No CSS-in-JS runtime, no Tailwind.
 - **No service worker**, deliberately. Home-screen install still works; the app
   just won't launch offline. This trades offline support for never having a
@@ -25,7 +28,7 @@ A no-signup online Yahtzee, shipped as a static PWA at
 
 ## The engine is the point
 
-`src/engine/` is pure TypeScript with **zero React / Firebase / DOM imports**.
+`src/engine/` is pure TypeScript with **zero React / network / DOM imports**.
 It runs in plain Node, which is why it's the only layer tested heavily.
 
 - `types.ts` has zero runtime *imports*. It does export the `as const` category
