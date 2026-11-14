@@ -1,0 +1,26 @@
+/* Pass-and-play roster. */
+
+.local {
+  max-width: 26rem;
+}
+
+.local__counts {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.local__count {
+  flex: 1;
+  font-size: var(--size-md);
+  font-weight: var(--weight-bold);
+}
+
+/*
+ * The selected count. `aria-pressed` on the button carries the same fact to
+ * assistive tech, so this styling is a second channel rather than the only one.
+ */
+.local__count[data-selected='true'] {
+  background: var(--accent);
+  color: var(--text-on-accent);
+  border-color: var(--accent);
+}

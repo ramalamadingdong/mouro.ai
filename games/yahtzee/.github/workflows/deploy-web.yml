@@ -1,0 +1,93 @@
+name: Deploy web app to mouro.ai/yahtzee
+
+# Every push to master rebuilds the static Vite bundle and rsyncs it to the NUC
+# that hosts mouro.ai, under /home/rami/yahtzee/ (served by nginx at
+# https://mouro.ai/yahtzee/). The one-time nginx location block is installed
+# separately — see deploy/install-nginx.sh.
+#
+# DNS, TLS and the Cloudflare Tunnel already cover every path under mouro.ai, so
+# a new sub-path needs zero certificate or tunnel work. This workflow only ever
+# moves files.
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+# One deploy at a time, and a newer push wins: a half-finished older rsync
+# racing a newer one would leave a mix of two builds on disk.
+concurrency:
+  group: deploy-web
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      # Gate: never deploy a build that doesn't typecheck or pass the engine tests.
+      # (`npm run build` runs `tsc -b` too, but a dedicated step fails faster and
+      # names the actual problem in the job log.)
+      - run: npm run typecheck
+      - run: npm test
+
+      - name: Build static bundle
+        # The Firebase web config is substituted into the JS bundle at build time.
+        # These VITE_* values are public identifiers — security is enforced by the
+        # Realtime Database rules, not by hiding them — but they live in repo
+        # secrets so the git-ignored .env isn't needed in CI.
+        #
+        # If a secret is unset the app still builds and ships with online play
+        # disabled (isFirebaseConfigured === false) rather than crashing; it falls
+        # back to pass-and-play.
+        env:
+          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_DATABASE_URL: ${{ secrets.VITE_FIREBASE_DATABASE_URL }}
+          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
+          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+        run: npm run build
+
+      - name: Guard that the bundle is sub-path aware
+        # Vite's `base` must be baked in or every asset URL 404s under /yahtzee/.
+        # The page would still return 200 and render blank, which is exactly the
+        # kind of failure a green CI run hides.
+        run: |
+          set -euo pipefail
+          grep -q '/yahtzee/assets/' dist/index.html || {
+            echo "::error::dist/index.html has no /yahtzee/assets/ URLs — check \`base\` in vite.config.ts"
+            exit 1
+          }
+
+      - name: Deploy dist/ to the NUC via rsync over SSH
+        # Reuses the same SSH_* secrets as the gin rummy deploy — one deploy key,
+        # one host, two apps in sibling directories.
+        env:
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+        run: |
+          set -euo pipefail
+          PORT="${SSH_PORT:-22}"
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          ssh-keyscan -p "$PORT" "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          # --delete prunes assets from previous builds. Vite content-hashes every
+          # filename, so without it the directory grows forever with dead bundles.
+          # --chmod=D755,F644 makes everything readable by nginx (www-data) no
+          # matter what umask the runner or the remote account has.
+          rsync -rlz --delete --chmod=D755,F644 \
+            -e "ssh -i ~/.ssh/id_deploy -p $PORT" \
+            dist/ "$SSH_USER@$SSH_HOST:/home/rami/yahtzee/"

@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+
+    <!--
+      viewport-fit=cover lets the page paint into the notch/home-indicator area.
+      base.css then pays that back with env(safe-area-inset-*) padding on body.
+      Without cover, iOS letterboxes the page and the table colour stops short of
+      the screen edge, which reads as a rendering bug on a dark UI.
+
+      No maximum-scale / user-scalable=no: pinch-zoom is an accessibility
+      affordance and disabling it is never worth the layout tidiness.
+    -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+
+    <!--
+      Root-relative. Vite prefixes each of these with `base` from vite.config.ts
+      itself, so they keep working if the app is ever re-hosted at a different
+      sub-path, with no deployment path written here.
+
+      DO NOT write the base into these hrefs yourself, whether literally or via
+      a %BASE_URL% placeholder. Measured on Vite 8.1.5: the dev server applies
+      base to any root-relative path it finds in this file, so a path that
+      already carries the base gets it a second time and every icon plus the
+      manifest 404s under `npm run dev` — while the production build looks
+      perfect. (That rewrite is a plain text substitution and does not skip HTML
+      comments, which is why this paragraph does not spell the prefix out.)
+
+      Plain relative paths ('./icons/...') are wrong in both modes: this same
+      HTML is served for deep routes such as the per-room game URL, and would
+      resolve against that route's directory instead of the app root.
+    -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+
+    <!-- Matches --felt in src/theme/tokens.css. Colours the iOS/Android browser
+         chrome so the status bar blends into the table instead of framing it. -->
+    <meta name="theme-color" content="#151828" />
+
+    <!-- Legacy iOS install hints. Modern iOS reads the manifest, but these are
+         still what older Safari versions honour, and they cost two lines. -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Yahtzee" />
+
+    <title>Yahtzee</title>
+    <meta
+      name="description"
+      content="Play Yahtzee online with friends — no sign-up. Share a five-character room code, or pass one phone around the table."
+    />
+
+    <!--
+      ANTI-FLASH. This is inline, and in the <head>, on purpose: the stylesheet
+      that carries --felt is loaded by the JS bundle, so between first paint and
+      hydration the browser would otherwise show its default white canvas. On a
+      dark app that is a full-screen strobe on every reload. The literal hex is
+      duplicated from --felt in tokens.css by necessity — a var() cannot be
+      resolved before the file that defines it has loaded.
+    -->
+    <style>
+      html,
+      body {
+        margin: 0;
+        background: #151828;
+        color: #f2f0f7;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

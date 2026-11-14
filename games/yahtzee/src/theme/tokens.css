@@ -1,0 +1,131 @@
+/*
+ * Design tokens — the canonical list.
+ *
+ * MIRRORED BY HAND in `src/theme/tokens.ts`. The two files must be edited
+ * together, value for value. There is no build step generating one from the
+ * other, on purpose: a codegen step for ~60 constants costs more than it saves.
+ *
+ * Every other stylesheet in the app must use these names and invent no others.
+ * Names state INTENT (`--felt-raised`, `--text-muted`), never value
+ * (`--slate-800`, `--grey-60`), so a palette change stays a one-file edit.
+ *
+ * The palette is a deep slate-indigo table with a warm amber accent —
+ * deliberately not the green baize of the gin rummy app, because Yahtzee reads
+ * as dice on a table rather than cards on felt.
+ *
+ * CONTRAST. Ratios below are measured against `--felt` (the page background)
+ * and, where it differs meaningfully, against `--surface` (panels). WCAG AA
+ * needs 4.5:1 for body text and 3:1 for large text (>=24px, or >=19px bold).
+ */
+
+:root {
+  /* ---- Table surfaces -------------------------------------------------- */
+  /* The page/table background. Everything else is measured against this. */
+  --felt: #151828;
+  /* A panel sitting ON the table — scorecard, dice tray. */
+  --felt-raised: #1e2238;
+  /* Recessed wells: the dice cup, an inset scorecard column. Reads as shadow. */
+  --felt-deep: #0e1020;
+  /* Cards/modals floating above the table. */
+  --surface: #262b45;
+  /* Hover/selected state of a surface, and table header rows. */
+  --surface-raised: #323853;
+  /* Hairlines and dividers. 1.85:1 on --felt: DECORATION ONLY, never text. */
+  --border: #3d4462;
+
+  /* ---- Accent ---------------------------------------------------------- */
+  /* Amber. 8.67:1 on --felt, 6.84:1 on --surface — safe for text at any size. */
+  --accent: #f0a830;
+  /* Muted amber for borders, inactive tabs, secondary accent text.
+     5.15:1 on --felt (AA body) but 3.42:1 on --surface — on a surface use it
+     for large text or decoration only. */
+  --accent-dim: #b8801f;
+
+  /* ---- Status ---------------------------------------------------------- */
+  /* Confirmations, "your turn", a scored box. 8.42:1 on --felt. */
+  --good: #4ec98a;
+  /* Warnings, last-roll pressure. 9.41:1 on --felt. */
+  --warn: #e8b64c;
+  /* Errors, a scratched (zeroed) category. 6.08:1 on --felt, 4.79:1 on
+     --surface — AA at both, but only just on --surface-raised (3.97:1), so
+     don't put small red body text on the raised variant. */
+  --bad: #f2705f;
+
+  /* ---- Text ------------------------------------------------------------ */
+  /* Primary content. 15.57:1 on --felt, 10.18:1 on --surface-raised. */
+  --text: #f2f0f7;
+  /* Secondary content: subtitles, opponent names. 8.91:1 / 5.82:1. AA safe. */
+  --text-muted: #b9b6cc;
+  /* Hints and helper prose. 6.47:1 on --felt, 5.10:1 on --surface, but
+     4.22:1 on --surface-raised — MARGINAL: on --surface-raised use it only at
+     --size-md or larger, or bump to --text-muted. */
+  --text-hint: #9d9ab4;
+  /* 3.31:1 on --felt. FAILS AA for body text — DECORATION ONLY: disabled glyphs,
+     watermark digits, placeholder scorecard rules. Never for prose a player
+     must read. */
+  --text-faint: #6b6885;
+  /* Text/icons printed on --accent. 9.13:1 on --accent. */
+  --text-on-accent: #1a1206;
+
+  /* ---- Dice ------------------------------------------------------------ */
+  /* Warm ivory die body, so dice read as physical objects on the slate table. */
+  --die-face: #f7f4ee;
+  /* Pips. 14.88:1 on --die-face. */
+  --die-pip: #1b1f30;
+  /* Held/kept die: ring and tint. 12.36:1 on --felt, so the ring stays visible
+     against the table as well as against the die. */
+  --die-held: #ffd27a;
+
+  /* ---- Space ----------------------------------------------------------- */
+  /* rem-based so --ui-scale (see below) scales layout with type. */
+  --space-xs: 0.25rem; /* 4px  — pip gaps, icon/label nudges */
+  --space-sm: 0.5rem; /* 8px  — inside a chip or table cell */
+  --space-md: 0.75rem; /* 12px — between rows */
+  --space-lg: 1rem; /* 16px — panel padding */
+  --space-xl: 1.5rem; /* 24px — between panels */
+  --space-xxl: 2rem; /* 32px — around the dice tray */
+  --space-section: 3rem; /* 48px — between major page blocks */
+
+  /* ---- Radius ---------------------------------------------------------- */
+  --radius-sm: 4px; /* scorecard cells, tight chips */
+  --radius-md: 8px; /* buttons, inputs */
+  --radius-lg: 14px; /* dice, panels */
+  --radius-xl: 22px; /* modals, the tray */
+  --radius-pill: 999px; /* badges, toggles */
+
+  /* ---- Type ------------------------------------------------------------
+     Monotonic ramp in rem. Because base.css sets html font-size from
+     --ui-scale, every one of these scales with it automatically. */
+  --size-xs: 0.6875rem; /* 11px — footnotes, seat labels */
+  --size-sm: 0.8125rem; /* 13px — secondary/table text */
+  --size-body: 0.9375rem; /* 15px — body copy */
+  --size-label: 1rem; /* 16px — form labels and button text; 16px specifically,
+                              because iOS Safari zooms an <input> under 16px */
+  --size-md: 1.125rem; /* 18px — emphasised body */
+  --size-lg: 1.375rem; /* 22px — section headings */
+  --size-title: 1.75rem; /* 28px — page titles */
+  --size-xl: 2.125rem; /* 34px — modal headlines */
+  --size-xxl: 2.75rem; /* 44px — running totals */
+  --size-display: 3.5rem; /* 56px — final score */
+  --size-hero: 4.5rem; /* 72px — room code on the lobby screen */
+  --size-giant: 6rem; /* 96px — the winner's total */
+
+  --weight-medium: 500;
+  --weight-bold: 700;
+  --weight-heavy: 800;
+
+  /* ---- Motion ---------------------------------------------------------- */
+  --dur-fast: 120ms; /* hover/press feedback */
+  --dur-base: 220ms; /* panel and dice transitions */
+  --dur-slow: 420ms; /* roll animation, modal entrance */
+  /* Fast out, settle in — reads as dice landing rather than easing linearly. */
+  --ease: cubic-bezier(0.2, 0.8, 0.25, 1);
+
+  /* ---- Layout ---------------------------------------------------------- */
+  /* Unitless multiplier written by JS to fit the table on short/small screens.
+     base.css applies it to html font-size, so it scales the whole rem-based
+     system at once instead of every component doing its own math. */
+  --ui-scale: 1;
+  /* The game table never gets wider than this; on desktop it centres. */
+  --table-max-width: 720px;
+}
