@@ -8,7 +8,7 @@ name: Deploy
 
 on:
   push:
-    branches: [main]
+    branches: [main, master]
   workflow_dispatch:
 
 concurrency:
@@ -24,13 +24,31 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     steps:
+      # Until the VPS secrets exist, finish green with a note rather than fail.
+      - name: Check deploy secrets
+        id: cfg
+        env:
+          HOST: ${{ secrets.DEPLOY_HOST }}
+          KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          if [ -n "$HOST" ] && [ -n "$KEY" ] && [ -n "$KNOWN" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Deploy skipped: set DEPLOY_HOST, DEPLOY_SSH_KEY and DEPLOY_KNOWN_HOSTS in the 'production' environment."
+          fi
+
       - uses: actions/checkout@v4
+        if: steps.cfg.outputs.ready == 'true'
 
       - uses: actions/download-artifact@v4
+        if: steps.cfg.outputs.ready == 'true'
         with:
           pattern: dist-*
 
       - name: Assemble upload
+        if: steps.cfg.outputs.ready == 'true'
         run: |
           set -euo pipefail
           mkdir -p out/web out/rt/server out/rt/games
@@ -44,6 +62,7 @@ jobs:
           cp -r server/src server/games.json server/package.json server/package-lock.json out/rt/server/
 
       - name: SSH setup
+        if: steps.cfg.outputs.ready == 'true'
         env:
           SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
@@ -55,6 +74,7 @@ jobs:
           printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
 
       - name: Upload
+        if: steps.cfg.outputs.ready == 'true'
         env:
           HOST: ${{ secrets.DEPLOY_HOST }}
         run: |
@@ -67,11 +87,13 @@ jobs:
           rsync -rlz --delete --chmod=D755,F644 -e "$SSH" out/rt/ "deploy@$HOST:/opt/mouro/realtime.new/"
 
       - name: Activate
+        if: steps.cfg.outputs.ready == 'true'
         env:
           HOST: ${{ secrets.DEPLOY_HOST }}
         run: ssh -i ~/.ssh/id_deploy -o BatchMode=yes "deploy@$HOST" 'bash /srv/mouro.ai/infra.new/activate.sh'
 
       - name: Smoke test
+        if: steps.cfg.outputs.ready == 'true'
         run: |
           set -euo pipefail
           for u in / /backgammon/ /gin-rummy/ /yahtzee/ /rt/health; do

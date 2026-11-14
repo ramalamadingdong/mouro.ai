@@ -63,7 +63,7 @@ game's real rules file (create / join / play / deny / onDisconnect / reaper).
 
 ## Deploying
 
-Push to `main`. [`deploy.yml`](.github/workflows/deploy.yml) runs CI
+Push to `main` (or `master`). [`deploy.yml`](.github/workflows/deploy.yml) runs CI
 (typecheck, tests and a production build of every game), uploads everything to
 the VPS into `*.new` directories, and [`infra/activate.sh`](infra/activate.sh)
 swaps them into place atomically, restarts the realtime server only if its code
@@ -101,7 +101,7 @@ everything else is rebuilt by a deploy.
 
 ## Repo conventions
 
-- `main` is protected: changes land through pull requests with CI green.
+- The default branch is protected: changes land through pull requests with CI green.
 - Each game keeps its own `package.json` and lockfile (the Expo apps are pinned
   to SDK 54 for Expo Go on iPhone; yahtzee is on newer React). There are no npm
   workspaces on purpose — hoisting would mix React versions.

@@ -1,6 +1,6 @@
 name: CI
 
-# Runs on pull requests, and on main as the first stage of deploy.yml.
+# Runs on pull requests, and on the default branch as the first stage of deploy.yml.
 on:
   pull_request:
   workflow_call:
