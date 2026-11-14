@@ -10,8 +10,7 @@
     "lint": "expo lint",
     "test": "jest",
     "test:watch": "jest --watch",
-    "typecheck": "tsc --noEmit",
-    "icons": "node scripts/make-icons.js"
+    "typecheck": "tsc --noEmit"
   },
   "jest": {
     "preset": "jest-expo",

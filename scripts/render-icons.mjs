@@ -1,31 +1,58 @@
 #!/usr/bin/env node
-// Render the hub and Sudoku icon SVGs (site/games/**/icons/*.svg) to the PNG
-// sizes a web app manifest and iOS need. Run after editing either SVG:
+// Render every hand-drawn icon SVG in the repo to the PNG sizes a web app
+// manifest, iOS and Expo need. Run after editing any of the SVGs below:
 //
 //   npx -y -p playwright node scripts/render-icons.mjs
 //
 // Needs a Playwright Chromium (`npx playwright install chromium`). The PNGs are
 // committed, so nothing in the build or deploy depends on this script.
+// (Texas Hold'em is not here: its icon is a painting, not an SVG.)
 import { readFileSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { join, resolve } from 'node:path';
 import { chromium } from 'playwright';
 
 const repo = resolve(import.meta.dirname, '..');
-const icons = [
-  join(repo, 'site/games/icons/hub.svg'),
-  join(repo, 'site/games/sudoku/icons/sudoku.svg'),
+
+// What a browser needs: manifest icons plus the iOS home-screen icon.
+const web = (dir) => [
+  [`${dir}/icon-192.png`, 192],
+  [`${dir}/icon-512.png`, 512],
+  [`${dir}/apple-touch-icon.png`, 180],
 ];
-const sizes = { 'icon-192.png': 192, 'icon-512.png': 512, 'apple-touch-icon.png': 180 };
+
+// [source SVG, [[output PNG, size], ...]] — all paths relative to the repo root.
+const icons = [
+  ['site/games/icons/hub.svg', web('site/games/icons')],
+  ['site/games/sudoku/icons/sudoku.svg', web('site/games/sudoku/icons')],
+  ['games/yahtzee/public/icons/icon.svg', web('games/yahtzee/public/icons')],
+  [
+    'games/backgammon/public/icons/icon.svg',
+    // The assets/images copies are what app.json points Expo at.
+    [
+      ...web('games/backgammon/public/icons'),
+      ['games/backgammon/assets/images/icon.png', 1024],
+      ['games/backgammon/assets/images/favicon.png', 64],
+    ],
+  ],
+  [
+    'games/gin-rummy/public/icons/icon.svg',
+    [
+      ...web('games/gin-rummy/public/icons'),
+      ['games/gin-rummy/assets/images/icon.png', 1024],
+      ['games/gin-rummy/assets/images/favicon.png', 64],
+    ],
+  ],
+];
 
 const browser = await chromium.launch();
-for (const svgPath of icons) {
-  const svg = readFileSync(svgPath, 'utf8');
-  for (const [name, size] of Object.entries(sizes)) {
+for (const [source, outputs] of icons) {
+  const svg = readFileSync(join(repo, source), 'utf8');
+  for (const [output, size] of outputs) {
     const page = await browser.newPage({ viewport: { width: size, height: size } });
     await page.setContent(
       `<style>html,body{margin:0}svg{display:block;width:${size}px;height:${size}px}</style>${svg}`
     );
-    await page.screenshot({ path: join(dirname(svgPath), name) });
+    await page.screenshot({ path: join(repo, output) });
     await page.close();
   }
 }

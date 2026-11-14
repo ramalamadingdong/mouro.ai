@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Backgammon icon: a checker with a cat's face, on the board. Full-bleed square with the artwork inside the central 80%, so the
+       same file works as a maskable icon. Rendered to the PNGs beside it by
+       scripts/render-icons.mjs (repo root). -->
+  <defs>
+    <radialGradient id="felt" cx="0.5" cy="0.4" r="0.8">
+      <stop offset="0" stop-color="#1f5a47"/>
+      <stop offset="1" stop-color="#0d271e"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" fill="#0d271e"/>
+  <rect x="63" y="63" width="386" height="386" rx="10" fill="url(#felt)" stroke="#d4af37" stroke-width="14"/>
+  <path d="M70 70 L132 70 L101.0 214 Z" fill="#f5f0e1"/>
+  <path d="M70 442 L132 442 L101.0 298 Z" fill="#8a3443"/>
+  <path d="M132 70 L194 70 L163.0 214 Z" fill="#8a3443"/>
+  <path d="M132 442 L194 442 L163.0 298 Z" fill="#f5f0e1"/>
+  <path d="M194 70 L256 70 L225.0 214 Z" fill="#f5f0e1"/>
+  <path d="M194 442 L256 442 L225.0 298 Z" fill="#8a3443"/>
+  <path d="M256 70 L318 70 L287.0 214 Z" fill="#8a3443"/>
+  <path d="M256 442 L318 442 L287.0 298 Z" fill="#f5f0e1"/>
+  <path d="M318 70 L380 70 L349.0 214 Z" fill="#f5f0e1"/>
+  <path d="M318 442 L380 442 L349.0 298 Z" fill="#8a3443"/>
+  <path d="M380 70 L442 70 L411.0 214 Z" fill="#8a3443"/>
+  <path d="M380 442 L442 442 L411.0 298 Z" fill="#f5f0e1"/>
+  <ellipse cx="256" cy="282" rx="128" ry="26" fill="#000" opacity="0.25" transform="translate(0 70)"/>
+  <g transform="translate(106.0 97.0) scale(1.5)">
+    <g fill="#f5f0e1" stroke="#0d271e" stroke-width="4.7" stroke-linejoin="round">
+      <path d="M30 96 L36 20 L94 64 Z"/>
+      <path d="M170 96 L164 20 L106 64 Z"/>
+      <ellipse cx="100" cy="115" rx="80" ry="68"/>
+    </g>
+    <ellipse cx="100" cy="115" rx="80" ry="68" fill="#f5f0e1"/>
+    <path d="M46 72 L49 42 L72 60 Z M154 72 L151 42 L128 60 Z" fill="#c9788a"/>
+    <ellipse cx="70" cy="108" rx="10" ry="14" fill="#3a1620"/>
+    <ellipse cx="130" cy="108" rx="10" ry="14" fill="#3a1620"/>
+    <circle cx="73" cy="103" r="3.5" fill="#fff"/>
+    <circle cx="133" cy="103" r="3.5" fill="#fff"/>
+    <path d="M91 128 L109 128 L100 139 Z" fill="#c9788a"/>
+    <g fill="none" stroke="#3a1620" stroke-width="4" stroke-linecap="round">
+      <path d="M100 139 Q100 152 87 151 M100 139 Q100 152 113 151"/>
+      <path d="M52 132 L14 124 M52 141 L14 148 M148 132 L186 124 M148 141 L186 148" stroke-width="3"/>
+    </g>
+  </g>
+</svg>

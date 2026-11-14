@@ -65,18 +65,16 @@ install on a phone over the LAN needs the deployed site, not the dev server.
 
 ### Icons
 
-`public/icons/*.png` and `public/favicon.svg` are generated, not hand-drawn:
+The icon is a hand-drawn SVG, `public/icons/icon.svg` — an amber die whose five
+pips double as a cat's face. `public/favicon.svg` is a copy of it, and the PNGs
+beside it are rendered from it by the repo-level script:
 
 ```bash
-node scripts/make-icons.mjs
+npx -y -p playwright node ../../scripts/render-icons.mjs
 ```
 
-The script rasterises the die and encodes PNG using only `node:zlib`, so there
-is no image dependency to install. Geometry is expressed as fractions of the
-canvas, so every size is the same drawing, and the script hard-fails if the die
-ever grows outside the maskable safe zone (the centre 80% circle Android may
-crop to). Edit the constants at the top of the script and re-run; don't edit the
-PNGs.
+Edit the SVG and re-run; don't edit the PNGs. Keep the artwork inside the
+centre 80% of the canvas, the safe zone Android may crop a maskable icon to.
 
 ## The sub-path: three places that must agree
 
@@ -131,7 +129,6 @@ src/
   util/       seed.ts — crypto.getRandomValues, room codes
 public/       manifest.webmanifest, favicon.svg, icons/
 database.rules.json + RULES.md   security rules, enforced by ../../server
-scripts/      make-icons.mjs
 ```
 
 `src/theme/tokens.css` and `src/theme/tokens.ts` are mirrored **by hand** and
