@@ -84,7 +84,7 @@
   .label { font-size: .78rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--faint); }
   .group { display: flex; flex-direction: column; gap: 16px; }
 
-  .shelf { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+  .shelf { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; grid-auto-rows: 1fr; }
 
   /* Each game brings its own colours: --a/--b the tile gradient, --ink the accent. */
   .game {
@@ -116,13 +116,11 @@
     color: #17110a; background: var(--ink); box-shadow: 0 3px 0 rgba(0, 0, 0, .35);
   }
 
-  .holdem     { --a: #7a4a26; --b: #3b2313; --ink: #e0b64a; grid-column: 1 / -1; }
+  .holdem     { --a: #7a4a26; --b: #3b2313; --ink: #e0b64a; }
   .backgammon { --a: #1f5a47; --b: #12362a; --ink: #e0b64a; }
   .gin        { --a: #8a3443; --b: #561d28; --ink: #f5f0e1; }
   .yahtzee    { --a: #2d3360; --b: #171a30; --ink: #f0a830; }
   .dots       { --a: #5b3a7a; --b: #2e1c42; --ink: #f2a35e; }
-  /* An odd card out at the end of the shelf takes the whole row. */
-  .shelf > .game:last-child:nth-child(even) { grid-column: 1 / -1; }
   .sudoku     { --a: #27437a; --b: #14213f; --ink: #7bb8ff; }
   .cafe       { --a: #1f6f78; --b: #123f47; --ink: #f2b560; }
 
