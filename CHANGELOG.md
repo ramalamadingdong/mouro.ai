@@ -11,8 +11,8 @@ realtime server and `infra/` are untouched.
   - Title, description and link-preview text now carry the current role: Lead
     Robotics / Physical AI Staff Software Engineer, Developer Relations at
     Qualcomm.
-  - New hero bio. Tagline kept.
-  - About rewritten as a year-level timeline: Damascus to Colorado, CU Boulder,
+  - New hero bio. The tagline is removed.
+  - About rewritten as a year-level timeline: Colorado, CU Boulder,
     Colorado Army National Guard 2017 to 2023, Qualcomm roles through 2026,
     FIRST roles, FRC Team 2972 at the Dawson School.
   - Current focus list replaced.

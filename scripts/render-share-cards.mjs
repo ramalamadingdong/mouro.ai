@@ -43,7 +43,7 @@ const pages = [
     name: 'home',
     label: 'Portfolio',
     title: 'Rami Mouro',
-    text: 'Robotics and physical AI developer relations lead at Qualcomm. Building the bridge between edge AI and the next generation of roboticists.',
+    text: 'Robotics and physical AI developer relations lead at Qualcomm. VLA models on edge NPUs, tutorials and workshops, and tools for FIRST teams.',
     path: 'mouro.ai',
     art: 'site/static/img/Rami_Pic.jpg',
     loud: true,
