@@ -43,7 +43,7 @@ const pages = [
     name: 'home',
     label: 'Portfolio',
     title: 'Rami Mouro',
-    text: 'Staff software engineer at Qualcomm. Building the bridge between edge AI and the next generation of roboticists.',
+    text: 'Robotics and physical AI developer relations lead at Qualcomm. Building the bridge between edge AI and the next generation of roboticists.',
     path: 'mouro.ai',
     art: 'site/static/img/Rami_Pic.jpg',
     loud: true,
@@ -54,7 +54,7 @@ const pages = [
     title: 'Projects',
     text: 'Write-ups on flagship builds, field automation, and applied research.',
     path: 'mouro.ai/projects',
-    list: ['PCB Agent', 'FIRST Agentic CSA', 'FRC Shooter Selector', 'Rubik TFLite', 'Military Service Leadership', 'Talks and demos'],
+    list: ['Pi0.5 VLA on Dragonwing NPU', 'PCB Agent', 'FIRST Agentic CSA', 'FIRST and K-12 robotics', 'Edge AI demos', 'FRC Shooter Selector'],
     loud: true,
   },
   {
@@ -70,6 +70,11 @@ const pages = [
 // One per write-up on /projects/. `id` is the write-up's anchor on that page.
 const projects = [
   {
+    id: 'pi05',
+    title: 'Pi0.5 VLA on Dragonwing NPU',
+    text: 'A vision-language-action model running on edge NPUs: 86/100 task success on LIBERO-10.',
+  },
+  {
     id: 'pcb-agent',
     title: 'PCB Agent',
     text: 'Circuit boards designed end to end by an AI agent: parts, netlist, placement, routing and gerbers.',
@@ -79,6 +84,16 @@ const projects = [
     id: 'agentic-csa',
     title: 'FIRST Agentic CSA',
     text: 'AI-powered search across the FRC documentation, for students and the volunteers who support them.',
+  },
+  {
+    id: 'first-k12',
+    title: 'FIRST and K-12 robotics at Qualcomm',
+    text: 'A grassroots robotics partnership with FIRST that became a Qualcomm engineering initiative.',
+  },
+  {
+    id: 'edge-ai-demos',
+    title: 'Edge AI demos',
+    text: 'MCP across cloud, PC and IoT hardware, on-device Gemma, and the RUBIK Pi developer experience.',
   },
   {
     id: 'shooter-selector',
