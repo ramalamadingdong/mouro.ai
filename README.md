@@ -3,6 +3,10 @@
 Everything behind **https://mouro.ai**: the personal site, the family games,
 and the small realtime server the games play through. One repo, one VPS.
 
+A new cat-themed multiplayer game is added every week; the ledger is
+[`games/WEEKLY.md`](games/WEEKLY.md). Only the newest weekly game is shown on
+the games hub; earlier ones stay live at their own URL.
+
 | Path | What | URL |
 |---|---|---|
 | [`site/`](site/) | Personal site (static HTML + CSS), plus the games hub, Sudoku and Cat Café (a solo tile puzzle against a computer cat) — each a self-contained, installable page with its own look | `/`, `/projects/`, `/games/`, `/games/sudoku/`, `/games/cat-cafe/` |
@@ -11,6 +15,7 @@ and the small realtime server the games play through. One repo, one VPS.
 | [`games/yahtzee/`](games/yahtzee/) | 1–4 player Yahtzee (Vite PWA) | `/yahtzee/` |
 | [`games/holdem/`](games/holdem/) | 2–6 player Texas Hold'em online, or solo against computer cats (Vite PWA) | `/holdem/` |
 | [`games/dots/`](games/dots/) | 2–4 player Dots and Boxes online, or solo against computer cats (Vite PWA) | `/dots/` |
+| [`games/pawprints/`](games/pawprints/) | Pawprints — weekly cat game, added Nov 15, 2026: 2–4 player five-in-a-row on a quilt online, or solo against computer cats (Vite PWA) | `/pawprints/` |
 | [`server/`](server/) | Realtime server: WebSocket + SQLite, enforces each game's rules | `/rt` |
 | [`packages/realtime/`](packages/realtime/) | `@mouro/realtime`, the client the games use | — |
 | [`infra/`](infra/) | Caddyfile, systemd unit, VPS provisioning, deploy activation | — |

@@ -1,0 +1,152 @@
+/* The quilt. Seat colours come from --ink-N / --wash-N in tokens.css. */
+
+.board {
+  display: block;
+  width: 100%;
+  height: auto;
+  /* Never taller than the screen leaves room for: the players above and the
+     status and button below. `svh` so the iOS address bar is accounted for. */
+  max-height: calc(100svh - 17rem);
+  min-height: 0;
+  touch-action: manipulation;
+  overflow: visible;
+}
+
+[data-seat='0'] { --ink: var(--ink-0); --wash: var(--wash-0); }
+[data-seat='1'] { --ink: var(--ink-1); --wash: var(--wash-1); }
+[data-seat='2'] { --ink: var(--ink-2); --wash: var(--wash-2); }
+[data-seat='3'] { --ink: var(--ink-3); --wash: var(--wash-3); }
+
+.board__edge {
+  fill: var(--patch-b);
+  stroke: var(--seam);
+  stroke-width: 3;
+  stroke-dasharray: 9 7;
+}
+
+.board__patch {
+  fill: var(--patch-a);
+}
+
+.board__patch--b {
+  fill: var(--patch-b);
+}
+
+/* Running stitch along every seam. */
+.board__seams line {
+  stroke: var(--seam);
+  stroke-width: 2.5;
+  stroke-dasharray: 8 5;
+  stroke-linecap: round;
+}
+
+.board__stars circle {
+  fill: var(--button);
+}
+
+/* ── Paws ───────────────────────────────────────────────────────────────── */
+
+.paw__disc {
+  fill: var(--ink);
+}
+
+/* A different ring per seat, so the colour is never the only cue. */
+.paw__ring {
+  fill: none;
+  stroke: var(--pad);
+  stroke-width: 0.035;
+  opacity: 0.55;
+}
+.paw[data-seat='1'] .paw__ring { stroke: var(--pad-1); stroke-dasharray: 0.09 0.07; }
+.paw[data-seat='1'] .paw__print { fill: var(--pad-1); }
+.paw[data-seat='2'] .paw__ring { stroke-dasharray: 0.02 0.08; stroke-linecap: round; stroke-width: 0.05; }
+.paw[data-seat='3'] .paw__ring { stroke-width: 0.08; opacity: 0.35; }
+
+.paw__print {
+  fill: var(--pad);
+}
+
+.paw--ghost {
+  opacity: 0.45;
+}
+
+.board__paw {
+  animation: board-step var(--dur-slow) var(--ease) both;
+}
+
+/* Opacity only: a CSS transform here would replace the SVG translate. */
+@keyframes board-step {
+  from {
+    opacity: 0;
+  }
+}
+
+/* The newest paw: a soft ring around it, so you can see what the other
+   player just did after looking away. */
+.board__last {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 5;
+  opacity: 0.55;
+  stroke-dasharray: 6 6;
+  animation: board-ring 1.6s ease-out both;
+}
+
+@keyframes board-ring {
+  from {
+    opacity: 0;
+    stroke-width: 12;
+  }
+}
+
+/* The winning line, wrapped in a strand of yarn. */
+.board__yarn {
+  stroke: var(--ink);
+  stroke-width: 26;
+  stroke-linecap: round;
+  opacity: 0.45;
+  stroke-dasharray: 2000;
+  animation: board-yarn 900ms var(--ease) both;
+}
+
+@keyframes board-yarn {
+  from {
+    stroke-dashoffset: 2000;
+  }
+}
+
+.board__paw--win .paw__disc {
+  stroke: var(--text);
+  stroke-width: 0.05;
+}
+
+.board__preview--chosen .paw--ghost {
+  opacity: 0.75;
+  animation: board-chosen 1.2s ease-in-out infinite;
+}
+
+@keyframes board-chosen {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.board__hits rect {
+  fill: transparent;
+  cursor: pointer;
+  outline: none;
+}
+
+.board__hits rect:focus-visible {
+  fill: var(--line-hint);
+  opacity: 0.5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .board__paw,
+  .board__last,
+  .board__yarn,
+  .board__preview--chosen .paw--ghost {
+    animation: none;
+  }
+}

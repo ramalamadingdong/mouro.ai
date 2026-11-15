@@ -41,6 +41,7 @@ before(async () => {
       { name: 'yahtzee', rules: rules('games/yahtzee/database.rules.json'), reap: ['rooms'] },
       { name: 'holdem', rules: rules('games/holdem/database.rules.json'), reap: ['rooms'] },
       { name: 'dots', rules: rules('games/dots/database.rules.json'), reap: ['rooms'] },
+      { name: 'pawprints', rules: rules('games/pawprints/database.rules.json'), reap: ['rooms'] },
     ],
   });
   await new Promise((r) => server.http.listen(0, '127.0.0.1', r));
@@ -396,6 +397,110 @@ describe('dots rules', () => {
     const outsider = await player('dots');
     await denied(set(state(outsider), dotsState(uids, { version: 2, toAct: 2, by: outsider.uid, kind: 'away' })));
     await set(state(b), dotsState(uids, { version: 2, toAct: 2, by: b.uid, kind: 'away' }));
+  });
+});
+
+describe('pawprints rules', () => {
+  // A structurally valid 7x7 GameState for `uids`, as the engine would write it.
+  // The rules bound shape and authority, not the game, so the paws are arbitrary.
+  const empty = '.'.repeat(49);
+  const pawState = (uids, { version, toAct = null, by, kind, cells = empty, size = 7 }) => ({
+    version,
+    config: { size },
+    players: uids.map((uid, i) => ({ uid, name: `P${i}`, isHuman: true, sitOut: false })),
+    cells,
+    phase: toAct === null ? 'gameover' : 'playing',
+    starter: 0,
+    gameNo: 1,
+    ...(toAct === null ? { turnUid: '*' } : { toAct, turnUid: uids[toAct] }),
+    lastMove: { by, kind, seat: 0, ...(kind === 'paw' || kind === 'away' ? { cell: 24 } : {}) },
+  });
+
+  async function room(code, seats = 3) {
+    const players = [];
+    for (let i = 0; i < seats; i++) players.push(await player('pawprints'));
+    const [host] = players;
+    const now = Date.now();
+    await set(ref(host.db, `rooms/${code}`), {
+      meta: { host: host.uid, status: 'waiting', createdAt: now, updatedAt: now },
+      seats: { [host.uid]: `${now}|Host` },
+    });
+    for (const p of players.slice(1)) {
+      await update(ref(p.db, `rooms/${code}`), { [`seats/${p.uid}`]: `${now}|Guest`, 'meta/updatedAt': serverTimestamp() });
+    }
+    const uids = players.map((p) => p.uid);
+    const state = (p) => ref(p.db, `rooms/${code}/state`);
+    return { players, uids, state };
+  }
+
+  test('create and join: a waiting room is readable, a playing one only by its members', async () => {
+    const { players: [host, guest], uids, state } = await room('PAW22', 2);
+    const stranger = await player('pawprints');
+    assert.equal((await get(ref(stranger.db, 'rooms/PAW22/meta/status'))).val(), 'waiting');
+    await set(state(host), pawState(uids, { version: 1, toAct: 0, by: host.uid, kind: 'start' }));
+    await update(ref(host.db, 'rooms/PAW22/meta'), { status: 'playing', updatedAt: serverTimestamp() });
+    await denied(get(ref(stranger.db, 'rooms/PAW22')));
+    await denied(set(ref(stranger.db, `rooms/PAW22/seats/${stranger.uid}`), `${Date.now()}|Late`));
+    assert.equal((await get(ref(guest.db, 'rooms/PAW22/state/turnUid'))).val(), host.uid);
+  });
+
+  test('only the host writes the first state, and it must be a start', async () => {
+    const { players: [host, guest], uids, state } = await room('PAW33', 2);
+    await denied(set(state(guest), pawState(uids, { version: 1, toAct: 0, by: guest.uid, kind: 'start' })));
+    await denied(set(state(host), pawState(uids, { version: 1, toAct: 0, by: host.uid, kind: 'paw' })));
+    await denied(set(state(host), pawState(uids, { version: 1, toAct: 0, by: guest.uid, kind: 'start' })));
+    // The board must be size x size.
+    await denied(set(state(host), pawState(uids, { version: 1, toAct: 0, by: host.uid, kind: 'start', cells: '.'.repeat(48) })));
+    await denied(set(state(host), pawState(uids, { version: 1, toAct: 0, by: host.uid, kind: 'start', size: 16, cells: '.'.repeat(256) })));
+    await set(state(host), pawState(uids, { version: 1, toAct: 0, by: host.uid, kind: 'start' }));
+  });
+
+  test('only the player on turn plays; version rises; the shape is closed', async () => {
+    const { players: [host, a, b], uids, state } = await room('PAW44');
+    await set(state(host), pawState(uids, { version: 1, toAct: 1, by: host.uid, kind: 'start' }));
+    const played = '.'.repeat(24) + '1' + '.'.repeat(24);
+    await denied(set(state(b), pawState(uids, { version: 2, toAct: 2, by: b.uid, kind: 'paw', cells: played })));
+    await denied(set(state(host), pawState(uids, { version: 2, toAct: 2, by: host.uid, kind: 'paw', cells: played })));
+    await denied(set(state(a), pawState(uids, { version: 1, toAct: 2, by: a.uid, kind: 'paw', cells: played })));
+    await denied(set(state(a), pawState(uids, { version: 2, toAct: 2, by: b.uid, kind: 'paw', cells: played })));
+    await denied(set(state(a), { ...pawState(uids, { version: 2, toAct: 2, by: a.uid, kind: 'paw', cells: played }), turnUid: a.uid }));
+    await denied(set(state(a), { ...pawState(uids, { version: 2, toAct: 2, by: a.uid, kind: 'paw', cells: played }), junk: 1 }));
+    await denied(set(state(a), pawState(uids, { version: 2, toAct: 2, by: a.uid, kind: 'paw', cells: played.replace('1', 'x') })));
+    await denied(set(state(a), pawState(uids, { version: 2, toAct: 2, by: a.uid, kind: 'paw', cells: played.replace('1', '4') })));
+    await denied(set(state(a), pawState(uids, { version: 2, toAct: 2, by: a.uid, kind: 'rematch', cells: played })));
+    // The quilt cannot change size mid-game.
+    await denied(set(state(a), pawState(uids, { version: 2, toAct: 2, by: a.uid, kind: 'paw', size: 9, cells: '1' + '.'.repeat(80) })));
+    await set(state(a), pawState(uids, { version: 2, toAct: 2, by: a.uid, kind: 'paw', cells: played }));
+    await denied(set(ref(b.db, 'rooms/PAW44/state/cells'), '2'.repeat(49)));
+    await denied(set(ref(b.db, 'rooms/PAW44/state/version'), 99));
+    const outsider = await player('pawprints');
+    await denied(set(state(outsider), pawState(uids, { version: 3, toAct: 0, by: outsider.uid, kind: 'paw', cells: played })));
+  });
+
+  test('after the game any seated player may start a rematch, and only a rematch', async () => {
+    const { players: [host, a, b], uids, state } = await room('PAW55');
+    await set(state(host), pawState(uids, { version: 1, toAct: 0, by: host.uid, kind: 'start' }));
+    await set(state(host), pawState(uids, { version: 2, by: host.uid, kind: 'paw', cells: '0' + '.'.repeat(48) })); // game over
+    await denied(set(state(b), pawState(uids, { version: 3, toAct: 1, by: b.uid, kind: 'paw' })));
+    await remove(ref(a.db, `rooms/PAW55/seats/${a.uid}`));
+    await denied(set(state(a), pawState(uids, { version: 3, toAct: 1, by: a.uid, kind: 'rematch' })));
+    await denied(set(state(b), pawState(uids, { version: 2, toAct: 1, by: b.uid, kind: 'rematch' })));
+    await set(state(b), pawState(uids, { version: 3, toAct: 1, by: b.uid, kind: 'rematch' }));
+  });
+
+  test('away: another player may play for the one on turn only while their presence is gone', async () => {
+    const { players: [host, a, b], uids, state } = await room('PAW66');
+    await set(state(host), pawState(uids, { version: 1, toAct: 1, by: host.uid, kind: 'start' }));
+    const presence = ref(a.db, `rooms/PAW66/presence/${a.uid}`);
+    await set(presence, serverTimestamp());
+    const cells = '.'.repeat(24) + '1' + '.'.repeat(24);
+    await denied(set(state(b), pawState(uids, { version: 2, toAct: 2, by: b.uid, kind: 'away', cells })));
+    await remove(presence);
+    await denied(set(state(b), pawState(uids, { version: 2, toAct: 2, by: b.uid, kind: 'paw', cells })));
+    await denied(set(state(a), pawState(uids, { version: 2, toAct: 2, by: a.uid, kind: 'away', cells })));
+    const outsider = await player('pawprints');
+    await denied(set(state(outsider), pawState(uids, { version: 2, toAct: 2, by: outsider.uid, kind: 'away', cells })));
+    await set(state(b), pawState(uids, { version: 2, toAct: 2, by: b.uid, kind: 'away', cells }));
   });
 });
 

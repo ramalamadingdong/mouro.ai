@@ -182,6 +182,15 @@ const games = [
     icon: 'games/dots/public/icons/icon-512.png',
   },
   {
+    name: 'pawprints',
+    title: 'Pawprints',
+    text: 'Five paws in a row across a patchwork quilt. Block your friends online, or outwit the computer cats.',
+    tags: ['2–4 players', 'Online', 'vs computer cats'],
+    path: 'mouro.ai/pawprints',
+    a: '#8a4b1f', b: '#45240e', ink: '#f7d9a8',
+    icon: 'games/pawprints/public/icons/icon-512.png',
+  },
+  {
     name: 'yahtzee',
     title: 'Yahtzee',
     text: 'Five dice, thirteen boxes. Up to four players on their own phones, or pass one around.',
