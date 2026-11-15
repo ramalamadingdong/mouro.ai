@@ -7,7 +7,7 @@ are working in — those hold each project's non-negotiables.
 ## Layout
 
 - `site/` — static HTML/CSS. No build step. Edit the HTML directly.
-  `site/games/` (the games hub) and `site/games/sudoku/` are deliberately
+  `site/games/` (the games hub), `site/games/sudoku/` and `site/games/cat-cafe/` are deliberately
   separate from the portfolio: self-contained pages with their own styles,
   manifest and icons — they must not load `static/css/site.css`. Their icon
   PNGs come from the SVGs beside them via `scripts/render-icons.mjs`.

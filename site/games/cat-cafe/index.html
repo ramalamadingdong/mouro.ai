@@ -1,0 +1,956 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cat Café — mouro.ai</title>
+<meta name="description" content="A calm tile puzzle: draft cat-shaped tiles, fit them onto your café floor, and outscore a computer cat. Match coats, keep rivals apart, fill whole rows.">
+<meta property="og:title" content="Cat Café — mouro.ai">
+<meta property="og:description" content="Draft cat-shaped tiles and fit them onto your café floor. Match coats, keep rivals apart, fill whole rows.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://mouro.ai/games/cat-cafe/">
+<meta property="og:image" content="https://mouro.ai/games/cat-cafe/icons/icon-512.png">
+<!--
+  One self-contained file, like Sudoku next door: no build step, no shared
+  stylesheet, nothing from the portfolio. The game is offline-only (you against
+  a computer cat), so it never talks to the realtime server.
+
+  Installable on its own (manifest + iOS tags); no service worker, like the other games.
+-->
+<link rel="manifest" href="/games/cat-cafe/manifest.webmanifest">
+<meta name="theme-color" content="#12383f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Cat Café">
+<link rel="apple-touch-icon" href="/games/cat-cafe/icons/apple-touch-icon.png">
+<link rel="icon" href="/games/cat-cafe/icons/icon-192.png" type="image/png" sizes="192x192">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    color-scheme: dark;
+    --wall: #12383f; --wall-deep: #0b2429; --raised: #194851; --sunk: rgba(0, 0, 0, .22);
+    --cream: #f7efdf; --muted: #a9c6c4; --faint: #7fa09f;
+    --amber: #f2b560; --amber-deep: #a8742a; --mint: #8fe0b8; --coral: #ff8370;
+    --line: rgba(247, 239, 223, .14);
+    --display: "Fredoka", "DM Sans", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; min-height: 100vh; min-height: 100dvh;
+    font-family: "DM Sans", "Segoe UI", system-ui, sans-serif; line-height: 1.45; color: var(--cream);
+    background-color: var(--wall-deep);
+    background-image:
+      radial-gradient(640px 380px at 8% -6%, rgba(242, 181, 96, .2), transparent 65%),
+      radial-gradient(560px 380px at 100% 0%, rgba(143, 224, 184, .12), transparent 62%),
+      linear-gradient(180deg, var(--wall), var(--wall-deep) 620px);
+    background-repeat: no-repeat;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3, p { margin: 0; }
+  a { color: inherit; }
+  [hidden] { display: none !important; }
+  :focus-visible { outline: 3px solid var(--amber); outline-offset: 2px; }
+
+  main {
+    max-width: 960px; margin: 0 auto;
+    padding: calc(14px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right)) calc(36px + env(safe-area-inset-bottom)) calc(14px + env(safe-area-inset-left));
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  h1 { font-family: var(--display); font-weight: 600; font-size: 1.6rem; line-height: 1.1; }
+  header nav { display: flex; align-items: center; gap: 14px; }
+  header a { color: var(--muted); text-decoration: none; font-weight: 600; font-size: .95rem; white-space: nowrap; }
+  header a:hover { color: var(--cream); }
+
+  button { font: inherit; color: var(--cream); cursor: pointer; }
+  .btn {
+    background: var(--raised); border: 1px solid var(--line); border-radius: 12px;
+    padding: 10px 14px; font-weight: 600; font-size: .95rem; white-space: nowrap;
+    transition: border-color .12s ease, background .12s ease, transform .12s ease;
+  }
+  .btn:hover:not(:disabled) { border-color: rgba(242, 181, 96, .6); }
+  .btn:active:not(:disabled) { transform: translateY(1px); }
+  .btn:disabled { opacity: .4; cursor: default; }
+  .btn.small { padding: 7px 12px; font-size: .9rem; }
+  .btn.go { background: var(--amber); border-color: transparent; color: #2a1a04; font-weight: 700; box-shadow: 0 3px 0 var(--amber-deep); }
+  .btn.go:disabled { box-shadow: none; }
+  .btn.quiet { background: transparent; color: var(--muted); }
+
+  /* ── Score line ─────────────────────────────────────────────────────── */
+  .scores { display: grid; grid-template-columns: 1fr auto 1fr; align-items: stretch; gap: 8px; }
+  .who {
+    display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 0 10px;
+    padding: 8px 12px; border-radius: 14px; background: var(--sunk); border: 1px solid transparent; min-width: 0;
+  }
+  .who.rival { grid-template-columns: 1fr auto; text-align: right; }
+  .who.turn { border-color: var(--amber); background: rgba(242, 181, 96, .1); }
+  .who .n { grid-row: span 2; font-family: var(--display); font-weight: 600; font-size: 1.9rem; line-height: 1; font-variant-numeric: tabular-nums; }
+  .who.rival .n { grid-column: 2; grid-row: 1 / span 2; }
+  .who .name { font-weight: 700; font-size: .92rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .who .parts { color: var(--muted); font-size: .78rem; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .round { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0 6px; color: var(--muted); font-size: .72rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+  .round strong { font-family: var(--display); font-size: 1.15rem; letter-spacing: 0; color: var(--cream); font-weight: 600; white-space: nowrap; }
+
+  /* ── Table: floor on the left, market and rival on the right ─────────── */
+  .table { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 18px; align-items: start; }
+  .floor { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .side { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+
+  svg.cafe {
+    display: block; width: 100%; height: auto; aspect-ratio: 1; border-radius: 16px;
+    background: #8a5b38; box-shadow: 0 0 0 5px #6f4628, 0 12px 28px rgba(0, 0, 0, .4);
+    user-select: none; -webkit-user-select: none;
+  }
+  #board { margin: 5px; width: calc(100% - 10px); cursor: default; }
+  #board * { pointer-events: none; }
+  #board.arming { touch-action: none; cursor: pointer; }
+  .settle { animation: settle .36s cubic-bezier(.2, 1.4, .4, 1); transform-box: fill-box; transform-origin: center; }
+  @keyframes settle { from { transform: scale(.82); opacity: 0; } to { transform: none; opacity: 1; } }
+  .ghost { opacity: .9; }
+  .ghost .shape { stroke-width: 7; }
+  .ghost.ok .shape { stroke: #2fa873; }
+  .ghost.bad { opacity: .75; }
+  .ghost.bad .shape { stroke: #d6452f; }
+  .ghost .veto { fill: #e4573d; opacity: .42; }
+
+  .status { min-height: 2.9em; text-align: center; color: var(--muted); font-size: .95rem; padding: 0 4px; }
+  .status b { color: var(--cream); font-weight: 700; }
+  .status .up { color: var(--mint); font-weight: 700; }
+  .status .down { color: var(--coral); font-weight: 700; }
+
+  .panel { background: var(--sunk); border: 1px solid var(--line); border-radius: 18px; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+  .panel h2 { font-size: .76rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--faint); }
+
+  .market { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .tile {
+    position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px;
+    padding: 6px 4px 7px; border-radius: 14px; background: rgba(247, 239, 223, .06); border: 2px solid transparent;
+    touch-action: none; min-width: 0; transition: background .12s ease, border-color .12s ease, opacity .12s ease;
+  }
+  .tile svg { width: 100%; max-width: 132px; height: auto; aspect-ratio: 1; pointer-events: none; }
+  .tile span { font-size: .78rem; font-weight: 600; color: var(--muted); pointer-events: none; white-space: nowrap; }
+  .tile:hover:not(:disabled) { background: rgba(247, 239, 223, .11); }
+  .tile[aria-pressed="true"] { border-color: var(--amber); background: rgba(242, 181, 96, .14); }
+  .tile[aria-pressed="true"] span { color: var(--cream); }
+  .tile.nofit svg { opacity: .45; }
+  .tile.nofit span { color: var(--coral); }
+  .tile.wanted { border-color: var(--mint); background: rgba(143, 224, 184, .14); }
+  .tile:disabled { cursor: default; }
+  .tile.gone { border: 2px dashed var(--line); background: transparent; justify-content: center; color: var(--faint); font-size: .8rem; aspect-ratio: 1 / 1.16; }
+
+  .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .controls .go { grid-column: 1 / -1; padding: 12px 14px; font-size: 1rem; }
+  .controls .quiet { grid-column: 1 / -1; padding: 4px; border: 0; font-size: .86rem; }
+
+  #rivalBoard { max-width: 300px; margin: 0 auto; border-radius: 10px; box-shadow: 0 0 0 3px #6f4628; }
+  .rivalnote { color: var(--muted); font-size: .86rem; text-align: center; }
+
+  .legend { display: flex; flex-direction: column; gap: 6px; font-size: .9rem; color: var(--muted); }
+  .legend li { display: flex; gap: 8px; align-items: baseline; }
+  .legend ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  .legend b { color: var(--cream); font-weight: 700; flex: none; min-width: 2.2em; font-variant-numeric: tabular-nums; }
+  .dot { display: inline-block; width: .8em; height: .8em; border-radius: 50%; vertical-align: -.06em; margin-right: .2em; box-shadow: 0 0 0 1.5px rgba(0, 0, 0, .35); }
+  details summary { cursor: pointer; font-weight: 600; color: var(--muted); font-size: .9rem; }
+  details p { color: var(--muted); font-size: .9rem; margin-top: 8px; }
+
+  /* ── Results ────────────────────────────────────────────────────────── */
+  .results h3 { font-family: var(--display); font-weight: 600; font-size: 1.45rem; line-height: 1.15; }
+  .results table { width: 100%; border-collapse: collapse; font-size: .92rem; font-variant-numeric: tabular-nums; }
+  .results th, .results td { padding: 5px 4px; text-align: right; border-bottom: 1px solid var(--line); font-weight: 500; }
+  .results th:first-child, .results td:first-child { text-align: left; color: var(--muted); }
+  .results thead th { color: var(--faint); font-size: .78rem; font-weight: 700; }
+  .results tr.sum td { border-bottom: 0; font-weight: 700; font-size: 1.05rem; color: var(--cream); }
+  .results .best { color: var(--muted); font-size: .88rem; }
+  .results .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+  /* ── Choose a rival ─────────────────────────────────────────────────── */
+  dialog {
+    width: min(440px, calc(100vw - 28px)); padding: 18px; border-radius: 22px; color: var(--cream);
+    background: var(--wall); border: 1px solid var(--line); box-shadow: 0 24px 60px rgba(0, 0, 0, .55);
+  }
+  dialog::backdrop { background: rgba(5, 16, 18, .7); }
+  dialog h2 { font-family: var(--display); font-weight: 600; font-size: 1.5rem; }
+  dialog > p { color: var(--muted); margin: 4px 0 14px; }
+  .rivals { display: flex; flex-direction: column; gap: 8px; }
+  .rivalpick {
+    display: grid; grid-template-columns: 56px 1fr; gap: 0 12px; align-items: center; text-align: left;
+    padding: 10px 12px; border-radius: 16px; background: var(--sunk); border: 1px solid var(--line);
+  }
+  .rivalpick:hover { border-color: var(--amber); }
+  .rivalpick svg { grid-row: span 2; width: 56px; height: 56px; }
+  .rivalpick strong { font-family: var(--display); font-weight: 600; font-size: 1.15rem; align-self: end; }
+  .rivalpick strong small { font-family: "DM Sans", sans-serif; font-size: .74rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); margin-left: 6px; }
+  .rivalpick span { color: var(--muted); font-size: .9rem; align-self: start; }
+  dialog .close { margin-top: 12px; width: 100%; }
+
+  @media (max-width: 780px) {
+    main { gap: 10px; }
+    .table { grid-template-columns: 1fr; gap: 10px; }
+    .market { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+    .tile { padding: 4px 2px 5px; border-radius: 12px; }
+    .tile span { font-size: .68rem; }
+    .controls { grid-template-columns: 1fr 1fr 1.6fr; }
+    .controls .go { grid-column: auto; padding: 10px; }
+    .panel { padding: 10px; }
+    .status { min-height: 2.6em; font-size: .9rem; }
+    .tile.gone { aspect-ratio: auto; }
+    .tile svg { max-width: 72px; }
+    /* Keep the floor and the cats at the door on one screen: no scrolling between picking and placing. */
+    .floor { align-items: center; }
+    #board { width: min(calc(100% - 10px), max(250px, calc(100dvh - 350px))); }
+    #marketTitle { display: none; }
+    .who .parts { display: none; }
+    .who .name { grid-row: span 2; }
+  }
+  @media (max-width: 380px) {
+    h1 { font-size: 1.35rem; }
+    .who { padding: 6px 9px; }
+    .who .n { font-size: 1.6rem; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Cat Café</h1>
+    <nav>
+      <button class="btn small" id="newGame" type="button">New game</button>
+      <a href="/games/">← All games</a>
+    </nav>
+  </header>
+
+  <section class="scores" aria-label="Scores">
+    <div class="who you" id="youBox">
+      <span class="n" id="youScore">0</span>
+      <span class="name">You</span>
+      <span class="parts" id="youParts"></span>
+    </div>
+    <div class="round">Round <strong id="round">1 / 12</strong></div>
+    <div class="who rival" id="rivalBox">
+      <span class="n" id="rivalScore">0</span>
+      <span class="name" id="rivalName">Miso</span>
+      <span class="parts" id="rivalParts"></span>
+    </div>
+  </section>
+
+  <div class="table">
+    <section class="floor">
+      <svg class="cafe" id="board" viewBox="0 0 700 700" role="img" aria-label="Your café floor, seven by seven squares"></svg>
+      <p class="status" id="status" role="status" aria-live="polite"></p>
+    </section>
+
+    <aside class="side">
+      <section class="panel" id="marketPanel">
+        <h2 id="marketTitle">Cats at the door</h2>
+        <div class="market" id="market"></div>
+        <div class="controls">
+          <button class="btn" id="rotate" type="button">Rotate</button>
+          <button class="btn" id="flip" type="button">Flip</button>
+          <button class="btn go" id="place" type="button">Seat this cat</button>
+          <button class="btn quiet" id="skip" type="button">Send it away instead (no points)</button>
+        </div>
+      </section>
+
+      <section class="panel results" id="results" hidden></section>
+
+      <section class="panel">
+        <h2 id="rivalTitle">Miso’s café</h2>
+        <svg class="cafe" id="rivalBoard" viewBox="0 0 700 700" role="img" aria-label="Your rival’s café floor"></svg>
+        <p class="rivalnote" id="rivalNote"></p>
+      </section>
+
+      <section class="panel legend">
+        <h2>Scoring</h2>
+        <ul>
+          <li><b>+2</b><span>for each pair of touching cats with the same coat</span></li>
+          <li><b>−3</b><span>for each pair of touching rivals:
+            <span class="dot" style="background:#ef9140"></span>Ginger and <span class="dot" style="background:#8f9cb3"></span>Smoke,
+            <span class="dot" style="background:#37323f"></span>Tuxedo and <span class="dot" style="background:#fffaf1"></span>Snow</span></li>
+          <li><b>+5</b><span>for each row filled from wall to wall</span></li>
+        </ul>
+        <details>
+          <summary>How to play</summary>
+          <p>Each round, four cats wait at the door. You and your rival each take one — you pick first on odd rounds, your rival on even ones — and seat it somewhere on your own floor. Cats can be rotated and flipped, but never moved once seated.</p>
+          <p>Tap a cat to pick it up (tap it again to rotate), tap or drag on the floor to choose a spot, then seat it. With a mouse, just click the spot. A cat that fits nowhere has to be sent away.</p>
+          <p>After twelve rounds, the café with the most points wins.</p>
+          <p>Keyboard: 1–4 pick a cat, arrows move it, R rotates, F flips, Enter seats it.</p>
+        </details>
+      </section>
+    </aside>
+  </div>
+</main>
+
+<dialog id="chooser" aria-labelledby="chooserTitle">
+  <h2 id="chooserTitle">Who’s running the café next door?</h2>
+  <p>Pick a rival. You’ll share the cats at the door.</p>
+  <div class="rivals" id="rivals"></div>
+  <button class="btn close" id="chooserClose" type="button">Back to my game</button>
+</dialog>
+
+<script>
+(() => {
+  "use strict";
+
+  // ── Rules ───────────────────────────────────────────────────────────────
+  const W = 7, H = 7, ROUNDS = 12, MARKET = 4;
+  const PTS = { friend: 2, spat: 3, row: 5 };
+
+  // `rival` is the coat this one cannot stand; it is always mutual.
+  const COATS = {
+    ginger: { name: "Ginger", rival: "smoke",  fill: "#ef9140", face: "#f8ad66", edge: "#b05c17", ink: "#4a2508", eye: "#4a2508" },
+    smoke:  { name: "Smoke",  rival: "ginger", fill: "#8f9cb3", face: "#a9b5c9", edge: "#525e75", ink: "#1f2735", eye: "#1f2735" },
+    tux:    { name: "Tuxedo", rival: "snow",   fill: "#37323f", face: "#474152", edge: "#131018", ink: "#2a2530", eye: "#f1df6e" },
+    snow:   { name: "Snow",   rival: "tux",    fill: "#fffaf1", face: "#ffffff", edge: "#ad9878", ink: "#4b3f33", eye: "#4b3f33" },
+  };
+
+  // Each shape is a cat lying down: the first square is its head, the last its tail.
+  const SHAPES = {
+    nap:     { name: "napper",       cells: [[0, 0], [1, 0]] },
+    stretch: { name: "stretcher",    cells: [[0, 0], [1, 0], [2, 0]] },
+    curl:    { name: "curler",       cells: [[0, 0], [0, 1], [1, 1]] },
+    loaf:    { name: "loaf",         cells: [[0, 0], [1, 0], [1, 1], [0, 1]] },
+    long:    { name: "long cat",     cells: [[0, 0], [1, 0], [2, 0], [3, 0]] },
+    sit:     { name: "sitter",       cells: [[0, 0], [0, 1], [0, 2], [1, 2]] },
+    sprawl:  { name: "sprawler",     cells: [[1, 1], [0, 0], [1, 0], [2, 0]] },
+    slink:   { name: "slinker",      cells: [[0, 0], [1, 0], [1, 1], [2, 1]] },
+    lounge:  { name: "lounger",      cells: [[0, 0], [1, 0], [1, 1], [0, 1], [0, 2]] },
+    corner:  { name: "corner hog",   cells: [[0, 0], [0, 1], [0, 2], [1, 2], [2, 2]] },
+  };
+
+  const RIVALS = {
+    pudding: { name: "Pudding", coat: "snow",   level: 0, tag: "Easy",   blurb: "Half asleep. Seats cats wherever is nearest." },
+    miso:    { name: "Miso",    coat: "ginger", level: 1, tag: "Medium", blurb: "Keeps a tidy café and likes a matching set." },
+    duchess: { name: "Duchess", coat: "smoke",  level: 2, tag: "Hard",   blurb: "Plans ahead, and takes the cat you wanted." },
+  };
+
+  const tileName = (t) => `${COATS[t.coat].name} ${SHAPES[t.shape].name}`;
+
+  function orient(cells, rot, flip) {
+    let out = cells.map(([x, y]) => (flip ? [-x, y] : [x, y]));
+    for (let i = 0; i < rot; i++) out = out.map(([x, y]) => [-y, x]);
+    const mx = Math.min(...out.map((c) => c[0])), my = Math.min(...out.map((c) => c[1]));
+    return out.map(([x, y]) => [x - mx, y - my]);
+  }
+  const extent = (cells) => [Math.max(...cells.map((c) => c[0])) + 1, Math.max(...cells.map((c) => c[1])) + 1];
+  const shift = (cells, gx, gy) => cells.map(([x, y]) => [x + gx, y + gy]);
+
+  /** Which cat (by index) sits on each square, or -1. */
+  function gridOf(cats) {
+    const g = new Array(W * H).fill(-1);
+    cats.forEach((c, i) => { for (const [x, y] of c.cells) g[y * W + x] = i; });
+    return g;
+  }
+  function fits(grid, cells) {
+    return cells.every(([x, y]) => x >= 0 && x < W && y >= 0 && y < H && grid[y * W + x] < 0);
+  }
+
+  /** Score a café. Pairs are counted once per two cats, however long the border they share. */
+  function tally(cats) {
+    const grid = gridOf(cats), seen = new Set(), links = [];
+    const mood = cats.map(() => "sleep");
+    let friends = 0, spats = 0;
+    const meet = (a, b, px, py) => {
+      if (b < 0 || a === b) return;
+      const key = Math.min(a, b) * 100 + Math.max(a, b);
+      if (seen.has(key)) return;
+      seen.add(key);
+      const ca = cats[a].coat, cb = cats[b].coat;
+      if (ca === cb) { friends++; links.push({ kind: "friend", x: px, y: py }); for (const i of [a, b]) if (mood[i] !== "grumpy") mood[i] = "happy"; }
+      else if (COATS[ca].rival === cb) { spats++; links.push({ kind: "spat", x: px, y: py }); mood[a] = mood[b] = "grumpy"; }
+    };
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const a = grid[y * W + x];
+      if (a < 0) continue;
+      if (x + 1 < W) meet(a, grid[y * W + x + 1], x + 1, y + 0.5);
+      if (y + 1 < H) meet(a, grid[(y + 1) * W + x], x + 0.5, y + 1);
+    }
+    const fullRows = [];
+    for (let y = 0; y < H; y++) if (grid.slice(y * W, y * W + W).every((v) => v >= 0)) fullRows.push(y);
+    const total = friends * PTS.friend - spats * PTS.spat + fullRows.length * PTS.row;
+    return { grid, friends, spats, rows: fullRows.length, fullRows, links, mood, total };
+  }
+
+  /** Every distinct way a tile can still be seated: a list of absolute cell lists. */
+  function placements(grid, tile) {
+    const seen = new Set(), out = [];
+    for (const flip of [false, true]) for (let rot = 0; rot < 4; rot++) {
+      const cells = orient(SHAPES[tile.shape].cells, rot, flip);
+      const key = cells.map((c) => c.join()).sort().join("|");
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const [w, h] = extent(cells);
+      for (let gy = 0; gy + h <= H; gy++) for (let gx = 0; gx + w <= W; gx++) {
+        const at = shift(cells, gx, gy);
+        if (fits(grid, at)) out.push(at);
+      }
+    }
+    return out;
+  }
+
+  // ── The rival ───────────────────────────────────────────────────────────
+  /** Cost of the awkward gaps on a floor: a lone empty square can never be filled, a pair rarely. */
+  function gapCost(grid) {
+    const seen = new Uint8Array(W * H);
+    let cost = 0;
+    for (let i = 0; i < W * H; i++) {
+      if (grid[i] >= 0 || seen[i]) continue;
+      let n = 0;
+      const stack = [i];
+      seen[i] = 1;
+      while (stack.length) {
+        const j = stack.pop(), x = j % W, y = (j / W) | 0;
+        n++;
+        for (const [nx, ny] of [[x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]]) {
+          const k = ny * W + nx;
+          if (nx >= 0 && nx < W && ny >= 0 && ny < H && grid[k] < 0 && !seen[k]) { seen[k] = 1; stack.push(k); }
+        }
+      }
+      if (n === 1) cost += 2.5; else if (n === 2) cost += 1;
+    }
+    return cost;
+  }
+  /** How close the unfinished rows are to done (nearly-full rows count for much more). */
+  function rowPromise(grid) {
+    let p = 0;
+    for (let y = 0; y < H; y++) {
+      let f = 0;
+      for (let x = 0; x < W; x++) if (grid[y * W + x] >= 0) f++;
+      if (f < W) p += (f / W) ** 2;
+    }
+    return p;
+  }
+  /** The most points `cats`' owner could make right now with `tile` (0 if it fits nowhere). */
+  function bestGain(cats, tile) {
+    const base = tally(cats).total;
+    let best = 0;
+    for (const cells of placements(gridOf(cats), tile)) {
+      best = Math.max(best, tally(cats.concat({ coat: tile.coat, cells })).total - base);
+    }
+    return best;
+  }
+  /**
+   * Choose a market slot and where to seat it. Level 0 looks only at the points
+   * on offer and is easily distracted; level 1 also likes big cats; level 2
+   * avoids dead gaps, builds rows, and weighs what the tile is worth to you.
+   * Returns { slot, cells } — cells is null when nothing fits anywhere.
+   */
+  function rivalChoice(market, mine, yours, level, rnd = Math.random) {
+    const g0 = gridOf(mine), base = tally(mine).total, gap0 = gapCost(g0), promise0 = rowPromise(g0);
+    const noise = [20, 2, 0.3][level];
+    let best = null;
+    market.forEach((tile, slot) => {
+      if (!tile) return;
+      const deny = level === 2 ? bestGain(yours, tile) * 0.35 : 0;
+      for (const cells of placements(g0, tile)) {
+        const cats = mine.concat({ coat: tile.coat, cells });
+        let v = tally(cats).total - base;
+        if (level >= 1) v += cells.length * 0.5;
+        if (level >= 2) {
+          const g = gridOf(cats);
+          v += deny - (gapCost(g) - gap0) + (rowPromise(g) - promise0) * 2;
+        }
+        v += (rnd() - 0.5) * noise;
+        if (!best || v > best.v) best = { slot, cells, v };
+      }
+    });
+    if (best) return { slot: best.slot, cells: best.cells };
+    const open = market.map((t, i) => (t ? i : -1)).filter((i) => i >= 0);
+    return { slot: open[Math.floor(rnd() * open.length)], cells: null };
+  }
+
+  // ── Game state ──────────────────────────────────────────────────────────
+  // Plain data, so it can go straight into localStorage.
+  //   turn: "you" | "rival" | "over";  picks: how many of this round's two picks are done.
+  function freshGame(rival, rnd = Math.random) {
+    const bag = [];
+    for (const coat of Object.keys(COATS)) for (const shape of Object.keys(SHAPES)) bag.push({ id: bag.length, coat, shape });
+    for (let i = bag.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [bag[i], bag[j]] = [bag[j], bag[i]]; }
+    const s = { v: 1, rival, round: 1, picks: 0, turn: "you", bag, market: new Array(MARKET).fill(null), cafes: { you: [], rival: [] } };
+    deal(s);
+    return s;
+  }
+  function deal(s) { s.market = s.market.map((t) => t || s.bag.pop() || null); }
+  /** `who` takes the tile in `slot` and seats it on `cells` (null = sent away). Advances the turn. */
+  function take(s, who, slot, cells) {
+    const tile = s.market[slot];
+    s.market[slot] = null;
+    if (cells) s.cafes[who].push({ coat: tile.coat, shape: tile.shape, cells });
+    s.picks++;
+    if (s.picks < 2) { s.turn = who === "you" ? "rival" : "you"; return; }
+    s.picks = 0;
+    if (s.round >= ROUNDS) { s.turn = "over"; return; }
+    s.round++;
+    deal(s);
+    s.turn = s.round % 2 ? "you" : "rival";
+  }
+
+  // ── Drawing ─────────────────────────────────────────────────────────────
+  // Everything is SVG in "floor units": one square is 100 × 100.
+  const U = 100;
+
+  /** Outline of a set of squares as one rounded path, pulled in by `inset`. */
+  function outline(cells, inset = 5, radius = 24) {
+    const has = new Set(cells.map((c) => c.join()));
+    const next = new Map();
+    const edge = (x1, y1, x2, y2) => next.set(`${x1},${y1}`, [x2, y2]);
+    for (const [x, y] of cells) {
+      if (!has.has(`${x},${y - 1}`)) edge(x, y, x + 1, y);
+      if (!has.has(`${x + 1},${y}`)) edge(x + 1, y, x + 1, y + 1);
+      if (!has.has(`${x},${y + 1}`)) edge(x + 1, y + 1, x, y + 1);
+      if (!has.has(`${x - 1},${y}`)) edge(x, y + 1, x, y);
+    }
+    // Walk the loop clockwise, keeping only the corners.
+    const start = next.keys().next().value.split(",").map(Number), pts = [];
+    let p = start, prevDir = null;
+    do {
+      const q = next.get(p.join());
+      const dir = [q[0] - p[0], q[1] - p[1]];
+      if (!prevDir || dir[0] !== prevDir[0] || dir[1] !== prevDir[1]) pts.push({ p, dir });
+      prevDir = dir;
+      p = q;
+    } while (p[0] !== start[0] || p[1] !== start[1]);
+    // The first point is only a corner if the loop turns there.
+    const last = pts[pts.length - 1].dir;
+    if (pts[0].dir[0] === last[0] && pts[0].dir[1] === last[1]) pts.shift();
+    const n = pts.length;
+    const corners = pts.map(({ p: [x, y], dir }, i) => {
+      const before = pts[(i + n - 1) % n].dir;
+      // Inward normal of a clockwise edge (dx, dy) is (-dy, dx).
+      return [x * U + inset * (-before[1] - dir[1]), y * U + inset * (before[0] + dir[0])];
+    });
+    let d = "";
+    corners.forEach((c, i) => {
+      const a = corners[(i + n - 1) % n], b = corners[(i + 1) % n];
+      const toward = (t) => { const len = Math.hypot(t[0] - c[0], t[1] - c[1]); const r = Math.min(radius, len / 2); return [c[0] + ((t[0] - c[0]) / len) * r, c[1] + ((t[1] - c[1]) / len) * r]; };
+      const p1 = toward(a), p2 = toward(b);
+      d += `${i ? "L" : "M"}${p1[0].toFixed(1)} ${p1[1].toFixed(1)}Q${c[0].toFixed(1)} ${c[1].toFixed(1)} ${p2[0].toFixed(1)} ${p2[1].toFixed(1)}`;
+    });
+    return d + "Z";
+  }
+
+  /** A cat's face, always upright, centred on (cx, cy). Mood: awake | sleep | happy | grumpy. */
+  function face(cx, cy, coat, mood) {
+    const c = COATS[coat];
+    const ear = (s) =>
+      `<path d="M${cx + s * 31} ${cy - 4}L${cx + s * 28} ${cy - 38}L${cx + s * 4} ${cy - 20}Z" fill="${c.face}" stroke="${c.edge}" stroke-width="4" stroke-linejoin="round"/>` +
+      `<path d="M${cx + s * 25} ${cy - 13}L${cx + s * 24} ${cy - 29}L${cx + s * 12} ${cy - 20}Z" fill="#f2a7ae"/>`;
+    const stroke = `fill="none" stroke="${c.eye}" stroke-width="3.6" stroke-linecap="round"`;
+    let eyes;
+    if (mood === "awake") eyes = `<circle cx="${cx - 13}" cy="${cy + 2}" r="4.6" fill="${c.eye}"/><circle cx="${cx + 13}" cy="${cy + 2}" r="4.6" fill="${c.eye}"/>`;
+    else if (mood === "happy") eyes = `<path d="M${cx - 19} ${cy + 4}q6 -8 12 0M${cx + 7} ${cy + 4}q6 -8 12 0" ${stroke}/>`;
+    else if (mood === "grumpy") eyes = `<path d="M${cx - 20} ${cy - 3}l12 6M${cx + 20} ${cy - 3}l-12 6" ${stroke}/><circle cx="${cx - 12}" cy="${cy + 6}" r="2.6" fill="${c.eye}"/><circle cx="${cx + 12}" cy="${cy + 6}" r="2.6" fill="${c.eye}"/>`;
+    else eyes = `<path d="M${cx - 19} ${cy + 1}q6 6 12 0M${cx + 7} ${cy + 1}q6 6 12 0" ${stroke}/>`;
+    const muzzle = coat === "tux" ? `<ellipse cx="${cx}" cy="${cy + 19}" rx="16" ry="11" fill="#f5efe2"/>` : "";
+    const brow = coat === "ginger" ? `<path d="M${cx - 6} ${cy - 17}v8M${cx} ${cy - 19}v9M${cx + 6} ${cy - 17}v8" stroke="${c.edge}" stroke-width="3" stroke-linecap="round" opacity=".55"/>` : "";
+    const whisk = coat === "tux" ? "#f5efe2" : c.ink;
+    return (
+      ear(-1) + ear(1) +
+      `<ellipse cx="${cx}" cy="${cy + 6}" rx="32" ry="27" fill="${c.face}" stroke="${c.edge}" stroke-width="4"/>` +
+      muzzle + brow + eyes +
+      `<path d="M${cx - 4.5} ${cy + 11}h9l-4.5 5z" fill="#e98b93"/>` +
+      `<path d="M${cx - 7} ${cy + 20}q3.5 4 7 0q3.5 4 7 0" fill="none" stroke="${c.ink}" stroke-width="2.4" stroke-linecap="round"/>` +
+      `<path d="M${cx - 23} ${cy + 13}l-13 -3M${cx - 23} ${cy + 18}l-13 3M${cx + 23} ${cy + 13}l13 -3M${cx + 23} ${cy + 18}l13 3" stroke="${whisk}" stroke-width="2" stroke-linecap="round" opacity=".5"/>`
+    );
+  }
+
+  /** One whole cat on absolute squares. */
+  function catMarkup(cells, coat, mood, cls = "") {
+    const c = COATS[coat];
+    const d = outline(cells);
+    let s = `<g class="cat ${cls}"><path class="shape" d="${d}" fill="${c.fill}" stroke="${c.edge}" stroke-width="4" stroke-linejoin="round"/>`;
+    cells.forEach(([x, y], i) => {
+      if (i === 0) return;
+      const ox = x * U, oy = y * U;
+      if (i === cells.length - 1) {
+        s += `<path d="M${ox + 30} ${oy + 66}q-6 -34 20 -34q24 2 20 24q-4 14 -16 10" fill="none" stroke="${c.edge}" stroke-width="7" stroke-linecap="round" opacity=".7"/>`;
+      } else if (coat === "ginger") {
+        s += `<path d="M${ox + 30} ${oy + 42}q20 -10 40 0M${ox + 30} ${oy + 60}q20 -10 40 0" fill="none" stroke="${c.edge}" stroke-width="5" stroke-linecap="round" opacity=".45"/>`;
+      } else if (coat === "smoke") {
+        s += `<circle cx="${ox + 40}" cy="${oy + 44}" r="8" fill="${c.face}" opacity=".8"/><circle cx="${ox + 62}" cy="${oy + 60}" r="6" fill="${c.face}" opacity=".8"/>`;
+      } else if (coat === "tux") {
+        s += `<ellipse cx="${ox + 50}" cy="${oy + 52}" rx="15" ry="12" fill="#f5efe2" opacity=".9"/>`;
+      }
+    });
+    const [hx, hy] = cells[0];
+    s += face(hx * U + 50, hy * U + 50, coat, mood);
+    if (cls.includes("bad")) s += `<path class="veto" d="${d}"/>`;
+    return s + "</g>";
+  }
+
+  const FLOOR = (() => {
+    let s = "";
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      s += `<rect x="${x * U + 2}" y="${y * U + 2}" width="96" height="96" rx="10" fill="${(x + y) % 2 ? "#e3cba3" : "#eedcbc"}"/>`;
+    }
+    return s;
+  })();
+
+  function badge(l) {
+    const t = `transform="translate(${l.x * U} ${l.y * U})"`;
+    return l.kind === "friend"
+      ? `<g ${t}><circle r="15" fill="#fff7f3" stroke="#e9577a" stroke-width="2.5"/><path d="M0 8C-13 -2 -6 -11 0 -5C6 -11 13 -2 0 8Z" fill="#e9577a"/></g>`
+      : `<g ${t}><circle r="15" fill="#e4573d" stroke="#7d2415" stroke-width="2.5"/><path d="M3 -10L-7 2H-1L-3 10L7 -2H1Z" fill="#fff"/></g>`;
+  }
+
+  /** A whole floor. opt.fresh = index of the cat to animate in; opt.ghost = { coat, cells, ok }. */
+  function floorMarkup(cats, opt = {}) {
+    const t = tally(cats);
+    let s = FLOOR;
+    cats.forEach((c, i) => { s += catMarkup(c.cells, c.coat, t.mood[i], i === opt.fresh ? "settle" : ""); });
+    for (const y of t.fullRows) s += `<rect x="3" y="${y * U + 3}" width="${W * U - 6}" height="94" rx="26" fill="none" stroke="#f2b560" stroke-width="6" opacity=".95"/>`;
+    for (const l of t.links) s += badge(l);
+    if (opt.ghost) s += catMarkup(opt.ghost.cells, opt.ghost.coat, "awake", `ghost ${opt.ghost.ok ? "ok" : "bad"}`);
+    return s;
+  }
+
+  /** A loose tile, centred in a 4.2-square box, for the market. */
+  function tileMarkup(tile, rot, flip) {
+    const cells = orient(SHAPES[tile.shape].cells, rot, flip), [w, h] = extent(cells), box = 420;
+    return `<svg viewBox="${-(box - w * U) / 2} ${-(box - h * U) / 2} ${box} ${box}" aria-hidden="true">${catMarkup(cells, tile.coat, "awake")}</svg>`;
+  }
+
+  // ── Interface ───────────────────────────────────────────────────────────
+  const $ = (id) => document.getElementById(id);
+  const boardEl = $("board"), marketEl = $("market"), statusEl = $("status");
+  const SAVE = "cat-cafe:game", BEST = "cat-cafe:best";
+  const store = {
+    get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* private mode: play on without saving */ } },
+  };
+
+  let state = null;
+  // What the player is holding: market slot, orientation, and where the ghost sits (top-left square).
+  const ui = { sel: -1, rot: 0, flip: false, gx: 2, gy: 2, fresh: -1, rivalFresh: -1, wanted: -1, note: "", byRival: false };
+  let timer = 0, marketKey = "";
+
+  const rival = () => RIVALS[state.rival];
+  const myTurn = () => state.turn === "you";
+  const held = () => (ui.sel >= 0 ? state.market[ui.sel] : null);
+  const heldCells = () => orient(SHAPES[held().shape].cells, ui.rot, ui.flip);
+  function clampGhost() {
+    const [w, h] = extent(heldCells());
+    ui.gx = Math.max(0, Math.min(W - w, ui.gx));
+    ui.gy = Math.max(0, Math.min(H - h, ui.gy));
+  }
+  function ghost() {
+    if (!held() || !myTurn()) return null;
+    const cells = shift(heldCells(), ui.gx, ui.gy);
+    return { coat: held().coat, cells, ok: fits(gridOf(state.cafes.you), cells) };
+  }
+
+  function loadGame() {
+    const s = store.get(SAVE);
+    const ok = s && s.v === 1 && RIVALS[s.rival] && Array.isArray(s.market) && s.cafes && Array.isArray(s.cafes.you) && Array.isArray(s.cafes.rival);
+    return ok ? s : null;
+  }
+
+  function startGame(rivalKey) {
+    clearTimeout(timer);
+    state = freshGame(rivalKey);
+    Object.assign(ui, { sel: -1, rot: 0, flip: false, gx: 2, gy: 2, fresh: -1, rivalFresh: -1, wanted: -1, note: "", byRival: false });
+    render();
+    if (state.turn === "rival") rivalTurn();
+  }
+
+  // ── Player moves ────────────────────────────────────────────────────────
+  function select(slot) {
+    if (!myTurn() || !state.market[slot]) return;
+    ui.sel = slot; ui.rot = 0; ui.flip = false;
+    clampGhost();
+    // Start somewhere legal if the last spot is taken, so the first thing you see is a cat that fits.
+    const g = gridOf(state.cafes.you);
+    if (!fits(g, shift(heldCells(), ui.gx, ui.gy))) {
+      const [w, h] = extent(heldCells());
+      let best = null;
+      for (let gy = 0; gy + h <= H; gy++) for (let gx = 0; gx + w <= W; gx++) {
+        if (!fits(g, shift(heldCells(), gx, gy))) continue;
+        const dist = Math.abs(gx - ui.gx) + Math.abs(gy - ui.gy);
+        if (!best || dist < best.dist) best = { gx, gy, dist };
+      }
+      if (best) { ui.gx = best.gx; ui.gy = best.gy; }
+    }
+    render();
+  }
+  function turnTile(rot, flip) {
+    if (!held() || !myTurn()) return;
+    ui.rot = (ui.rot + rot) % 4;
+    if (flip) ui.flip = !ui.flip;
+    clampGhost();
+    render();
+  }
+  function nudge(dx, dy) {
+    if (!held() || !myTurn()) return;
+    ui.gx += dx; ui.gy += dy;
+    clampGhost();
+    renderFloor(); renderStatus(); renderControls();
+  }
+  /** Put the ghost so the pointed-at square is roughly its middle. */
+  function aim(e) {
+    if (!held() || !myTurn()) return false;
+    const r = boardEl.getBoundingClientRect();
+    const cx = Math.floor(((e.clientX - r.left) / r.width) * W), cy = Math.floor(((e.clientY - r.top) / r.height) * H);
+    const [w, h] = extent(heldCells());
+    const gx = Math.max(0, Math.min(W - w, cx - Math.floor((w - 1) / 2)));
+    const gy = Math.max(0, Math.min(H - h, cy - Math.floor((h - 1) / 2)));
+    if (gx !== ui.gx || gy !== ui.gy) { ui.gx = gx; ui.gy = gy; renderFloor(); renderStatus(); renderControls(); }
+    return true;
+  }
+  function finishPick(cells) {
+    const tile = held();
+    take(state, "you", ui.sel, cells);
+    ui.fresh = cells ? state.cafes.you.length - 1 : -1;
+    ui.note = cells ? "" : `You sent the ${tileName(tile)} away.`;
+    ui.byRival = false;
+    ui.sel = -1;
+    afterPick();
+  }
+  function place() {
+    const g = ghost();
+    if (g && g.ok) finishPick(g.cells);
+  }
+  function skip() {
+    if (held() && myTurn()) finishPick(null);
+  }
+
+  // ── Rival moves ─────────────────────────────────────────────────────────
+  function rivalTurn() {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      const pick = rivalChoice(state.market, state.cafes.rival, state.cafes.you, rival().level);
+      ui.wanted = pick.slot;
+      renderMarket();
+      timer = setTimeout(() => {
+        const tile = state.market[pick.slot];
+        take(state, "rival", pick.slot, pick.cells);
+        ui.wanted = -1;
+        ui.rivalFresh = pick.cells ? state.cafes.rival.length - 1 : -1;
+        // The rival picks twice in a row across a round boundary; keep both lines.
+        ui.note = `${ui.byRival ? ui.note + " " : ""}${pick.cells ? `${rival().name} took the ${tileName(tile)}.` : `${rival().name} had no room for the ${tileName(tile)} and sent it away.`}`;
+        ui.byRival = true;
+        ui.fresh = -1;
+        afterPick();
+      }, 1000);
+    }, 750);
+  }
+  function afterPick() {
+    if (state.turn === "over") {
+      const mine = tally(state.cafes.you).total, best = store.get(BEST);
+      if (typeof best !== "number" || mine > best) store.set(BEST, mine);
+    }
+    render();
+    ui.fresh = ui.rivalFresh = -1;
+    if (state.turn === "rival") rivalTurn();
+  }
+
+  // ── Rendering ───────────────────────────────────────────────────────────
+  const signed = (n) => (n > 0 ? `+${n}` : n < 0 ? `−${-n}` : "0");
+  const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
+
+  function renderFloor() {
+    boardEl.innerHTML = floorMarkup(state.cafes.you, { fresh: ui.fresh, ghost: ghost() });
+    boardEl.classList.toggle("arming", !!held() && myTurn());
+  }
+
+  function renderScores() {
+    const you = tally(state.cafes.you), them = tally(state.cafes.rival);
+    const parts = (t) => `${plural(t.friends, "pair")} · ${plural(t.spats, "spat")} · ${plural(t.rows, "row")}`;
+    $("youScore").textContent = you.total;
+    $("rivalScore").textContent = them.total;
+    $("youParts").textContent = parts(you);
+    $("rivalParts").textContent = parts(them);
+    $("rivalName").textContent = rival().name;
+    $("rivalTitle").textContent = `${rival().name}’s café`;
+    $("round").textContent = state.turn === "over" ? "Done" : `${state.round} / ${ROUNDS}`;
+    $("youBox").classList.toggle("turn", state.turn === "you");
+    $("rivalBox").classList.toggle("turn", state.turn === "rival");
+    $("rivalBoard").innerHTML = floorMarkup(state.cafes.rival, { fresh: ui.rivalFresh });
+    $("rivalBoard").setAttribute("aria-label", `${rival().name}’s café floor, ${them.total} points`);
+    $("rivalNote").textContent = `${plural(state.cafes.rival.length, "cat")} seated`;
+  }
+
+  function renderMarket() {
+    // Rebuild the buttons only when the tiles themselves change: a drag that
+    // starts on a tile must keep its element, or touch events stop arriving.
+    const key = state.market.map((t) => (t ? t.id : "-")).join();
+    if (key !== marketKey) {
+      marketKey = key;
+      marketEl.innerHTML = state.market.map((t, i) => t
+        ? `<button class="tile" type="button" data-slot="${i}"></button>`
+        : `<div class="tile gone">taken</div>`).join("");
+    }
+    const mine = gridOf(state.cafes.you);
+    for (const b of marketEl.querySelectorAll("button")) {
+      const slot = +b.dataset.slot, t = state.market[slot], on = slot === ui.sel;
+      const room = placements(mine, t).length > 0;
+      b.innerHTML = tileMarkup(t, on ? ui.rot : 0, on && ui.flip) + `<span>${room ? `${COATS[t.coat].name} · ${SHAPES[t.shape].cells.length}` : "no room"}</span>`;
+      b.setAttribute("aria-pressed", String(on));
+      b.setAttribute("aria-label", `${tileName(t)}, ${SHAPES[t.shape].cells.length} squares${room ? "" : ", no room on your floor"}${on ? ", selected — press again to rotate" : ""}`);
+      b.classList.toggle("nofit", !room);
+      b.classList.toggle("wanted", slot === ui.wanted);
+      b.disabled = !myTurn();
+    }
+    $("marketTitle").textContent = state.turn === "rival" ? `${rival().name} is choosing…` : "Cats at the door — pick one";
+  }
+
+  function renderControls() {
+    const g = ghost();
+    $("rotate").disabled = $("flip").disabled = $("skip").disabled = !g;
+    $("place").disabled = !(g && g.ok);
+  }
+
+  function renderStatus() {
+    const g = ghost();
+    let html;
+    if (state.turn === "over") html = "The doors are closed for the night.";
+    else if (state.turn === "rival") html = `${ui.note ? ui.note + " " : ""}${rival().name} is choosing…`;
+    else if (!g) html = `${ui.note ? ui.note + " " : ""}<b>Your pick.</b> Choose a cat, then a spot on your floor.`;
+    else if (!placements(gridOf(state.cafes.you), held()).length) html = `<span class="down">No room anywhere</span> for the ${tileName(held())}. Pick another cat, or send this one away.`;
+    else if (!g.ok) html = `<span class="down">Doesn’t fit there.</span> Try another spot, or rotate.`;
+    else {
+      const a = tally(state.cafes.you), b = tally(state.cafes.you.concat({ coat: g.coat, cells: g.cells }));
+      const bits = [];
+      if (b.friends > a.friends) bits.push(`<span class="up">+${(b.friends - a.friends) * PTS.friend}</span> matching coats`);
+      if (b.spats > a.spats) bits.push(`<span class="down">−${(b.spats - a.spats) * PTS.spat}</span> rivals touching`);
+      if (b.rows > a.rows) bits.push(`<span class="up">+${(b.rows - a.rows) * PTS.row}</span> ${b.rows - a.rows > 1 ? "rows" : "row"} filled`);
+      const d = b.total - a.total;
+      html = bits.length
+        ? `${bits.join(" · ")} — <b>${signed(d)} here</b>`
+        : `No points here yet — <b>${tileName(held())}</b>, ${g.cells.length} squares.`;
+    }
+    statusEl.innerHTML = html;
+  }
+
+  function renderResults() {
+    const over = state.turn === "over";
+    $("results").hidden = !over;
+    $("marketPanel").hidden = over;
+    if (!over) return;
+    const a = tally(state.cafes.you), b = tally(state.cafes.rival), name = rival().name;
+    const verdict = a.total > b.total ? `You win, ${a.total} to ${b.total}!` : a.total < b.total ? `${name} wins, ${b.total} to ${a.total}.` : `A tie at ${a.total} — share the cream.`;
+    const cell = (n, pts) => `${n} <small>(${signed(pts)})</small>`;
+    $("results").innerHTML = `
+      <h2>Closing time</h2>
+      <h3>${verdict}</h3>
+      <table>
+        <thead><tr><th></th><th>You</th><th>${name}</th></tr></thead>
+        <tbody>
+          <tr><td>Matching pairs</td><td>${cell(a.friends, a.friends * PTS.friend)}</td><td>${cell(b.friends, b.friends * PTS.friend)}</td></tr>
+          <tr><td>Rivals touching</td><td>${cell(a.spats, -a.spats * PTS.spat)}</td><td>${cell(b.spats, -b.spats * PTS.spat)}</td></tr>
+          <tr><td>Full rows</td><td>${cell(a.rows, a.rows * PTS.row)}</td><td>${cell(b.rows, b.rows * PTS.row)}</td></tr>
+          <tr class="sum"><td>Total</td><td>${a.total}</td><td>${b.total}</td></tr>
+        </tbody>
+      </table>
+      <p class="best">Your best café so far: ${store.get(BEST) ?? a.total} points</p>
+      <div class="row">
+        <button class="btn go" type="button" data-again>Play again</button>
+        <button class="btn" type="button" data-change>Change rival</button>
+      </div>`;
+  }
+
+  function render() {
+    renderFloor(); renderScores(); renderMarket(); renderControls(); renderStatus(); renderResults();
+    store.set(SAVE, state);
+  }
+
+  // ── Input ───────────────────────────────────────────────────────────────
+  // Market: tap to pick up, tap the held cat again to rotate, or drag it onto the floor.
+  let press = null;
+  marketEl.addEventListener("pointerdown", (e) => {
+    const b = e.target.closest("button[data-slot]");
+    if (!b || !myTurn()) return;
+    const slot = +b.dataset.slot;
+    press = { picked: slot !== ui.sel, dragged: false };
+    if (press.picked) select(slot);
+  });
+  window.addEventListener("pointermove", (e) => {
+    if (!press) return;
+    const r = boardEl.getBoundingClientRect();
+    if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) { press.dragged = true; aim(e); }
+  });
+  for (const type of ["pointerup", "pointercancel"]) window.addEventListener(type, () => { if (press) setTimeout(() => { press = null; }, 0); });
+  marketEl.addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-slot]");
+    if (!b || !myTurn()) return;
+    if (press && (press.picked || press.dragged)) return; // the press itself already did the work
+    const slot = +b.dataset.slot;
+    if (slot === ui.sel) turnTile(1, false); else select(slot);
+  });
+
+  // Floor: with a finger, tap or drag to aim and use the button to commit;
+  // with a mouse, the ghost follows the pointer and a click seats the cat.
+  let aiming = false;
+  boardEl.addEventListener("pointerdown", (e) => {
+    if (!aim(e)) return;
+    aiming = true;
+    boardEl.setPointerCapture(e.pointerId);
+  });
+  boardEl.addEventListener("pointermove", (e) => { if (aiming || e.pointerType === "mouse") aim(e); });
+  boardEl.addEventListener("pointerup", (e) => {
+    const wasAiming = aiming;
+    aiming = false;
+    if (wasAiming && e.pointerType === "mouse" && e.button === 0) place();
+  });
+  boardEl.addEventListener("pointercancel", () => { aiming = false; });
+
+  $("rotate").addEventListener("click", () => turnTile(1, false));
+  $("flip").addEventListener("click", () => turnTile(0, true));
+  $("place").addEventListener("click", place);
+  $("skip").addEventListener("click", skip);
+
+  document.addEventListener("keydown", (e) => {
+    if (e.metaKey || e.ctrlKey || e.altKey || $("chooser").open || !state || !myTurn()) return;
+    const k = e.key.toLowerCase();
+    if (k >= "1" && k <= String(MARKET)) select(+k - 1);
+    else if (k === "r") turnTile(1, false);
+    else if (k === "f") turnTile(0, true);
+    else if (k === "enter" && !e.target.closest("button, summary, a")) place();
+    else if (k.startsWith("arrow") && held()) {
+      e.preventDefault();
+      nudge(k === "arrowleft" ? -1 : k === "arrowright" ? 1 : 0, k === "arrowup" ? -1 : k === "arrowdown" ? 1 : 0);
+    }
+  });
+
+  // Choosing a rival starts a new game.
+  const chooser = $("chooser");
+  $("rivals").innerHTML = Object.entries(RIVALS).map(([key, r]) => `
+    <button class="rivalpick" type="button" data-rival="${key}">
+      <svg viewBox="10 6 80 80" aria-hidden="true">${face(50, 46, r.coat, ["sleep", "awake", "grumpy"][r.level])}</svg>
+      <strong>${r.name}<small>${r.tag}</small></strong>
+      <span>${r.blurb}</span>
+    </button>`).join("");
+  function openChooser() {
+    $("chooserClose").hidden = !state;
+    chooser.showModal();
+  }
+  $("rivals").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-rival]");
+    if (!b) return;
+    chooser.close();
+    startGame(b.dataset.rival);
+  });
+  $("chooserClose").addEventListener("click", () => chooser.close());
+  chooser.addEventListener("cancel", (e) => { if (!state) e.preventDefault(); }); // nothing to go back to yet
+  $("newGame").addEventListener("click", openChooser);
+  $("results").addEventListener("click", (e) => {
+    if (e.target.closest("[data-again]")) startGame(state.rival);
+    else if (e.target.closest("[data-change]")) openChooser();
+  });
+
+  // ── Go ──────────────────────────────────────────────────────────────────
+  state = loadGame();
+  if (state) { render(); if (state.turn === "rival") rivalTurn(); }
+  else {
+    // Something to look at behind the dialog on a first visit.
+    boardEl.innerHTML = FLOOR;
+    $("rivalBoard").innerHTML = FLOOR;
+    openChooser();
+  }
+})();
+</script>
+</body>
+</html>

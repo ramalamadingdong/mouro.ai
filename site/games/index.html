@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Mouro Games — family game night</title>
-<meta name="description" content="Texas Hold’em, backgammon (Tawleh), gin rummy, Yahtzee and Sudoku to play with family and friends. No accounts, no ads — share a code and play.">
+<meta name="description" content="Texas Hold’em, backgammon (Tawleh), gin rummy, Yahtzee, Sudoku and Cat Café to play with family and friends. No accounts, no ads — share a code and play.">
 <meta property="og:title" content="Mouro Games — family game night">
-<meta property="og:description" content="Backgammon (Tawleh), gin rummy, Yahtzee and Sudoku to play with family and friends. No accounts, no ads — share a code and play.">
+<meta property="og:description" content="Backgammon (Tawleh), gin rummy, Yahtzee, Sudoku and Cat Café to play with family and friends. No accounts, no ads — share a code and play.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://mouro.ai/games/">
 <meta property="og:image" content="https://mouro.ai/games/icons/icon-512.png">
@@ -124,6 +124,7 @@
   /* An odd card out at the end of the shelf takes the whole row. */
   .shelf > .game:last-child:nth-child(even) { grid-column: 1 / -1; }
   .sudoku     { --a: #27437a; --b: #14213f; --ink: #7bb8ff; }
+  .cafe       { --a: #1f6f78; --b: #123f47; --ink: #f2b560; }
 
   .links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
   .ext {
@@ -227,6 +228,15 @@
           <p>A new daily puzzle every day, plus easy to expert on demand. Notes, hints and your progress saved.</p>
           <div class="meta">
             <div class="tags"><span>1 player</span><span>Daily puzzle</span></div>
+            <span class="play">Play</span>
+          </div>
+        </a>
+        <a class="game cafe" href="/games/cat-cafe/">
+          <img src="/games/cat-cafe/icons/icon-192.png" alt="" width="92" height="92">
+          <h3>Cat Café</h3>
+          <p>Draft cat-shaped tiles and fit them onto your café floor. Match coats, keep rivals apart, fill whole rows.</p>
+          <div class="meta">
+            <div class="tags"><span>1 player</span><span>Tile puzzle</span><span>vs computer cat</span></div>
             <span class="play">Play</span>
           </div>
         </a>

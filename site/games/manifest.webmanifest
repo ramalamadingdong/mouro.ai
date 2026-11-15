@@ -4,7 +4,7 @@
   "id": "/games/",
   "name": "Mouro Games",
   "short_name": "Games",
-  "description": "Texas Hold'em, backgammon, gin rummy, Yahtzee and Sudoku for family game night. No accounts, no ads.",
+  "description": "Texas Hold'em, backgammon, gin rummy, Yahtzee, Sudoku and Cat Café for family game night. No accounts, no ads.",
   "start_url": "/games/",
   "scope": "/",
   "display": "standalone",
