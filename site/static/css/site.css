@@ -1158,12 +1158,11 @@ img {
     cursor: default;
 }
 
-/* Shooter: the plot beside its controls and readouts. */
+/* Shooter: the drawing across the top, controls and readouts beneath it. */
 .shot {
-    display: grid;
-    grid-template-columns: minmax(0, 5fr) minmax(0, 4fr);
-    gap: 32px;
-    align-items: start;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
 }
 
 .shot-figure {
@@ -1172,40 +1171,69 @@ img {
     gap: 10px;
 }
 
+/* Drawn by project-demos.js in real pixels, so its text stays its set size. */
 .shot-plot {
     display: block;
     width: 100%;
-    height: auto;
-    background: var(--ground);
-    border: 1px solid var(--line);
+    height: 300px;
 }
 
-.plot-floor,
-.plot-tick,
-.plot-target line,
-.plot-target path {
-    fill: none;
-    stroke: var(--ink);
-    stroke-width: 2;
-    stroke-linejoin: round;
+.plot-area {
+    fill: var(--ground);
 }
 
-.plot-tick {
+.plot-grid line {
+    stroke: var(--line);
     stroke-width: 1;
 }
 
-.plot-label {
-    fill: var(--steel);
-    font-size: 15px;
+.plot-floor {
+    stroke: var(--ink);
+    stroke-width: 2;
 }
 
-.plot-robot {
+.plot-label,
+.plot-note {
+    fill: var(--steel);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+}
+
+.plot-note {
+    fill: var(--ink);
+    font-weight: 600;
+    paint-order: stroke;
+    stroke: var(--ground);
+    stroke-width: 4px;
+    stroke-linejoin: round;
+}
+
+.plot-peak {
     fill: var(--ink);
 }
 
-.plot-barrel {
+.plot-goal line,
+.plot-goal path {
+    fill: none;
     stroke: var(--ink);
-    stroke-width: 7;
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.plot-robot,
+.plot-wheel {
+    fill: var(--ink);
+}
+
+.plot-wheel {
+    stroke: var(--ground);
+    stroke-width: 2;
+}
+
+.plot-barrel {
+    stroke: var(--steel);
+    stroke-linecap: round;
 }
 
 .plot-flight,
@@ -1217,19 +1245,19 @@ img {
 
 .plot-flight {
     stroke: var(--ink);
-    stroke-width: 3;
+    stroke-width: 3.5;
 }
 
 .plot-vacuum {
     stroke: var(--steel);
-    stroke-width: 1.5;
-    stroke-dasharray: 2 6;
+    stroke-width: 2;
+    stroke-dasharray: 1 7;
 }
 
 .plot-ball {
     fill: var(--yellow);
     stroke: var(--ink);
-    stroke-width: 1.5;
+    stroke-width: 2;
 }
 
 .no-shot .plot-ball {
@@ -1258,9 +1286,15 @@ img {
 }
 
 .shot-panel {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 20px 48px;
+    align-items: start;
+}
+
+.shot-panel .demo-note,
+.shot-none {
+    grid-column: 1 / -1;
 }
 
 .shot-controls {
@@ -1462,9 +1496,8 @@ img {
         padding: 20px;
     }
 
-    .shot {
+    .shot-panel {
         grid-template-columns: 1fr;
-        gap: 24px;
     }
 }
 
