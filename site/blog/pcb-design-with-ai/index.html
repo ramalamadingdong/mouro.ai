@@ -1,0 +1,869 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Designing a circuit board end to end with an AI agent — Rami Mouro</title>
+    <meta name="description" content="How I get an AI agent to design a whole PCB: a CSV as the source of truth, idempotent build passes, constrained Freerouting, and checks that run on the fab output.">
+    <meta property="og:title" content="Designing a circuit board end to end with an AI agent — Rami Mouro">
+    <meta property="og:description" content="How I get an AI agent to design a whole PCB: a CSV as the source of truth, idempotent build passes, constrained Freerouting, and checks that run on the fab output.">
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="https://mouro.ai/blog/pcb-design-with-ai/">
+    <meta property="og:site_name" content="Rami Mouro">
+    <meta property="og:image" content="https://mouro.ai/static/video/round-trip-poster.jpg">
+    <meta name="theme-color" content="#e7eaec" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#131b24" media="(prefers-color-scheme: dark)">
+    <link rel="icon" href="/static/img/favicon.svg" type="image/svg+xml">
+    <link rel="preload" href="/static/fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="/static/css/site.css">
+</head>
+<body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="site-header">
+        <div class="site-header-inner">
+            <a class="wordmark" href="/">Rami Mouro</a>
+            <nav class="nav" aria-label="Main">
+                <a class="nav-link" href="/">Home</a>
+                <a class="nav-link" href="/projects/">Projects</a>
+                <a class="nav-link" href="/games/">Games</a>
+                <a class="nav-link" href="https://www.linkedin.com/in/rami-mouro/" target="_blank" rel="noreferrer">LinkedIn</a>
+                <a class="nav-link" href="https://github.com/ramalamadingdong" target="_blank" rel="noreferrer">GitHub</a>
+            </nav>
+        </div>
+    </header>
+    <main class="page" id="main">
+
+<article class="post">
+    <header class="post-header">
+        <p><a class="text-link" href="/projects/#pcb-agent">Back to projects</a></p>
+        <h1>Designing a circuit board end to end with an AI agent</h1>
+        <p class="post-deck">Parts, netlist, placement, routing, gerbers. I review, it does the work.</p>
+        <p class="post-meta"><time datetime="2026-08-16">August 16, 2026</time>, updated <time datetime="2026-08-30">August 30, 2026</time>. 24 min read.</p>
+        <p class="stack"><span class="stack-label">Topics</span>KiCad, AI Agents, Hardware, Claude Code, PCB</p>
+    </header>
+
+    <aside class="tldr" aria-labelledby="tldr-heading">
+        <p class="tldr-label" id="tldr-heading">The short version</p>
+        <ul class="tldr-points">
+            <li>The design lives in a CSV, one row per pin, every row citing the document it came from. Scripts build
+                the schematic and the board from it. Nothing in KiCad is edited by hand.</li>
+            <li>One <code>board.toml</code> per board drives the build passes and the checker off the same numbers, in
+                one coordinate frame.</li>
+            <li>The build is a chain of idempotent passes. Routing is a separate script off a snapshot, so placement
+                can be re-run without paying for a re-route.</li>
+            <li>Freerouting, single threaded and constrained: plane layers marked unroutable, anything critical
+                pre-routed as fixed copper.</li>
+            <li>Five levels of checking. The one that pays parses the exported gerbers, because the gerbers are what
+                the factory builds.</li>
+            <li>Fixes go in the pipeline, never in the board file. The next rebuild wipes anything done by hand.</li>
+        </ul>
+
+        <ol class="pipeline">
+            <li class="stage">
+                <span class="stage-name">netlist.csv</span>
+                <span class="stage-note">source of truth</span>
+            </li>
+            <li class="stage">
+                <span class="stage-name">schematic</span>
+                <span class="stage-gate">round trip diff</span>
+            </li>
+            <li class="stage">
+                <span class="stage-name">board</span>
+                <span class="stage-note">place, zones, fanout, silk</span>
+                <span class="stage-gate">ERC</span>
+            </li>
+            <li class="stage">
+                <span class="stage-name">routed</span>
+                <span class="stage-note">Freerouting, <code>-mt 1</code></span>
+                <span class="stage-gate">DRC &times;5</span>
+            </li>
+            <li class="stage">
+                <span class="stage-name">gerbers</span>
+                <span class="stage-note">what the factory builds</span>
+                <span class="stage-gate">validate_gerbers</span>
+            </li>
+        </ol>
+
+        <p class="tldr-tail">
+            All of it is public, and the board this post walks through is in the repo. You can clone it, build it, and
+            get the same gates. That particular board hasn't been fabricated; others designed this way have.
+        </p>
+    </aside>
+
+    <div class="post-layout">
+    <nav class="post-toc" aria-label="Table of contents">
+        <h3>On this page</h3>
+        <ul class="post-toc-list">
+            <li><a href="#the-board">The board</a></li>
+            <li><a href="#csv-source-of-truth">The design lives in a CSV, not in KiCad</a></li>
+            <li><a href="#requirements">Requirements come out of documents</a></li>
+            <li><a href="#what-i-use">What I use</a></li>
+            <li><a href="#the-build">The build</a></li>
+            <li><a href="#tool-behaviour-passes">The passes that exist because of specific tool behaviour</a></li>
+            <li><a href="#routing">Routing, and what it actually costs</a></li>
+            <li><a href="#checking">Checking</a></li>
+            <li><a href="#rules">Rules</a></li>
+            <li><a href="#what-this-gets-you">What this gets you</a></li>
+            <li><a href="#tools">Tools</a></li>
+        </ul>
+    </nav>
+
+    <div class="post-body">
+    <div class="prose">
+        <p class="lede">
+            This is the setup I use to get an AI agent to do a whole PCB. Not help me in KiCad, actually do it. Pick the
+            parts, write the netlist, place everything, route it, output gerbers a fab will build. I review, it does the
+            work.
+        </p>
+        <p>
+            All of it is public now, and so is the board I'm going to use as the example the whole way through, so
+            nothing here is a claim you have to take on trust. Clone it, run four commands, and you get the same output
+            I did.
+        </p>
+
+        <aside class="post-update" aria-labelledby="status-heading">
+            <p class="post-update-label" id="status-heading">Where this stands</p>
+            <p>
+                The pipeline is
+                <a href="https://github.com/ramalamadingdong/pcb-agent" target="_blank" rel="noreferrer">pcb-agent</a>,
+                GPL-3.0. The fab-output checker stands alone, no dependencies, as
+                <a href="https://github.com/ramalamadingdong/gerber-check" target="_blank" rel="noreferrer">gerber-check</a>,
+                MIT. The example board is in the repo with its full design record.
+            </p>
+            <p>
+                <strong>This particular board has not been fabricated.</strong> It passed its pre-order gates, and gates
+                are not hardware &mdash; I'd rather say so here than have you infer otherwise from a clean DRC run.
+            </p>
+            <p>
+                Boards designed this way have been built and paid for; those aren't ones I'm ready to publish. So the
+                example is what I can hand you instead: a board you can clone, build and check yourself, rather than one
+                you'd have to take my word for.
+            </p>
+        </aside>
+
+        <h2 id="the-board">The board</h2>
+        <p>
+            A power and I/O demo shield for the Arduino UNO Q. Screw-terminal input at 7&ndash;24 V behind
+            reverse-polarity protection, a TPS54331 buck making 5 V for shield loads, an INA226 monitoring the whole
+            stack's current and bus voltage over I&sup2;C, four BSS138 level-shift channels between the UNO Q's 3.3 V
+            headers and 5 V peripherals, Qwiic passthrough, an RGB status LED. Four layers, top side only, 24 BOM lines.
+        </p>
+        <p>
+            It is deliberately boring, and it is deliberately not a toy. A switching converter sits a few millimetres
+            from a 0.5 mm pitch part, inside the UNO form factor &mdash; which fixes the outline, the four mounting
+            holes and all 32 header pins before you place anything of your own. Every rule in its config exists for a
+            reason you can point at on the board: the buck's exposed pad is its only real heatsink, VIN carries up to
+            4 A, and the UNO Q's Wi-Fi antenna sits directly under the top-left corner, so copper there detunes the
+            radio.
+        </p>
+        <p>
+            Those coordinates aren't mine. The outline, the hole pattern, the header positions and the antenna keepout
+            were extracted from
+            <a href="https://docs.arduino.cc/hardware/uno-q" target="_blank" rel="noreferrer">Arduino's own documents</a>
+            and fab data for the UNO Q, &copy; Arduino SA, licensed
+            <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noreferrer">CC BY-SA 4.0</a>.
+            Pulling the hole pattern out of the manufacturer's drill file rather than a drawing is the kind of thing
+            this whole method is about.
+        </p>
+        <p>
+            Where a number below came off a different board, I say so. The method came out of an earlier project, a
+            small data logger &mdash; MCU module with Bluetooth, two sensors, a GNSS receiver, storage, USB-C charging,
+            about 60 parts &mdash; and several of the scars in here were earned there and paid for in fabricated boards.
+        </p>
+        <p>Here's the whole thing.</p>
+
+        <h2 id="csv-source-of-truth">The design lives in a CSV, not in KiCad</h2>
+
+        <blockquote>
+            <p>The schematic isn't the source of truth. A CSV is. The KiCad project is a build output.</p>
+        </blockquote>
+
+        <p>
+            One row per pin, every pin of every IC, <code>NC</code> written out where a pin is meant to be unconnected,
+            and a note column that carries the citation. Real rows from this board:
+        </p>
+
+<pre><code><span class="tok-head">Net,RefDes,Pin,PinName,Note</span>
+<span class="tok-net">VIN_RAW</span>,J1,2,VIN,<span class="tok-comment">7-24 V in, matches UNO Q DC_IN range (ABX00162 datasheet 3.2 p.11)</span>
+<span class="tok-net">VIN_PROT</span>,Q5,1,S,<span class="tok-comment">protected rail out (AO4407A.pdf p.1: pins 1-3 S)</span>
+<span class="tok-net">GND</span>,U2,2,A0,<span class="tok-comment">address 0x40 = A1:GND A0:GND (INA226 Table 6-2)</span>
+<span class="tok-net">BOOT</span>,U1,1,BOOT,<span class="tok-comment">bootstrap; 100nF to PH (ds front-page application circuit)</span></code></pre>
+
+        <p>
+            One script turns that into a schematic. Another turns the schematic into a board. Nothing in the KiCad files
+            gets touched by hand. To change the circuit you edit a row and rebuild.
+        </p>
+        <p>
+            The reason this matters: KiCad files are s-expressions full of coordinates. An agent editing them directly is
+            working on geometry it can't see, in a format where being slightly wrong looks exactly like being right.
+            Nothing errors out. You just get a broken board.
+        </p>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>Agent edits CAD files</th>
+                        <th>CSV is the source</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Agent reads the design</td>
+                        <td>screenshots, brittle parsing</td>
+                        <td><code>cat netlist.csv</code></td>
+                    </tr>
+                    <tr>
+                        <td>Agent changes the design</td>
+                        <td>s-expression surgery</td>
+                        <td>edit one row</td>
+                    </tr>
+                    <tr>
+                        <td>Reviewing a change</td>
+                        <td>squint at a schematic diff</td>
+                        <td><code>git diff</code></td>
+                    </tr>
+                    <tr>
+                        <td>Rebuilding after a change</td>
+                        <td>hours of rework</td>
+                        <td>one command</td>
+                    </tr>
+                    <tr>
+                        <td>Catching silent breakage</td>
+                        <td>you don't</td>
+                        <td>the build fails</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>The round trip check</h3>
+        <p>
+            The schematic generator reads back the file it just wrote, pulls the netlist out of it, diffs that against
+            the CSV, and fails the build if anything doesn't match.
+        </p>
+        <p>
+            This is the single most important line of the build. An LLM writing KiCad files will eventually put a label a
+            fraction of a millimetre off a pin. The schematic looks perfect. The net isn't there. ERC reads it as an
+            intentional floating label. DRC doesn't look at schematics at all. Without the round trip check you find out
+            when the board comes back and the part doesn't show up on the bus.
+        </p>
+
+        <figure class="post-figure">
+            <video
+                controls
+                muted
+                playsinline
+                preload="metadata"
+                width="1920"
+                height="1080"
+                poster="/static/video/round-trip-poster.jpg">
+                <source src="/static/video/round-trip.mp4" type="video/mp4">
+            </video>
+            <figcaption>
+                Two runs of the generator, same CSV row. The schematics are indistinguishable, but in run B the net
+                label sits a fraction of a millimetre off the pin, so the drawing carries no net at all. Reading the
+                file back and diffing it against the CSV is the only step that sees it.
+            </figcaption>
+        </figure>
+
+        <h2 id="requirements">Requirements come out of documents</h2>
+
+        <blockquote>
+            <p>An LLM's memory of a pin map is a guess that looks like a fact.</p>
+        </blockquote>
+
+        <p>
+            Before any wiring, the agent writes down what the hardware has to provide, and every line carries a citation
+            to something it actually read in that session. Not a recollection, not a plausible number. A document, a
+            page, a table.
+        </p>
+        <p>
+            This board had no firmware yet, so every requirement came out of Arduino's own material: the datasheet with
+            page numbers as printed, the full pinout, the schematics by sheet number, and the fab data inside their CAD
+            files &mdash; the Allegro gerbers and NC drill they actually manufacture from. Sixteen requirements, each
+            with a source. A few of the load-bearing ones:
+        </p>
+        <ul>
+            <li>
+                All shield-facing logic is 3.3 V. A0 and A1 aren't 5 V tolerant in any mode, and one digital pin is
+                3.6 V max even in digital mode &mdash; which is why the level shifters are the point of the board rather
+                than a nicety
+            </li>
+            <li>
+                The shield I&sup2;C bus already has 2.2 k&Omega; pull-ups on the UNO Q itself, found on schematic sheet
+                20, so the shield adds none. Two boards' worth of pull-ups on one bus is a classic way to get a marginal
+                bus nobody can explain
+            </li>
+            <li>
+                The Wi-Fi antenna occupies a specific rectangle in the top-left corner, extracted from the copper in
+                Arduino's own gerber and confirmed against a 600 DPI render. That rectangle becomes the keepout, on all
+                copper layers, pads included
+            </li>
+            <li>
+                The four mounting holes are &Oslash;3.2 mm NPTH at coordinates taken from the manufacturer's drill file,
+                not from a drawing. They're fixed by the UNO pattern &mdash; not ours to choose
+            </li>
+        </ul>
+        <p>
+            When firmware does exist, it's the best requirements source you have, and the agent should read it first.
+            On the data logger that's where bus addresses, sample rates and partition sizes came from, each cited to a
+            file and a line number. That board also had a headless code path already, so a variant with no display and
+            no I/O expander needed no new code at all, just a pin map. Nothing makes a new board cheaper than finding
+            out the firmware already supports it.
+        </p>
+        <p>
+            The agent then reads every datasheet against the connection table. This is where it earns its keep, because
+            a BOM with the right ICs on it is usually still missing everything that makes them run. On the data logger
+            that meant a charger with no load-share path, which reads system load as charge current and trickles the
+            cell forever; no battery sense divider on a board whose firmware reports a battery percentage over
+            Bluetooth; a GNSS receiver with no antenna connector and no RF front end; and IMU pins floating, which sits
+            the part in the wrong interface mode so it never answers.
+        </p>
+
+        <h3>Have it do the capacity math</h3>
+        <p>
+            Same session, before layout. On this board that's a worst-case VIN current of 3.6 A at the low end of the
+            input range, designed to 4 A, which IPC-2221 turns into a 2.0 mm conductor at 1 oz external copper for a
+            10 &deg;C rise. The shunt is 10 m&Omega;, so 4 A puts 40 mV across it &mdash; 49% of the INA226's
+            &plusmn;81.92 mV range, which is the right place to sit. Inductor ripple works out at 0.69 A peak to peak
+            worst case, so peak current is 1.9 A against a 3.2 A saturation rating.
+        </p>
+        <p>
+            The number that changes a design is the one that comes out wrong. On the data logger the logging rate was
+            21 MB/hour into an 896 kB filesystem, which is two and a half minutes of recording. That's why that board
+            has a microSD socket.
+        </p>
+        <p class="lead-in">
+            <strong>Make it show the arithmetic, and make it write down what it rejected.</strong> This board's plan
+            names six parts it didn't use and why: a buck in a package with no exposed pad, which would have deleted the
+            thermal-via lesson the board exists to teach; a current monitor whose 26 V absolute maximum is too close to
+            a 24 V nominal input, because an unloaded 24 V supply drifts above it; a one-chip level shifter whose
+            edge-rate accelerators misbehave on exactly the breadboard wiring a first-time user will do. A rejection
+            with a reason is worth more later than the choice itself.
+        </p>
+
+        <h2 id="what-i-use">What I use</h2>
+
+        <h3>Harness</h3>
+        <p>
+            <a href="https://claude.com/claude-code" target="_blank" rel="noreferrer">Claude Code</a>. Four
+            things matter:
+        </p>
+        <ul>
+            <li><strong>Shell and file access across the whole repo</strong>, firmware included.</li>
+            <li><strong>Subagents</strong>, so part research and layout and firmware work run at the same time.</li>
+            <li>
+                <strong>Persistent memory.</strong> A board takes weeks. What you find on Tuesday has to still be there
+                when you plan the next revision on Thursday.
+            </li>
+            <li>
+                <strong>A plan doc per revision</strong> in the repo: what's in scope, what defect it fixes, how, and a
+                list of checks that have to pass before you order. That last list is the important one.
+            </li>
+        </ul>
+
+        <h3>Skills</h3>
+        <p>
+            Eleven of them, all from
+            <a href="https://github.com/aklofas/kicad-happy" target="_blank" rel="noreferrer">kicad-happy</a>
+            by Andrew Klofas. MIT licensed, works with Claude Code and Codex. This is the install that matters most.
+        </p>
+
+<pre><code><span class="tok-cmd">/plugin</span> <span class="tok-flag">marketplace add</span> aklofas/kicad-happy
+<span class="tok-cmd">/plugin</span> <span class="tok-flag">install</span> kicad-happy@kicad-happy</code></pre>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Skill</th>
+                        <th>What it does</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>kicad</code></td>
+                        <td>
+                            Net tracing, ERC and DRC output, power tree, DFM, footprints, gerbers. Also reads PDF
+                            schematics, which is how you pull in vendor reference designs
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><code>datasheets</code></td>
+                        <td>Pinouts and electrical specs out of component PDFs</td>
+                    </tr>
+                    <tr>
+                        <td><code>bom</code></td>
+                        <td>Part numbers, quantities, costs, sourcing gaps across revisions</td>
+                    </tr>
+                    <tr>
+                        <td><code>digikey</code>, <code>mouser</code>, <code>lcsc</code>, <code>element14</code></td>
+                        <td>Stock and lead time. Check more than one, they don't agree</td>
+                    </tr>
+                    <tr>
+                        <td><code>jlcpcb</code>, <code>pcbway</code></td>
+                        <td>
+                            Process limits, basic vs extended parts, assembly rules, BOM and CPL format, which parts get
+                            flagged for review
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><code>emc</code></td>
+                        <td>Ground planes, decoupling, return paths, clock routing, board edge radiation</td>
+                    </tr>
+                    <tr>
+                        <td><code>spice</code></td>
+                        <td>Divider ratios, filter corners</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <p>Two things these are good for.</p>
+        <p class="lead-in">
+            <strong>Part selection with the whole picture in it.</strong> Every line on this board was checked against
+            JLCPCB's own component endpoint on the day it was signed off: price, stock, and whether the part is Basic or
+            Extended, which is a real cost because each Extended line carries a loading fee. On the data logger the same
+            habit found the expensive version of that problem &mdash; a $16.31 part with a seven week lead, whose
+            obvious replacement had more stock but a 22 week lead. The agent found a third option at $2.93, in stock,
+            and gave the reason it worked: the firmware only used three things from the original part, and the
+            replacement puts all three out of its own fusion block. That swap deleted 11 parts, a crystal, half the
+            fanout pads and one layout constraint.
+        </p>
+        <p class="lead-in">
+            <strong>Land patterns out of the drawing, not the text.</strong> On this board the RGB LED's common anode is
+            pin 2, which you only learn from the land drawing on page 8. On the data logger a chip antenna's datasheet
+            text said two terminals while the land drawing in the same PDF showed three pads, because the feed terminal
+            sits on a split pad pair. A two pad footprint ships a dead antenna on a board that's otherwise fine.
+        </p>
+
+        <blockquote>
+            <p>
+                The text and the drawing in a datasheet can disagree, and the drawing is what the factory builds. Pull
+                the figure.
+            </p>
+        </blockquote>
+
+        <h3>CAD and the toolchain</h3>
+        <p>
+            <a href="https://github.com/rjwalters/kicad-tools" target="_blank" rel="noreferrer">kicad-tools</a>
+            by RJ Walters. MIT licensed Python toolkit built for agents. Every command outputs JSON and none of it needs
+            KiCad running. It ships an MCP server and a <code>kct</code> CLI, so the agent calls it as tools and the build
+            scripts call the same things. I use it for checkpoint and restore, board inspection, schematic to PCB, the
+            placement tools, zones, and export. I route with
+            <a href="https://github.com/freerouting/freerouting" target="_blank" rel="noreferrer">Freerouting</a>
+            instead of the built-in routers.
+        </p>
+        <p>
+            All the headless stages run in one container now, so none of it has to be installed by hand: KiCad 10 on a
+            digest-pinned base image, Freerouting 1.9.0 fetched by checksum, a pinned <code>kct</code>, and
+            <a href="https://github.com/astral-sh/uv" target="_blank" rel="noreferrer">uv</a> holding the
+            Python environment still.
+        </p>
+
+<pre><code><span class="tok-cmd">git</span> <span class="tok-flag">clone</span> https://github.com/ramalamadingdong/pcb-agent &amp;&amp; <span class="tok-cmd">cd</span> pcb-agent
+<span class="tok-cmd">python3</span> scripts/doctor.py       <span class="tok-comment"># names every missing piece and the fix</span>
+<span class="tok-cmd">make</span> <span class="tok-flag">setup</span>                      <span class="tok-comment"># builds the image, fetches the pinned jar</span>
+<span class="tok-cmd">make</span> <span class="tok-flag">build route export check</span>  <span class="tok-comment"># this board, end to end</span></code></pre>
+
+        <p>
+            Install KiCad natively as well if you want to <em>look</em> at a board &mdash; the container has no GUI, and
+            the one X11 thing inside it is a virtual framebuffer that exists solely because Freerouting asks for a
+            screen size it never uses. Match the major version to the boards you build. A KiCad 9 <code>pcbnew</code>
+            loading a KiCad 10 board returns <code>None</code>, with no error and no message.
+        </p>
+
+        <h2 id="the-build">The build</h2>
+
+<pre><code><span class="tok-net">netlist.csv</span> + <span class="tok-net">board.toml</span>
+  <span class="tok-stage">make_libs</span>            <span class="tok-note">generate missing symbols, vendor every footprint into the project</span>
+  <span class="tok-stage">generate_schematic</span>   <span class="tok-note">CSV to schematic, then round trip check</span>
+  <span class="tok-stage">create_pcb</span>           <span class="tok-note">schematic to 4 layer board with nets assigned</span>
+  <span class="tok-stage">apply_netclasses</span>     <span class="tok-note">pin the power nets to the power class by name</span>
+  <span class="tok-stage">floorplan</span>            <span class="tok-note">hand place and lock everything position critical</span>
+  <span class="tok-stage">add_mounting_holes</span>   <span class="tok-note">before placement, so their courtyards are obstacles</span>
+  <span class="tok-stage">placement loop</span>       <span class="tok-note">fix, optimize, repair_pads, tuck_in, N rounds, keep the best score</span>
+  <span class="tok-stage">zones</span>                <span class="tok-note">planes and bounded pours</span>
+  <span class="tok-stage">fanout</span>               <span class="tok-note">dogbone escapes on the fine pitch parts</span>
+  <span class="tok-stage">add_fiducials</span>        <span class="tok-note">not netlist objects, nothing else will emit them</span>
+  <span class="tok-stage">add_keepouts</span>         <span class="tok-note">antenna clearance, analog islands, any layer declared a plane</span>
+  <span class="tok-stage">silk_finish</span>          <span class="tok-note">reposition every refdes on board, draw the markings</span>
+  <span class="tok-stage">fill, snapshot</span>
+                       <span class="tok-rule">---- separate script ----</span>
+                       <span class="tok-note">export DSN, freerouting, import SES</span>
+                       <span class="tok-note">completion passes, fill, DRC x5</span>
+                       <span class="tok-note">export_fab, validate_gerbers</span></code></pre>
+
+        <p>Four things about the shape of this.</p>
+        <p class="lead-in">
+            <strong>One config file per board.</strong> <code>board.toml</code> drives the build passes and the gerber
+            checker off the same numbers, in one coordinate frame with the origin at the board's bottom left corner. The
+            same rectangle feeds the keepout rule area, the silkscreen dodge, the router's fence, and the check that the
+            keepout is actually clear in the exported gerbers. Anything you catch by hand becomes a line in it, which is
+            the only reason the checker gets better over time instead of staying wherever it started.
+        </p>
+        <p class="lead-in">
+            <strong>Build and route are separate scripts, and routing starts from a snapshot.</strong> Routing is the
+            only slow, non repeatable step, and importing the router's output rewrites the board into a format the rest
+            of the tools can't read. With a snapshot you can iterate on placement 20 times without paying for a re-route.
+        </p>
+        <p class="lead-in">
+            <strong>Every pass is idempotent.</strong> Strip and rebuild, don't append. The agent will re-run a stage when
+            it isn't sure whether it already ran. An appending pass turns that into junk copper &mdash; on the data
+            logger, nine stray vias inside a module's exposed pad.
+        </p>
+        <p class="lead-in">
+            <strong>Order is load-bearing.</strong> Mounting holes before the placement loop, so their courtyards are
+            obstacles. Fiducials before the pour refill, so the pour honours their clearance ring. Keepouts before silk,
+            so the silk dodges the rectangles. Get the order wrong and each pass still succeeds.
+        </p>
+
+        <h2 id="tool-behaviour-passes">The passes that exist because of specific tool behaviour</h2>
+        <p>These four are the ones I'd tell anyone to write on day one.</p>
+        <p class="lead-in">
+            <strong><code>repair_pads</code>, after every optimiser call.</strong> The placement optimiser writes absolute
+            board coordinates into each footprint's local pad positions. Both pads of a two pad passive end up at the same
+            point:
+        </p>
+
+<pre><code><span class="tok-note">after create-pcb</span>    C17 pads: [(<span class="tok-str">'1','-0.775','0'</span>), (<span class="tok-str">'2','0.775','0'</span>)]     <span class="tok-ok">correct</span>
+<span class="tok-note">after optimize</span>      C17 pads: [(<span class="tok-str">'1','142.598','92.092'</span>),
+                               (<span class="tok-str">'2','142.598','92.092'</span>)]                  <span class="tok-bad">corrupt</span></code></pre>
+
+        <p>
+            On the data logger it hit 71 of 74 footprints, which is a couple hundred shorts and several hundred clearance
+            errors, and the router can't escape any pad because the pads aren't really there. The repair pass puts every
+            pad back where the footprint library says it goes. <strong>Restore the rotation as well as the
+            position.</strong> Pad angle in the board file is footprint rotation plus pad rotation, and if you only
+            restore coordinates then every pad on a rotated part comes out axis aligned.
+        </p>
+        <p class="lead-in">
+            <strong>A net table assertion in the build.</strong> One KiCad operation rewrites the board into a stripped
+            down format that drops the top level net table and keeps only per pad net names. KiCad reads it fine, DRC
+            reads it fine, every fab export reads it fine. The router builds its net list from that table, so it reports
+            "nets to route: 0" and does nothing, with no error.
+        </p>
+
+<pre><code><span class="tok-cmd">grep</span> <span class="tok-flag">-cE</span> <span class="tok-str">'^\s*\(net [0-9]+ '</span> board_file   <span class="tok-comment"># must be N, not 0</span></code></pre>
+
+        <p class="lead-in">
+            <strong>A fanout that checks all four spacings it creates.</strong> Pad to its own via and via to via aren't
+            enough. Also check the stub running past the next pad's via, where real spacing is
+            <code>pitch - track_width/2 - via_size/2</code>. And check other nets' copper, or an escape via lands on a
+            resistor pad and you get a short, a clearance error, a hole clearance error and a mask bridge that all read
+            like an unrelated footprint problem.
+        </p>
+        <p>
+            That third spacing is not always satisfiable, and this board is where I found out. Dogbone every pad of the
+            INA226's MSOP-10 and each ring via lands exactly one pad pitch from its neighbour's escape stub. Run the
+            numbers at the board minimum via and track: 0.5 &minus; 0.1 &minus; 0.25 = 0.15 mm, which is exactly the
+            clearance, and equality fails. No via size fixes it, because a smaller via is what that number already
+            assumes. <strong>A full fanout of a 0.5 mm pitch part can be arithmetically impossible.</strong> The answer
+            was to fan out one pad &mdash; the ground pad, which has to reach the inner plane and which no other pass
+            can draw. Every other pin is a routed signal or sits in a pour. Alone, it fits.
+        </p>
+        <p>
+            Note which clearance applies: DRC uses the larger of the two nets' clearances, so a fine pitch escape running
+            past ground copper gets held to the ground net's rule, not its own.
+        </p>
+        <p class="lead-in">
+            <strong><code>silk_finish</code>.</strong> The same coordinate corruption that hits pads also hits reference
+            and value field positions, and a pad-only repair doesn't touch them. Reposition every refdes back on board,
+            then draw the markings you actually need: orientation arrow, polarity, revision, connector and LED labels.
+            The fab clips anything off board, so without this the boards print bare.
+        </p>
+
+        <h2 id="routing">Routing, and what it actually costs</h2>
+        <p>
+            Freerouting, single threaded, version pinned, and it runs headless under <code>xvfb-run</code> whatever
+            you've read to the contrary.
+        </p>
+        <ul>
+            <li>
+                <strong><code>-mt 1</code>.</strong> It warns that multithreaded optimisation makes clearance violations
+                and it's right. On the data logger <code>-mt 4</code> gave about 20 DRC errors; <code>-mt 1</code> on the
+                same input gave zero, and finished faster (61 s vs 210 s) because it stops when it stops improving
+                instead of running all the passes.
+            </li>
+            <li><strong>Foreground.</strong> Backgrounded, it opens the file and exits without routing.</li>
+            <li><strong>Pin the version to your Java.</strong> Newer releases need a newer JVM.</li>
+            <li>
+                <strong>Budget for the layer you gave up.</strong> Declaring an inner layer a plane is the right call for
+                reference integrity, but it's a routing layer gone. On the data logger it left about 25% of nets
+                unrouted. Raise the pass count and finish the remainder with a completion pass.
+            </li>
+        </ul>
+        <p>
+            The way to get a good result is to constrain the router, not swap it. Pre-route anything critical as fixed
+            copper, mark plane layers unroutable when you export the DSN, and let it do the rest. Then read the JSON,
+            not the router's mood: segment count must climb, the unfixed list names the nets completion couldn't finish,
+            and the DRC block shows violation <em>kinds</em> across five runs. Stable kinds are real; unstable ones are
+            DRC nondeterminism.
+        </p>
+
+        <blockquote>
+            <p>Setup is push-button. Finishing a board is not.</p>
+        </blockquote>
+
+        <p>
+            Getting this board from first placement to zero clearance violations took about 19 rounds, each one an edit
+            to <code>board.toml</code> and a rebuild. Placement alone went 26 errors, then 10, then 6, then
+            warnings-only over four iterations. That is the honest cost, and several of those rounds needed judgment no
+            checker was going to supply. Three of them are worth knowing before you start.
+        </p>
+        <p class="lead-in">
+            <strong>A copper pour is a wall.</strong> A bounded pour exported to the DSN is fixed copper as far as the
+            router is concerned, and it will not cut through it. The VIN pour on this board reached one pad column past
+            the buck and closed off the corridor east of the chip. So the router took the only path left, which shoved
+            the switch node under the chip and past the feedback pad &mdash; the worst place on the board for it to go.
+            Same violation, round after round, for about six of them. I spent those rounds on the router. The fix was to
+            shrink the pour.
+        </p>
+        <p class="lead-in">
+            <strong>Place passives by net topology, not by schematic tidiness.</strong> The feedback divider and the
+            compensation network started north of the buck, which is where they sit on the schematic. Their pins leave
+            the chip south and east. The router's only short path back grazed pads the whole way, and that was the last
+            cluster of clearance errors on the board. Putting them into a row south of the chip, each rotation chosen so
+            the pad carrying a net faces the track coming into it, cleared them. Rotation is placement. A part in the
+            right spot facing the wrong way is a part in the wrong spot.
+        </p>
+        <p class="lead-in">
+            <strong>Congestion is a floorplan problem.</strong> When completion leaves nets unfixed it usually means a
+            corner is too tight. Give the parts room rather than fighting the router for a path that isn't there.
+        </p>
+        <p>
+            And a few traps paid for in blood, in the order I'd want to be warned about them. KiCad 10 writes the
+            netclass name <code>"Power,Default"</code>, and the comma splits the token in the Specctra DSN, so the
+            router reads a class that isn't there and those nets route at the default width. A second
+            <code>pcbnew.LoadBoard</code> after editing zones hands back a bare <code>SwigPyObject</code> with no
+            methods on it, so load once and keep the handle. Zone net assignment resets on <code>board.Add()</code>, so
+            set the net after you add it. And <code>kct zones fill</code> refuses to write its output over its input.
+        </p>
+        <p>
+            Two things to watch for in any router you evaluate. If it reports <code>"violations": []</code> on a pass that
+            just laid traces through other nets' pads, its self report isn't evidence. If it lists nets correctly and then
+            emits zero copper, count segments before and after every call so you catch a silent no-op.
+        </p>
+
+        <h2 id="checking">Checking</h2>
+        <p>Five levels. Each one catches things the one above it passes.</p>
+        <p class="lead-in">
+            <strong>Level 0, the generator checks itself.</strong> Round trip diff of the schematic against the CSV. Every
+            node matches or the build fails.
+        </p>
+        <p><strong>Level 1, ERC.</strong> Cheap, doesn't catch much, run it anyway.</p>
+        <p class="lead-in">
+            <strong>Level 2, DRC, sampled.</strong> DRC isn't deterministic. Twelve runs on one unmodified file gave me a
+            violation 0 times in nine runs, once in two, twice in one, with totals moving by plus or minus 2. Run it five
+            or more times and compare which violations appear, not the count. Also fill zones with the real filler first,
+            because the refill-zones flag during DRC fills worse and invents thermal relief errors.
+        </p>
+        <p class="lead-in">
+            <strong>Level 3, the agent reviewing the board.</strong> Useful, and the one to trust least, because it
+            reasons from what the build was supposed to do rather than what it did.
+        </p>
+        <p><strong>Level 4, parse the gerbers.</strong> The gerbers are what the factory builds. Nothing else is.</p>
+        <p>Level 4 is a script, and it's the one that pays. Things it catches that nothing above it does:</p>
+        <ul>
+            <li>
+                Signal routing on a layer you declared a plane. The data logger had 60 track segments across 17 nets on
+                one, including a line running directly under an RF trace, which breaks its reference plane.
+            </li>
+            <li>
+                Missing mounting holes. They're not netlist objects, so nothing in the build emits them unless you write
+                that pass, and nothing checks unless you write this one.
+            </li>
+            <li>Reference designators and free silk text off the board edge.</li>
+            <li>Fiducials sitting inside a keepout, because keepout rules ban pours, tracks and vias, not pads.</li>
+            <li>
+                Power nets at the default trace width, because the generated netclass patterns (<code>VCC*</code>,
+                <code>VDD*</code>, <code>+*V</code>) match none of the usual power net names. Nothing errors, the traces
+                just come out thin.
+            </li>
+            <li>
+                Fiducials the checker can't see at all. An earlier revision shipped them as bare copper dots with no X2
+                aperture tag, so gerber-level checking was blind to them. Export with X2 attributes on.
+            </li>
+        </ul>
+        <p>So the script reads the exported package and checks:</p>
+        <ul>
+            <li>No signal draws on layers declared planes (net tagged X2 scan)</li>
+            <li>Drill file has every mounting hole at the right size and position</li>
+            <li>Every keepout actually clear, on all four layers</li>
+            <li>Power nets at or above minimum width on every layer (aperture per net scan)</li>
+            <li>All silkscreen inside the board outline</li>
+            <li>Three fiducials, not in a line, outside every keepout</li>
+            <li>Enough thermal vias under the exposed pad</li>
+            <li>The board outline lands where the config says it does, so coordinate rules aren't looking at empty space</li>
+        </ul>
+        <p>
+            One PASS or FAIL per line, non-zero exit if anything fails, run after every export. Rules you don't configure
+            report SKIP, not PASS &mdash; a check you haven't written isn't a check that passed.
+        </p>
+
+        <blockquote>
+            <p>
+                Anything you find by hand becomes a check in that script, and the script runs on the fab output, never on
+                the KiCad file.
+            </p>
+        </blockquote>
+
+        <p>Where this board ended up, at sign-off:</p>
+        <ul>
+            <li>0 unconnected, 0 clearance violations, identical across five consecutive DRC runs</li>
+            <li>Gerber checker 14 passed, 0 failed. ERC clean</li>
+            <li>All 24 JLC BOM lines verified in stock that day</li>
+            <li>
+                17 residual DRC items in 3 kinds, every one written down and explained: four are the Qwiic connector's
+                pads, on a part that mounts at the board edge by design; one is a header pin inside a mounting hole's
+                courtyard, both positions fixed by Arduino; twelve are courtyard grazes in the deliberately tight power
+                stage, where the bodies clear and the conservative courtyards touch
+            </li>
+        </ul>
+        <p>
+            That ledger is the part I'd look at first if I were reviewing someone else's board. A residual violation
+            with a written reason is a decision. A residual violation without one is a defect nobody has met yet.
+        </p>
+
+        <h2 id="rules">Rules</h2>
+        <p class="lead-in">
+            <strong>Fixes go in the pipeline, never in the board file.</strong> After routing there are always
+            connectivity problems the router can't sort out: isolated ground pads, pour islands, plane fragments that need
+            links across layers. Fix those by hand and the next rebuild wipes all of it. Write them as a pass. (A layer
+            hop needs vias at both ends. A track on one layer that ends under a pad on another layer connects nothing.)
+        </p>
+        <p class="lead-in">
+            <strong>Save the exact files you order.</strong> Not a regenerated approximation, the literal package.
+            Auditing an order only means something if you can prove the zip you're reading is identical to what shipped.
+        </p>
+        <p><strong>Don't trust what a tool says about itself.</strong> Verify with an independent check.</p>
+        <p><strong>Don't wave off a warning from a checker.</strong> That's swapping a measurement for an assumption.</p>
+        <p class="lead-in">
+            <strong>Don't assume generated defaults match your names.</strong> Netclass patterns, layer names, part
+            rotation conventions. Nothing errors, the output is just wrong.
+        </p>
+        <p class="lead-in">
+            <strong>Recheck the numbers in your own plan.</strong> On the data logger I'd written down 0.5 mm power
+            traces. At 0.5 mm a trace can't get into a 0.3 mm USB-C pad without breaking clearance to its neighbours, and
+            the router left two dozen nets unrouted. The right number was 0.30 mm, about 1.1 A at 1 oz copper per
+            IPC-2221, which is more than 2x margin on a 500 mA charge current. Then write down why it changed. This
+            board carries the same lesson as a config comment: the wide conductor the IPC math implies can't enter a
+            small pad, so the current path is the plane and the bounded pours, and the width rule is a floor for the
+            checker rather than the design width.
+        </p>
+        <p class="lead-in">
+            <strong>Get the document.</strong> Pull the datasheet or the vendor library, cite it, and copy it into the
+            project so an upstream update can't quietly change your geometry later.
+        </p>
+        <p class="lead-in">
+            <strong>Stop twice before the netlist.</strong> The agent interviews you, then stops. It writes the plan,
+            then stops. Those two stops are the safety story. An idea-to-board prompt with no stops produces sixty
+            confident rows of hallucinated pin numbers, and you find out when the boards arrive.
+        </p>
+
+        <h2 id="what-this-gets-you">What this gets you</h2>
+        <p>
+            A build that goes from CSV to gerbers repeatably. A written reason behind every real part choice. Sources
+            cited for everything. A gerber checker that runs on every export. Respins in hours instead of days, because
+            the fixes are in code.
+        </p>
+        <p>
+            The thing to understand about where an agent fails on a board is that it isn't reasoning. It's sight.
+            Corrupted pad coordinates, dropped rotations, a fanout that doesn't check its own spacing, signals on a
+            reference plane, text off the board, fiducials in a keepout, thin power traces. The agent knows what it wants.
+            It has no way to check what it got. Once you stop asking it to look at the board and start making it parse the
+            board, this works.
+        </p>
+        <p>
+            And then there's the part no pipeline closes. This board passed every gate I know how to write, and it has
+            never been fabricated. Two of its gates can't close until the order is placed: re-verify every part in stock
+            at order time, and commit the ordered files byte for byte. After that it either comes back and powers on, or
+            the pipeline learns something and the next revision plan says what.
+        </p>
+        <p>It doesn't replace bring-up. Done and clean and checked five ways isn't the same as working.</p>
+
+        <h2 id="tools">Tools</h2>
+        <ul class="tool-grid">
+            <li>
+                <a href="https://github.com/ramalamadingdong/pcb-agent" target="_blank" rel="noreferrer">pcb-agent</a>,
+                mine. Everything in this post: the build passes, five slash commands, <code>board.toml</code>, the
+                checker, and this board as the worked example. GPL-3.0, because the build passes import
+                <code>pcbnew</code>. Developed and verified on Linux and WSL with Docker; macOS is untested and native
+                Windows isn't a path. Start at
+                <a href="https://github.com/ramalamadingdong/pcb-agent/blob/master/docs/end-to-end.md" target="_blank" rel="noreferrer">docs/end-to-end.md</a>.
+            </li>
+            <li>
+                <a href="https://github.com/ramalamadingdong/gerber-check" target="_blank" rel="noreferrer">gerber-check</a>,
+                mine. Level 4 on its own: one file, no dependencies, doesn't need KiCad, runs on a fab package out of any
+                tool. Non-zero exit, so it drops straight into a Makefile or a pre-order gate. MIT.
+            </li>
+            <li>
+                <a href="https://github.com/aklofas/kicad-happy" target="_blank" rel="noreferrer">kicad-happy</a>
+                by Andrew Klofas. Eleven KiCad skills for Claude Code and Codex: schematic and PCB analysis, EMC, SPICE,
+                datasheet extraction, sourcing from DigiKey, Mouser, LCSC and element14, BOM management, and fab prep for
+                JLCPCB and PCBWay. MIT. There's also a
+                <a href="https://github.com/aklofas/kicad-happy-testharness" target="_blank" rel="noreferrer">test harness</a>
+                that runs the analyzers against thousands of open source KiCad projects.
+            </li>
+            <li>
+                <a href="https://github.com/rjwalters/kicad-tools" target="_blank" rel="noreferrer">kicad-tools</a>
+                by RJ Walters. Python toolkit for agents to parse and edit KiCad files. MCP server plus a <code>kct</code>
+                CLI, JSON output, doesn't need KiCad running. MIT. Board gallery at
+                <a href="https://kicad-tools.org" target="_blank" rel="noreferrer">kicad-tools.org</a>.
+            </li>
+            <li>
+                <a href="https://www.kicad.org/" target="_blank" rel="noreferrer">KiCad</a> and
+                <a href="https://docs.kicad.org/9.0/en/cli/cli.html" target="_blank" rel="noreferrer"><code>kicad-cli</code></a>
+                for ERC, DRC and fab export. The bundled <code>pcbnew</code> Python API does everything else. Pin the
+                major version to the boards you build.
+            </li>
+            <li>
+                <a href="https://github.com/freerouting/freerouting" target="_blank" rel="noreferrer">Freerouting</a>,
+                Specctra DSN/SES autorouter. Pin the version to your Java, run it single threaded, and run it headless
+                under <code>xvfb-run</code>.
+            </li>
+            <li>
+                <a href="https://github.com/astral-sh/uv" target="_blank" rel="noreferrer">uv</a> to pin the
+                Python environment.
+            </li>
+            <li>
+                <a href="https://claude.com/claude-code" target="_blank" rel="noreferrer">Claude Code</a>, the
+                harness it all runs in.
+            </li>
+        </ul>
+        <p>
+            All of it is free, and both third-party skill packs are MIT. The UNO Q facts this board is built on come from
+            Arduino's own documents, CC BY-SA 4.0, credited in the example's README.
+        </p>
+    </div>
+    </div>
+    </div>
+
+    <p><a class="button button-quiet" href="/projects/">All projects</a></p>
+</article>
+
+<footer class="footer">
+    <div class="footer-cta">
+        <h2>Connect</h2>
+        <p>Open to collaboration, mentoring, and conversations about edge AI in robotics.</p>
+        <div class="button-row">
+            <a class="button" href="https://www.linkedin.com/in/rami-mouro/" target="_blank" rel="noreferrer">LinkedIn</a>
+            <a class="button button-quiet" href="https://github.com/ramalamadingdong" target="_blank" rel="noreferrer">GitHub</a>
+        </div>
+    </div>
+    <div class="footer-meta">
+        <nav class="footer-nav" aria-label="Footer">
+            <a href="/">Home</a>
+            <a href="/projects/">Projects</a>
+            <a href="/games/">Games</a>
+        </nav>
+        <p>© 2026 Rami Mouro</p>
+        <p>Static HTML, hosted on our own VPS</p>
+    </div>
+</footer>
+
+    </main>
+</body>
+</html>

@@ -1,8 +1,8 @@
-/* mouro.ai — styles for the portfolio pages (/ and /projects/).
+/* mouro.ai — styles for the portfolio pages (/, /projects/ and /blog/…).
    The games hub and Sudoku are self-contained and do not load this file.
 
    The look: aluminium-grey ground, steel ink, safety yellow as the only accent,
-   one typeface (Archivo, set wide for headings). The name across the top of the
+   one typeface (Archivo). The name across the top of the
    home page is the one loud element; yellow is kept for the things you can
    press and for what is under the pointer. */
 
@@ -31,7 +31,7 @@
 
     --measure: 64ch;
     --gutter: 24px;
-    --wide: 125%;
+    --wide: 100%;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -98,7 +98,7 @@ img {
 }
 
 [id] {
-    scroll-margin-top: 24px;
+    scroll-margin-top: 92px;
 }
 
 :focus-visible {
@@ -129,10 +129,19 @@ img {
 
 /* ── Header ─────────────────────────────────────────────────────────────── */
 
+/* Stays at the top while scrolling, so Home is always in reach. */
 .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--ground);
+    border-bottom: 1px solid var(--line);
+}
+
+.site-header-inner {
     max-width: 1168px;
     margin: 0 auto;
-    padding: 22px var(--gutter);
+    padding: 18px var(--gutter);
     display: flex;
     flex-wrap: wrap;
     align-items: baseline;
@@ -174,7 +183,7 @@ img {
 .page {
     max-width: 1168px;
     margin: 0 auto;
-    padding: 0 var(--gutter) 72px;
+    padding: 40px var(--gutter) 72px;
     display: flex;
     flex-direction: column;
     gap: 112px;
@@ -289,11 +298,12 @@ img {
     align-items: end;
 }
 
-/* The name runs the full width of the page. The divisor is the width of
-   "Rami Mouro" in ems at this weight and width, so it always fits one line. */
+/* The name fills the width on a phone and stops growing on larger screens.
+   The divisor is the width of "Rami Mouro" in ems at this weight, so it
+   always fits one line. */
 .name {
     grid-column: 1 / -1;
-    font-size: min(calc((100vw - 2 * var(--gutter)) / 7.1), 9.95rem);
+    font-size: min(calc((100vw - 2 * var(--gutter)) / 5.65), 7.5rem);
     font-weight: 800;
     line-height: 0.92;
     letter-spacing: -0.035em;
@@ -509,7 +519,6 @@ img {
     display: flex;
     flex-direction: column;
     gap: 22px;
-    padding-top: 24px;
 }
 
 .page-title h1 {
@@ -529,7 +538,7 @@ img {
 
 .index {
     position: sticky;
-    top: 24px;
+    top: 92px;
     padding-top: 28px;
     border-top: 2px solid var(--ink);
 }
@@ -705,6 +714,336 @@ img {
     fill: currentColor;
 }
 
+/* ── Article (/blog/…) ──────────────────────────────────────────────────── */
+
+.post {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 48px;
+}
+
+.post-header {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+    max-width: 52rem;
+}
+
+.post-header h1 {
+    font-size: clamp(2.2rem, 5.4vw, 4rem);
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.03em;
+}
+
+.post-deck {
+    font-size: 1.3rem;
+    line-height: 1.4;
+    color: var(--steel);
+}
+
+.post-meta {
+    font-size: 0.94rem;
+    color: var(--steel);
+}
+
+/* The short version: summary points, then the pipeline as a row of stages. */
+.tldr {
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding: 32px;
+    background: var(--plate);
+}
+
+.tldr-label {
+    font-weight: 750;
+    font-size: 1.2rem;
+}
+
+.tldr-points {
+    margin: 0;
+    padding-left: 1.2em;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: 48rem;
+}
+
+.tldr-tail {
+    max-width: 48rem;
+    color: var(--steel);
+}
+
+.pipeline {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.stage {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    padding-top: 12px;
+    border-top: 4px solid var(--yellow);
+    min-width: 0;
+}
+
+.stage-name {
+    font-weight: 700;
+    overflow-wrap: anywhere;
+}
+
+.stage-note {
+    font-size: 0.88rem;
+    line-height: 1.35;
+    color: var(--steel);
+}
+
+.stage-gate {
+    margin-top: 4px;
+    padding: 1px 7px;
+    background: var(--ink);
+    color: var(--ground);
+    font-size: 0.8rem;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.post-layout {
+    align-self: stretch;
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(0, 9fr);
+    gap: 48px;
+    align-items: start;
+}
+
+.post-toc {
+    position: sticky;
+    top: 92px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding-top: 28px;
+    border-top: 2px solid var(--ink);
+}
+
+.post-toc h3 {
+    font-size: 1rem;
+}
+
+.post-toc-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    font-size: 0.94rem;
+    line-height: 1.3;
+}
+
+.post-toc-list a {
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.post-toc-list a:hover {
+    background: var(--yellow);
+    color: var(--on-yellow);
+}
+
+.post-body {
+    min-width: 0;
+    padding-top: 28px;
+    border-top: 2px solid var(--ink);
+}
+
+.post-body .prose {
+    max-width: 44rem;
+}
+
+.post-body .lede {
+    font-size: 1.2rem;
+    line-height: 1.5;
+}
+
+.post-body h2 {
+    font-size: clamp(1.6rem, 3vw, 2.1rem);
+    margin-top: 40px;
+    padding-top: 28px;
+    border-top: 1px solid var(--line);
+}
+
+.post-body h3 {
+    font-size: 1.3rem;
+    margin-top: 16px;
+}
+
+.post-body ul,
+.post-body ol {
+    margin: 0;
+    padding-left: 1.2em;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.post-body blockquote {
+    margin: 6px 0;
+    padding-left: 20px;
+    border-left: 4px solid var(--yellow);
+    font-size: 1.3rem;
+    font-weight: 650;
+    line-height: 1.35;
+}
+
+.post-body code,
+.tldr code {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.88em;
+    background: var(--plate);
+    padding: 1px 5px;
+}
+
+.tldr code,
+.stage code {
+    background: var(--ground);
+}
+
+.post-body pre {
+    margin: 4px 0;
+    padding: 18px 20px;
+    overflow-x: auto;
+    background: var(--band);
+    color: var(--band-ink);
+    font-size: 0.9rem;
+    line-height: 1.55;
+}
+
+.post-body pre code {
+    background: none;
+    padding: 0;
+    font-size: inherit;
+}
+
+.tok-comment,
+.tok-note,
+.tok-rule {
+    color: var(--band-steel);
+}
+
+.tok-net,
+.tok-stage,
+.tok-flag {
+    color: var(--yellow);
+}
+
+.tok-cmd,
+.tok-head {
+    font-weight: 700;
+}
+
+.tok-str,
+.tok-ok {
+    color: #8fd6a4;
+}
+
+.tok-bad {
+    color: #ff9c8f;
+}
+
+.table-wrap {
+    overflow-x: auto;
+    margin: 4px 0;
+}
+
+.table-wrap table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+    line-height: 1.4;
+}
+
+.table-wrap th,
+.table-wrap td {
+    padding: 10px 14px 10px 0;
+    text-align: left;
+    vertical-align: top;
+    border-bottom: 1px solid var(--line);
+}
+
+.table-wrap th {
+    font-weight: 700;
+    border-bottom: 2px solid var(--ink);
+}
+
+.post-update {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 6px 0;
+    padding: 22px 24px;
+    border: 2px solid var(--ink);
+}
+
+.post-update-label {
+    font-weight: 750;
+}
+
+.post-figure {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 6px 0;
+}
+
+.post-figure video {
+    display: block;
+    width: 100%;
+    height: auto;
+    background: var(--band);
+}
+
+.post-figure figcaption {
+    font-size: 0.9rem;
+    line-height: 1.45;
+    color: var(--steel);
+}
+
+@media (max-width: 900px) {
+    .post-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .post-toc {
+        position: static;
+    }
+
+    .pipeline {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 600px) {
+    .tldr {
+        margin: 0 calc(-1 * var(--gutter));
+        padding: 28px var(--gutter);
+    }
+
+    .pipeline {
+        grid-template-columns: 1fr;
+    }
+}
+
 /* ── Footer ─────────────────────────────────────────────────────────────── */
 
 .footer {
@@ -820,15 +1159,8 @@ img {
 }
 
 @media (max-width: 600px) {
-    /* Wide headings read as stretched on a narrow screen: set them at normal
-       width here, which also lets the name stand taller. */
     :root {
         --gutter: 20px;
-        --wide: 100%;
-    }
-
-    .name {
-        font-size: calc((100vw - 2 * var(--gutter)) / 5.65);
     }
 
     body {
@@ -839,17 +1171,21 @@ img {
         gap: 72px;
     }
 
-    .site-header {
-        padding-top: 16px;
-        padding-bottom: 16px;
+    .site-header-inner {
+        padding-top: 14px;
+        padding-bottom: 14px;
+    }
+
+    .page {
+        padding-top: 28px;
     }
 
     .nav {
         gap: 4px 18px;
     }
 
-    /* On the home page the name is the headline right below; don't say it twice. */
-    .wordmark[aria-current="page"] {
+    /* The nav's Home link does the wordmark's job; keep the bar to one row. */
+    .wordmark {
         display: none;
     }
 
