@@ -15,6 +15,7 @@
     <link rel="icon" href="/static/img/favicon.svg" type="image/svg+xml">
     <link rel="preload" href="/static/fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="/static/css/site.css">
+    <script type="module" src="/static/js/project-demos.js"></script>
 </head>
 <body>
     <a class="skip-link" href="#main">Skip to content</a>
@@ -113,6 +114,32 @@
             <div><dt>PulseMCP listing</dt><dd>464+ visitors</dd></div>
             <div><dt>Install</dt><dd><code>uvx first-agentic-csa</code></dd></div>
         </dl>
+        <section class="demo" data-demo="docs" data-index="/static/data/frc-docs-index.json" aria-labelledby="docs-demo-title" hidden>
+            <div class="demo-head">
+                <h3 id="docs-demo-title">Try the search</h3>
+                <p>
+                    The server's own index and ranking, running in your browser. Ask it what you would ask
+                    your coding assistant.
+                </p>
+            </div>
+            <form class="docs-form" role="search">
+                <label class="visually-hidden" for="docs-q">Search the FRC documentation</label>
+                <input id="docs-q" name="q" type="search" placeholder="Search the FRC docs" autocomplete="off" spellcheck="false">
+                <label class="visually-hidden" for="docs-vendor">Documentation source</label>
+                <select id="docs-vendor" name="vendor">
+                    <option value="all">All sources</option>
+                </select>
+                <button class="button" type="submit">Search</button>
+            </form>
+            <p class="docs-examples">
+                <span>Try</span>
+                <button class="docs-example" type="button">swerve drive odometry</button>
+                <button class="docs-example" type="button">TalonFX current limit</button>
+                <button class="docs-example" type="button">AprilTag pose estimation</button>
+            </p>
+            <p class="docs-status" role="status"></p>
+            <ol class="docs-results"></ol>
+        </section>
         <p class="stack"><span class="stack-label">Built with</span>Python, MCP Protocol, UV Package Manager, PyPI, VS Code Integration</p>
         <a class="text-link" href="https://github.com/ramalamadingdong/agentic-csa" target="_blank" rel="noreferrer">View on GitHub</a>
     </article>
@@ -140,8 +167,50 @@
             <div><dt>Languages</dt><dd>Python, HTML</dd></div>
             <div><dt>Interfaces</dt><dd>Web, Django, CLI</dd></div>
         </dl>
+        <section class="demo" data-demo="shooter" aria-labelledby="shot-demo-title" hidden>
+            <div class="demo-head">
+                <h3 id="shot-demo-title">Try a shot</h3>
+                <p>
+                    Set the distance and the launch angle. The tool's physics finds the exit speed that
+                    drops the ball into the goal, and how forgiving that shot is.
+                </p>
+            </div>
+            <div class="shot">
+                <figure class="shot-figure">
+                    <svg class="shot-plot" role="img" aria-label="Side view of the shot: the ball's path from the shooter to the goal"></svg>
+                    <figcaption>
+                        <span class="key key-flight">With air drag</span>
+                        <span class="key key-vacuum">Same launch, no air</span>
+                    </figcaption>
+                </figure>
+                <div class="shot-panel">
+                    <div class="shot-controls">
+                        <label for="shot-distance">Distance to goal <output data-out="distance" for="shot-distance"></output></label>
+                        <input id="shot-distance" name="distance" type="range" min="8" max="20" step="0.5" value="14">
+                        <label for="shot-angle">Launch angle <output data-out="angle" for="shot-angle"></output></label>
+                        <input id="shot-angle" name="angle" type="range" min="55" max="75" step="1" value="65">
+                        <button class="button shot-fire" type="button">Fire</button>
+                    </div>
+                    <dl class="facts shot-facts" aria-live="polite">
+                        <div><dt>Exit speed</dt><dd data-out="speed"></dd></div>
+                        <div><dt>Wheel speed</dt><dd data-out="rpm"></dd></div>
+                        <div><dt>Enters the goal at</dt><dd data-out="entry"></dd></div>
+                        <div><dt>Miss per 1° of angle error</dt><dd data-out="angle-miss"></dd></div>
+                        <div><dt>Miss per 1 ft/s of speed error</dt><dd data-out="speed-miss"></dd></div>
+                    </dl>
+                    <p class="shot-none">No shot reaches the goal from here at this angle.</p>
+                    <p class="demo-note">
+                        Launched 20 in off the floor into a 72 in goal, with the tool's defaults:
+                        <span data-out="setup"></span>. The full tool also sizes motors, gearing and flywheels.
+                    </p>
+                </div>
+            </div>
+        </section>
         <p class="stack"><span class="stack-label">Built with</span>Python, Django, JavaScript, Plotly, Physics Simulation, GitHub Pages</p>
-        <a class="text-link" href="https://github.com/ramalamadingdong/frc-shooter-selector" target="_blank" rel="noreferrer">View on GitHub</a>
+        <p class="link-row">
+            <a class="text-link" href="https://ramalamadingdong.github.io/frc-shooter-selector/" target="_blank" rel="noreferrer">Open the full tool</a>
+            <a class="text-link" href="https://github.com/ramalamadingdong/frc-shooter-selector" target="_blank" rel="noreferrer">View on GitHub</a>
+        </p>
     </article>
 
     <article class="writeup" id="rubik-tflite">

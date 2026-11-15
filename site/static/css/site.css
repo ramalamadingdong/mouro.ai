@@ -1100,6 +1100,374 @@ img {
     text-underline-offset: 4px;
 }
 
+/* ── Live demos (projects) ──────────────────────────────────────────────── */
+
+/* A working piece of a project, set into its write-up on a lighter plate.
+   Hidden until static/js/project-demos.js has it running. */
+.demo {
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    margin: 8px 0;
+    padding: 28px;
+    background: var(--plate);
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--yellow);
+}
+
+.demo[hidden] {
+    display: none;
+}
+
+.demo-head {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.demo-head p,
+.demo-note,
+.docs-status {
+    color: var(--steel);
+}
+
+.demo-note {
+    font-size: 0.9rem;
+    line-height: 1.45;
+}
+
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
+.demo button {
+    font: inherit;
+    border: 0;
+    cursor: pointer;
+}
+
+.demo .button:disabled {
+    background: var(--line);
+    color: var(--steel);
+    cursor: default;
+}
+
+/* Shooter: the plot beside its controls and readouts. */
+.shot {
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 4fr);
+    gap: 32px;
+    align-items: start;
+}
+
+.shot-figure {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.shot-plot {
+    display: block;
+    width: 100%;
+    height: auto;
+    background: var(--ground);
+    border: 1px solid var(--line);
+}
+
+.plot-floor,
+.plot-tick,
+.plot-target line,
+.plot-target path {
+    fill: none;
+    stroke: var(--ink);
+    stroke-width: 2;
+    stroke-linejoin: round;
+}
+
+.plot-tick {
+    stroke-width: 1;
+}
+
+.plot-label {
+    fill: var(--steel);
+    font-size: 15px;
+}
+
+.plot-robot {
+    fill: var(--ink);
+}
+
+.plot-barrel {
+    stroke: var(--ink);
+    stroke-width: 7;
+}
+
+.plot-flight,
+.plot-vacuum {
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.plot-flight {
+    stroke: var(--ink);
+    stroke-width: 3;
+}
+
+.plot-vacuum {
+    stroke: var(--steel);
+    stroke-width: 1.5;
+    stroke-dasharray: 2 6;
+}
+
+.plot-ball {
+    fill: var(--yellow);
+    stroke: var(--ink);
+    stroke-width: 1.5;
+}
+
+.no-shot .plot-ball {
+    display: none;
+}
+
+.shot-figure figcaption {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 24px;
+    font-size: 0.88rem;
+    color: var(--steel);
+}
+
+.key::before {
+    content: "";
+    display: inline-block;
+    width: 28px;
+    margin-right: 8px;
+    vertical-align: middle;
+    border-top: 3px solid var(--ink);
+}
+
+.key-vacuum::before {
+    border-top: 2px dotted var(--steel);
+}
+
+.shot-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.shot-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+}
+
+.shot-controls label {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    font-weight: 600;
+}
+
+.shot-controls label:not(:first-child) {
+    margin-top: 10px;
+}
+
+.shot-controls output {
+    font-variant-numeric: tabular-nums;
+}
+
+.shot-controls input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 28px;
+    margin: 0;
+    background: transparent;
+    cursor: pointer;
+}
+
+.shot-controls input[type="range"]::-webkit-slider-runnable-track {
+    height: 4px;
+    background: var(--ink);
+}
+
+.shot-controls input[type="range"]::-moz-range-track {
+    height: 4px;
+    background: var(--ink);
+}
+
+.shot-controls input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 24px;
+    height: 24px;
+    margin-top: -10px;
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+    background: var(--yellow);
+}
+
+.shot-controls input[type="range"]::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+    background: var(--yellow);
+}
+
+.shot-fire {
+    align-self: flex-start;
+    margin-top: 12px;
+}
+
+.shot-facts {
+    grid-template-columns: 1fr;
+    margin: 0;
+}
+
+.shot-facts div {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 16px;
+    padding: 8px 0;
+}
+
+.shot-facts dd {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.shot-none {
+    display: none;
+    font-weight: 600;
+}
+
+.no-shot .shot-none {
+    display: block;
+}
+
+/* Docs search. */
+.docs-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.docs-form input,
+.docs-form select {
+    font: inherit;
+    color: var(--ink);
+    background: var(--ground);
+    border: 2px solid var(--ink);
+    border-radius: 3px;
+    padding: 10px 14px;
+    min-width: 0;
+}
+
+.docs-form input {
+    flex: 1 1 240px;
+}
+
+.docs-form input::placeholder {
+    color: var(--steel);
+}
+
+.docs-examples {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px 18px;
+    max-width: none;
+    font-size: 0.94rem;
+    color: var(--steel);
+}
+
+.docs-example {
+    padding: 0;
+    background: none;
+    color: var(--ink);
+    font-weight: 600;
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 4px;
+}
+
+.docs-example:hover {
+    background: var(--yellow);
+    color: var(--on-yellow);
+    text-decoration-color: transparent;
+}
+
+.docs-status {
+    max-width: none;
+    font-size: 0.94rem;
+}
+
+.docs-status:empty,
+.docs-results:empty {
+    display: none;
+}
+
+.docs-results {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.docs-results li {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 14px 0;
+    border-top: 1px solid var(--line);
+}
+
+.docs-results a {
+    align-self: flex-start;
+    font-weight: 650;
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 4px;
+}
+
+.docs-results a:hover {
+    background: var(--yellow);
+    color: var(--on-yellow);
+    text-decoration-color: transparent;
+}
+
+.docs-source {
+    font-size: 0.88rem;
+    color: var(--steel);
+}
+
+.docs-results p {
+    max-width: none;
+    font-size: 0.94rem;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 720px) {
+    .demo {
+        padding: 20px;
+    }
+
+    .shot {
+        grid-template-columns: 1fr;
+        gap: 24px;
+    }
+}
+
 /* ── Motion preference ──────────────────────────────────────────────────── */
 
 @media (prefers-reduced-motion: reduce) {
