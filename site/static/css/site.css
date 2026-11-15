@@ -1,4 +1,4 @@
-/* mouro.ai — styles for the portfolio pages (/ and /projects/).
+/* mouro.ai — styles for the portfolio pages (/, /projects/ and /blog/…).
    The games hub and Sudoku are self-contained and do not load this file.
 
    The look: aluminium-grey ground, steel ink, safety yellow as the only accent,
@@ -712,6 +712,336 @@ img {
     width: 12px;
     height: 12px;
     fill: currentColor;
+}
+
+/* ── Article (/blog/…) ──────────────────────────────────────────────────── */
+
+.post {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 48px;
+}
+
+.post-header {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+    max-width: 52rem;
+}
+
+.post-header h1 {
+    font-size: clamp(2.2rem, 5.4vw, 4rem);
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.03em;
+}
+
+.post-deck {
+    font-size: 1.3rem;
+    line-height: 1.4;
+    color: var(--steel);
+}
+
+.post-meta {
+    font-size: 0.94rem;
+    color: var(--steel);
+}
+
+/* The short version: summary points, then the pipeline as a row of stages. */
+.tldr {
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding: 32px;
+    background: var(--plate);
+}
+
+.tldr-label {
+    font-weight: 750;
+    font-size: 1.2rem;
+}
+
+.tldr-points {
+    margin: 0;
+    padding-left: 1.2em;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: 48rem;
+}
+
+.tldr-tail {
+    max-width: 48rem;
+    color: var(--steel);
+}
+
+.pipeline {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.stage {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    padding-top: 12px;
+    border-top: 4px solid var(--yellow);
+    min-width: 0;
+}
+
+.stage-name {
+    font-weight: 700;
+    overflow-wrap: anywhere;
+}
+
+.stage-note {
+    font-size: 0.88rem;
+    line-height: 1.35;
+    color: var(--steel);
+}
+
+.stage-gate {
+    margin-top: 4px;
+    padding: 1px 7px;
+    background: var(--ink);
+    color: var(--ground);
+    font-size: 0.8rem;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.post-layout {
+    align-self: stretch;
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(0, 9fr);
+    gap: 48px;
+    align-items: start;
+}
+
+.post-toc {
+    position: sticky;
+    top: 92px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding-top: 28px;
+    border-top: 2px solid var(--ink);
+}
+
+.post-toc h3 {
+    font-size: 1rem;
+}
+
+.post-toc-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    font-size: 0.94rem;
+    line-height: 1.3;
+}
+
+.post-toc-list a {
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.post-toc-list a:hover {
+    background: var(--yellow);
+    color: var(--on-yellow);
+}
+
+.post-body {
+    min-width: 0;
+    padding-top: 28px;
+    border-top: 2px solid var(--ink);
+}
+
+.post-body .prose {
+    max-width: 44rem;
+}
+
+.post-body .lede {
+    font-size: 1.2rem;
+    line-height: 1.5;
+}
+
+.post-body h2 {
+    font-size: clamp(1.6rem, 3vw, 2.1rem);
+    margin-top: 40px;
+    padding-top: 28px;
+    border-top: 1px solid var(--line);
+}
+
+.post-body h3 {
+    font-size: 1.3rem;
+    margin-top: 16px;
+}
+
+.post-body ul,
+.post-body ol {
+    margin: 0;
+    padding-left: 1.2em;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.post-body blockquote {
+    margin: 6px 0;
+    padding-left: 20px;
+    border-left: 4px solid var(--yellow);
+    font-size: 1.3rem;
+    font-weight: 650;
+    line-height: 1.35;
+}
+
+.post-body code,
+.tldr code {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.88em;
+    background: var(--plate);
+    padding: 1px 5px;
+}
+
+.tldr code,
+.stage code {
+    background: var(--ground);
+}
+
+.post-body pre {
+    margin: 4px 0;
+    padding: 18px 20px;
+    overflow-x: auto;
+    background: var(--band);
+    color: var(--band-ink);
+    font-size: 0.9rem;
+    line-height: 1.55;
+}
+
+.post-body pre code {
+    background: none;
+    padding: 0;
+    font-size: inherit;
+}
+
+.tok-comment,
+.tok-note,
+.tok-rule {
+    color: var(--band-steel);
+}
+
+.tok-net,
+.tok-stage,
+.tok-flag {
+    color: var(--yellow);
+}
+
+.tok-cmd,
+.tok-head {
+    font-weight: 700;
+}
+
+.tok-str,
+.tok-ok {
+    color: #8fd6a4;
+}
+
+.tok-bad {
+    color: #ff9c8f;
+}
+
+.table-wrap {
+    overflow-x: auto;
+    margin: 4px 0;
+}
+
+.table-wrap table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+    line-height: 1.4;
+}
+
+.table-wrap th,
+.table-wrap td {
+    padding: 10px 14px 10px 0;
+    text-align: left;
+    vertical-align: top;
+    border-bottom: 1px solid var(--line);
+}
+
+.table-wrap th {
+    font-weight: 700;
+    border-bottom: 2px solid var(--ink);
+}
+
+.post-update {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 6px 0;
+    padding: 22px 24px;
+    border: 2px solid var(--ink);
+}
+
+.post-update-label {
+    font-weight: 750;
+}
+
+.post-figure {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 6px 0;
+}
+
+.post-figure video {
+    display: block;
+    width: 100%;
+    height: auto;
+    background: var(--band);
+}
+
+.post-figure figcaption {
+    font-size: 0.9rem;
+    line-height: 1.45;
+    color: var(--steel);
+}
+
+@media (max-width: 900px) {
+    .post-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .post-toc {
+        position: static;
+    }
+
+    .pipeline {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 600px) {
+    .tldr {
+        margin: 0 calc(-1 * var(--gutter));
+        padding: 28px var(--gutter);
+    }
+
+    .pipeline {
+        grid-template-columns: 1fr;
+    }
 }
 
 /* ── Footer ─────────────────────────────────────────────────────────────── */

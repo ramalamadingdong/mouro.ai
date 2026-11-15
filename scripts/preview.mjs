@@ -47,6 +47,7 @@ const types = {
   '.json': 'application/json',
   '.png': 'image/png',
   '.jpg': 'image/jpeg',
+  '.mp4': 'video/mp4',
   '.svg': 'image/svg+xml',
   '.ico': 'image/x-icon',
   '.ttf': 'font/ttf',

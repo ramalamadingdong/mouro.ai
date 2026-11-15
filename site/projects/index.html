@@ -4,9 +4,9 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Projects — Rami Mouro</title>
-    <meta name="description" content="Write-ups of Rami Mouro's projects: FIRST Agentic CSA, FRC Shooter Selector, Rubik TFLite, military logistics automation, and Qualcomm talks and demos.">
+    <meta name="description" content="Write-ups of Rami Mouro's projects: PCB Agent, FIRST Agentic CSA, FRC Shooter Selector, Rubik TFLite, military logistics automation, and Qualcomm talks and demos.">
     <meta property="og:title" content="Projects — Rami Mouro">
-    <meta property="og:description" content="Write-ups of Rami Mouro's projects: FIRST Agentic CSA, FRC Shooter Selector, Rubik TFLite, military logistics automation, and Qualcomm talks and demos.">
+    <meta property="og:description" content="Write-ups of Rami Mouro's projects: PCB Agent, FIRST Agentic CSA, FRC Shooter Selector, Rubik TFLite, military logistics automation, and Qualcomm talks and demos.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://mouro.ai/projects/">
     <meta property="og:site_name" content="Rami Mouro">
@@ -40,6 +40,7 @@
 <div class="projects">
     <nav class="index" aria-label="Project index">
         <ul>
+            <li><a href="#pcb-agent"><strong>PCB Agent</strong><small>Boards designed by an AI agent</small></a></li>
             <li><a href="#agentic-csa"><strong>FIRST Agentic CSA</strong><small>AI documentation search</small></a></li>
             <li><a href="#shooter-selector"><strong>FRC Shooter Selector</strong><small>Ballistics optimization</small></a></li>
             <li><a href="#rubik-tflite"><strong>Rubik TFLite</strong><small>TFLite + libQnn demo</small></a></li>
@@ -50,6 +51,42 @@
         </ul>
     </nav>
     <div class="writeups">
+    <article class="writeup" id="pcb-agent">
+        <div class="writeup-head">
+            <h2>PCB Agent</h2>
+            <p class="kicker">Circuit boards designed end to end by an AI agent</p>
+        </div>
+        <p>
+            pcb-agent is the setup I use to get an AI agent to do a whole PCB. Not help me in KiCad, actually do it:
+            pick the parts, write the netlist, place everything, route it, and output gerbers a fab will build.
+            I review, it does the work.
+        </p>
+        <p>
+            The design lives in a CSV, not in KiCad. One row per pin, every row citing the document it came from.
+            Scripts build the schematic and the board from it, and nothing in the KiCad files is edited by hand; to
+            change the circuit you edit a row and rebuild. Then five levels of checking, the last of which parses the
+            exported gerbers, because the gerbers are what the factory builds.
+        </p>
+        <p>
+            The example board in the repo is a power and I/O shield for the Arduino UNO Q: 49 components on four
+            layers, routed to 0 unconnected and 0 clearance violations. It has passed its pre-order gates, but this
+            particular board has not been fabricated.
+        </p>
+        <dl class="facts">
+            <div><dt>Stars</dt><dd>5</dd></div>
+            <div><dt>Forks</dt><dd>1</dd></div>
+            <div><dt>License</dt><dd>GPL-3.0</dd></div>
+            <div><dt>Language</dt><dd>Python</dd></div>
+            <div><dt>Toolchain</dt><dd>KiCad, Freerouting, Docker</dd></div>
+            <div><dt>Example board</dt><dd>UNO Q power shield, four layers</dd></div>
+        </dl>
+        <p class="stack"><span class="stack-label">Built with</span>Python, KiCad, Freerouting, Docker, Claude Code</p>
+        <p class="link-row">
+            <a class="text-link" href="/blog/pcb-design-with-ai/">Read the full write-up</a>
+            <a class="text-link" href="https://github.com/ramalamadingdong/pcb-agent" target="_blank" rel="noreferrer">View on GitHub</a>
+        </p>
+    </article>
+
     <article class="writeup" id="agentic-csa">
         <div class="writeup-head">
             <h2>FIRST Agentic CSA</h2>
