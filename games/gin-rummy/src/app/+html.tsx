@@ -42,6 +42,20 @@ export default function Root({ children }: PropsWithChildren) {
         <meta name="apple-mobile-web-app-title" content="Gin Rummy" />
         <link rel="apple-touch-icon" href={`${baseUrl}/icons/apple-touch-icon.png`} />
 
+        {/* Link previews (Slack, iMessage, WhatsApp). Absolute addresses, because
+            previews need them. The card is drawn by scripts/render-share-cards.mjs
+            at the repo root and lives with the site. */}
+        <meta property="og:title" content="Gin Rummy" />
+        <meta property="og:description" content="Classic two-player gin rummy with no sign-up: share a room code and play a friend online, or play Marmalade, a computer cat." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://mouro.ai/gin-rummy/" />
+        <meta property="og:site_name" content="Mouro Games" />
+        <meta property="og:image" content="https://mouro.ai/static/share/gin-rummy.png" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:image:alt" content="Gin Rummy, online or against a computer cat" />
+        <meta name="twitter:card" content="summary_large_image" />
+
         {/*
           Disable body scrolling on web so the fixed-height game table doesn't
           bounce. This must be added since the root <body> is undefined on native.

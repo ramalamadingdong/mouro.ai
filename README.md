@@ -15,6 +15,16 @@ and the small realtime server the games play through. One repo, one VPS.
 | [`packages/realtime/`](packages/realtime/) | `@mouro/realtime`, the client the games use | — |
 | [`infra/`](infra/) | Caddyfile, systemd unit, VPS provisioning, deploy activation | — |
 
+Anything that is not on the site gets `site/404.html` (Caddy `handle_errors`).
+
+Every page, project and game has a link-preview card (1200 × 630) in
+`site/static/share/`, drawn by `node scripts/render-share-cards.mjs` and
+committed. A preview ignores the `#fragment`, so each project also has a share
+address — `/projects/pcb-agent/`, `/projects/shooter-selector/`, … — that
+carries its own card and forwards to the write-up; the same script writes those
+pages. After changing a title or adding a page, edit the list in the script,
+run it, and point the page's `og:image` at its card.
+
 Old `/gin-rummey/…` links (the original spelling) redirect permanently to
 `/gin-rummy/…`, so invites already sent keep working.
 

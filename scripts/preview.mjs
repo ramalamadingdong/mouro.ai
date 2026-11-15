@@ -94,7 +94,11 @@ const server = createServer((req, res) => {
   if (old) return res.writeHead(301, { location: `/gin-rummy${old[1] ?? '/'}${url.search}` }).end();
   if (/^\/(backgammon|gin-rummy|yahtzee|holdem|dots)$/.test(p)) return res.writeHead(301, { location: `${p}/` }).end();
   const file = resolveFile(p);
-  if (!file) return res.writeHead(404).end('not found');
+  if (!file) {
+    // Same as the Caddyfile's handle_errors: the site's 404 page, as a 404.
+    res.writeHead(404, { 'content-type': types['.html'] });
+    return createReadStream(join(dirs.site, '404.html')).pipe(res);
+  }
   res.writeHead(200, { 'content-type': types[extname(file)] ?? 'application/octet-stream' });
   createReadStream(file).pipe(res);
 });
