@@ -13,7 +13,8 @@ import { TargetPicker } from '@/components/target-picker';
 import { Button } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
 import type { Difficulty } from '@/ai/cpu';
-import { useSoloStore } from '@/store/soloStore';
+import { catDeck } from '@/components/card-back';
+import { CPU_CAT, CPU_NAME, useSoloStore } from '@/store/soloStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { accent, felt, text } from '@/theme/colors';
 import { randomSeed } from '@/util/seed';
@@ -59,7 +60,7 @@ export default function SoloScreen() {
   if (!state || !mySeat) {
     return (
       <Screen center>
-        <Text style={styles.startTitle}>Play vs Computer</Text>
+        <Text style={styles.startTitle}>Play vs Marmalade</Text>
         <Text style={styles.startSub}>Pick a difficulty</Text>
 
         <View style={styles.picker}>
@@ -105,9 +106,11 @@ export default function SoloScreen() {
       error={error}
       connected
       opponentOnline
-      opponentTurnLabel={cpuThinking ? 'Computer is thinking…' : "Computer's turn"}
+      opponentTurnLabel={cpuThinking ? `${CPU_NAME} is thinking…` : `${CPU_NAME}'s turn`}
       opponentThinking={cpuThinking}
       rematchVotes={{}}
+      opponentCat={CPU_CAT}
+      opponentCardBack={catDeck(CPU_CAT)}
     />
   );
 }

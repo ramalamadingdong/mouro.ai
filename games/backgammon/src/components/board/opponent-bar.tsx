@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 
+import { CatFace, type CatId } from '@/components/cat-face';
 import { accent, felt, piece, text } from '@/theme/colors';
 import type { Seat } from '@/engine/types';
 
@@ -14,6 +15,8 @@ export type PlayerStripProps = {
   active: boolean;
   /** `top` sits above the board (the opponent), `bottom` below (you). */
   side: 'top' | 'bottom';
+  /** Set when this player is a computer cat: draws its face by the name. */
+  cat?: CatId;
 };
 
 /**
@@ -30,6 +33,7 @@ export function PlayerStrip({
   online,
   active,
   side,
+  cat,
 }: PlayerStripProps) {
   return (
     <View
@@ -49,6 +53,7 @@ export function PlayerStrip({
           },
         ]}
       />
+      {cat ? <CatFace cat={cat} size={28} /> : null}
       <Text style={styles.name} numberOfLines={1}>
         {name}
       </Text>

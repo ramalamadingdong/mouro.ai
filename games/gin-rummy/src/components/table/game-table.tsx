@@ -11,6 +11,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 
+import type { CatId } from '@/components/cat-face';
 import { Hand } from '@/components/hand';
 import { type KnockHint } from '@/components/playing-card';
 import { Button } from '@/components/ui/button';
@@ -86,6 +87,8 @@ export type GameTableProps = {
    * the CPU shows the default lattice). Shown on their face-down cards.
    */
   opponentCardBack?: string | null;
+  /** Solo only: the computer cat in the opponent's chair, drawn by its name. */
+  opponentCat?: CatId;
   /**
    * Broadcast a reaction. ONLINE ONLY — when omitted (solo), the whole reaction
    * UI (the tray button and the floating pops) is hidden.
@@ -118,6 +121,7 @@ export function GameTable({
   opponentThinking = false,
   rematchVotes = {},
   opponentCardBack = null,
+  opponentCat,
   onEmote,
   myEmote = null,
   opponentEmote = null,
@@ -363,6 +367,7 @@ export function GameTable({
         isTurn={state.turn === opp && phase !== 'roundOver' && phase !== 'matchOver'}
         reconnecting={!opponentOnline}
         cardBack={opponentCardBack}
+        cat={opponentCat}
       />
 
       <View style={styles.center}>
