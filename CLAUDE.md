@@ -1,6 +1,7 @@
 # mouro.ai — notes for coding agents
 
-Monorepo for the personal site, five family games, and their realtime server.
+Monorepo for the personal site, the family games (five originals plus one new
+cat game a week — see `games/WEEKLY.md`), and their realtime server.
 Read the root `README.md` first, then the `AGENTS.md` in whichever folder you
 are working in — those hold each project's non-negotiables.
 
@@ -32,10 +33,14 @@ are working in — those hold each project's non-negotiables.
   by `server/src/rules.js`. Changing a rule changes production behaviour on the
   next deploy — add or adjust a case in `server/test/realtime.test.js`.
 - **Game namespaces are fixed** in `server/games.json` (`gin-rummy`,
-  `backgammon`, `yahtzee`, `holdem`, `dots`). Renaming one orphans its data.
-- **URLs are fixed** — `/backgammon/`, `/gin-rummy/`, `/yahtzee/`, `/holdem/`, `/dots/`. Each is set
+  `backgammon`, `yahtzee`, `holdem`, `dots`, `pawprints`). Renaming one orphans its data.
+- **URLs are fixed** — `/backgammon/`, `/gin-rummy/`, `/yahtzee/`, `/holdem/`, `/dots/`, `/pawprints/`. Each is set
   in the app (Expo `experiments.baseUrl` + `WEB_BASE_PATH`, or Vite `base` +
   router `basename`) and in `infra/Caddyfile`; change them together.
+- **Weekly games.** Only the newest one has a tile on the games hub (its
+  "This week's game" spot); when a new one lands, the previous tile is removed
+  from the hub, but its folder, namespace, rules, Caddy route, CI/deploy
+  entries and tests all stay so its invite links keep working.
 - Don't commit `.env` files, `server/data/`, or build output.
 
 ## Verify before finishing

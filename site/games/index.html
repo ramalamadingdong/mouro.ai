@@ -127,6 +127,19 @@
   .dots       { --a: #5b3a7a; --b: #2e1c42; --ink: #f2a35e; }
   .sudoku     { --a: #27437a; --b: #14213f; --ink: #7bb8ff; }
   .cafe       { --a: #1f6f78; --b: #123f47; --ink: #f2b560; }
+  .pawprints  { --a: #8a4b1f; --b: #45240e; --ink: #f7d9a8; }
+
+  /* This week's game: its own heading row with a small "New this week" pill
+     and the date. The pill sits beside the heading, never in the tile, so the
+     tile stays exactly the size of every other one. */
+  .weekly-head { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; }
+  .new {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: .74rem; font-weight: 700; letter-spacing: .04em;
+    padding: 3px 10px; border-radius: 999px;
+    color: #1d1503; background: var(--gold);
+  }
+  .new time { font-weight: 600; opacity: .8; }
 
   .links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
   .ext {
@@ -174,6 +187,31 @@
       <h1>Game night, <em>anywhere.</em></h1>
       <p>Games for family and friends. No accounts, no ads — share a code and play.</p>
       <p class="ios-hint label" id="ios-hint" hidden>Tip: tap Share, then “Add to Home Screen” to install</p>
+    </section>
+
+    <!--
+      WEEKLY GAME. Exactly one tile lives here: the newest game from
+      games/WEEKLY.md. Each week the new game REPLACES this tile — the
+      previous weekly game is not shown anywhere on the hub (it stays live at
+      its own URL, in the README table and in games/WEEKLY.md). Update the
+      pill's date with it.
+    -->
+    <section class="group" aria-labelledby="weekly">
+      <div class="weekly-head">
+        <h2 class="label" id="weekly">This week’s game</h2>
+        <span class="new">New this week <time datetime="2026-11-15">· Nov 15</time></span>
+      </div>
+      <div class="shelf">
+        <a class="game pawprints" href="/pawprints/">
+          <img src="/pawprints/icons/icon-192.png" alt="" width="92" height="92">
+          <h3>Pawprints</h3>
+          <p>Five paws in a row across a patchwork quilt. Block your friends’ lines online, or outwit the computer cats.</p>
+          <div class="meta">
+            <div class="tags"><span>2–4 players</span><span>Online</span><span>vs computer cats</span></div>
+            <span class="play">Play</span>
+          </div>
+        </a>
+      </div>
     </section>
 
     <section class="group" aria-labelledby="ours">

@@ -1,0 +1,113 @@
+/* Home and the solo setup screen. Only what screen.css does not cover. */
+
+.home {
+  /* Narrower than the table: this is a form, and a 560px-wide text input
+     reads as a search bar rather than a name field. */
+  max-width: 26rem;
+  gap: var(--space-xl);
+}
+
+.home__header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  align-items: center;
+}
+
+/* The app icon, like a sticker on the cover of the notebook. */
+.home__art {
+  width: 6rem;
+  height: 6rem;
+  border-radius: var(--radius-lg);
+  border: 2px solid var(--surface);
+  box-shadow: 0 0.4rem 1.2rem var(--shadow);
+}
+
+.home__wordmark {
+  font-family: var(--font-display);
+  font-size: var(--size-xl);
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.01em;
+  color: var(--accent);
+  text-align: center;
+}
+
+.home__actions {
+  gap: var(--space-md);
+}
+
+.home__resume {
+  border-color: var(--accent-dim);
+}
+
+.home__hub {
+  align-self: center;
+  /* A 44px-tall target for what is visually a small text link. */
+  padding: var(--space-md) var(--space-lg);
+  color: var(--text-muted);
+  font-size: var(--size-body);
+  text-decoration: none;
+}
+
+.home__hub:hover {
+  color: var(--accent);
+}
+
+/* ── Solo setup ─────────────────────────────────────────────────────────── */
+
+.setup__cats {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.setup__cat {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  background: var(--page-raised);
+  transition: opacity var(--dur-base) var(--ease);
+}
+
+/* Cats beyond the chosen number of opponents stay listed, greyed, so the
+   choice shows who you are leaving out. */
+.setup__cat[data-in='false'] {
+  opacity: 0.35;
+}
+
+.setup__cat .avatar {
+  width: 2.5rem;
+  flex-shrink: 0;
+}
+
+.setup__cat-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+}
+
+.setup__cat-name {
+  font-weight: var(--weight-bold);
+}
+
+.setup__cat-style {
+  font-weight: var(--weight-medium);
+  color: var(--accent);
+  font-size: var(--size-sm);
+}
+
+.setup__cat-blurb {
+  font-size: var(--size-sm);
+  color: var(--text-muted);
+}
+
+/* The one line that says which week this game was added. */
+.home__weekly {
+  margin-top: var(--space-xs);
+  font-size: var(--size-xs);
+  font-weight: var(--weight-medium);
+  letter-spacing: 0.04em;
+  color: var(--text-hint);
+}

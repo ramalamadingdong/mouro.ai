@@ -26,6 +26,7 @@ const dirs = {
   yahtzee: join(repo, 'games/yahtzee/dist'),
   holdem: join(repo, 'games/holdem/dist'),
   dots: join(repo, 'games/dots/dist'),
+  pawprints: join(repo, 'games/pawprints/dist'),
   site: join(repo, 'site'),
 };
 
@@ -66,12 +67,12 @@ function firstFile(root, candidates) {
 }
 
 function resolveFile(pathname) {
-  const m = pathname.match(/^\/(backgammon|gin-rummy|yahtzee|holdem|dots)(\/.*)?$/);
+  const m = pathname.match(/^\/(backgammon|gin-rummy|yahtzee|holdem|dots|pawprints)(\/.*)?$/);
   if (m) {
     const [, app, rest = '/'] = m;
     const root = dirs[app];
     const dyn = rest.match(/^\/(join|lobby|game)\/[A-HJKMNP-Z2-9]{5}\/?$/);
-    const vite = app === 'yahtzee' || app === 'holdem' || app === 'dots';
+    const vite = app === 'yahtzee' || app === 'holdem' || app === 'dots' || app === 'pawprints';
     if (dyn && !vite) return firstFile(root, [`/${dyn[1]}/[code].html`, '/index.html']);
     if (vite) return firstFile(root, [rest, '/index.html']);
     return firstFile(root, [rest, `${rest}.html`, `${rest}/index.html`, '/index.html']);
@@ -92,7 +93,7 @@ const server = createServer((req, res) => {
   }
   const old = p.match(/^\/gin-rummey(\/.*)?$/);
   if (old) return res.writeHead(301, { location: `/gin-rummy${old[1] ?? '/'}${url.search}` }).end();
-  if (/^\/(backgammon|gin-rummy|yahtzee|holdem|dots)$/.test(p)) return res.writeHead(301, { location: `${p}/` }).end();
+  if (/^\/(backgammon|gin-rummy|yahtzee|holdem|dots|pawprints)$/.test(p)) return res.writeHead(301, { location: `${p}/` }).end();
   const file = resolveFile(p);
   if (!file) {
     // Same as the Caddyfile's handle_errors: the site's 404 page, as a 404.

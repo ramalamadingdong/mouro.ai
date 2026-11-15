@@ -1,0 +1,174 @@
+/*
+ * Design tokens — the canonical list. Every other stylesheet uses these names
+ * and invents no colours, sizes or durations of its own. The non-colour scales
+ * (space, radius, type, motion) are the same names and steps as the other
+ * Vite games: the shared screens (join, lobby, code input) were ported from
+ * them and read these tokens unchanged.
+ *
+ * The palette is a patchwork quilt on a wool blanket: oatmeal and biscuit
+ * squares, stitched seams, and one paw colour per player. Teal thread is the
+ * accent for anything you press. At night (prefers-color-scheme: dark) the
+ * same quilt is a deep indigo one under lamplight.
+ *
+ * CONTRAST (WCAG: 4.5:1 body text, 3:1 large text / UI), against --page.
+ */
+
+:root {
+  color-scheme: light;
+
+  /* ---- Paper ----------------------------------------------------------- */
+  --page: #f3eadb;
+  /* A card lying on the page: notices, rows. */
+  --page-raised: #fbf7ec;
+  /* Input wells. Lighter than the page, like a fresh sheet. */
+  --page-deep: #fffdf8;
+  /* Panels and modals. */
+  --surface: #fffaf0;
+  /* Secondary buttons, selected segments. */
+  --surface-raised: #ece3cf;
+  /* Hairlines. DECORATION ONLY. */
+  --border: #d3c6a8;
+  /* The faint weave of the blanket under everything. */
+  --grid-line: rgb(150 100 60 / 0.1);
+  /* Shadows are warm pencil-grey, never black. */
+  --shadow: rgb(70 55 30 / 0.16);
+
+  /* ---- Accent (teal thread) ------------------------------------------- */
+  /* 5.3:1 on --page; white on it is 6.3:1. */
+  --accent: #1f6a6a;
+  --accent-dim: #4f8c8a;
+  --accent-bright: #22807f;
+
+  /* ---- Status ---------------------------------------------------------- */
+  --good: #2c7a4b; /* 5.0:1 */
+  --warn: #8a5d00; /* 5.3:1 */
+  --bad: #b2372a; /* 5.6:1 */
+
+  /* ---- Text (pencil) --------------------------------------------------- */
+  --text: #2b2720; /* 13.7:1 */
+  --text-muted: #554d3e; /* 7.6:1 */
+  --text-hint: #6a604d; /* 5.6:1 */
+  /* FAILS AA for body text — placeholders and decoration only. */
+  --text-faint: #a0957d;
+  --text-on-accent: #ffffff;
+
+  /* ---- The quilt ------------------------------------------------------- */
+  /* Two patch colours in a checker, the stitched seams the paws sit on,
+     and the little buttons sewn at the star points. */
+  --patch-a: #f7e6c6;
+  --patch-b: #efd6ad;
+  --seam: #a07a4e;
+  --button: #7b5634;
+  /* The paw print inside every piece; --pad-1 for the charcoal / silver one,
+     which turns light at night and needs a dark print. */
+  --pad: #fff6e6;
+  --pad-1: #fff6e6;
+  /* A point you could play, while hovering or pressing it. */
+  --line-hint: rgb(31 106 106 / 0.35);
+
+  /* ---- One paw colour per seat ---------------------------------------- */
+  /* Pieces in full ink with a cream paw print inside; a winner's card in a
+     light wash of the same colour. Ginger and charcoal (the two-player
+     colours) differ hugely in lightness, so colour is never the only cue
+     for the commonest game; every piece also has a different ring. */
+  --ink-0: #a84c0e; /* ginger, 4.8:1 */
+  --ink-1: #3b3c48; /* charcoal, 9.1:1 */
+  --ink-2: #36703f; /* sage, 5.2:1 */
+  --ink-3: #85407f; /* plum, 5.8:1 */
+  --wash-0: rgb(168 76 14 / 0.16);
+  --wash-1: rgb(59 60 72 / 0.14);
+  --wash-2: rgb(54 112 63 / 0.16);
+  --wash-3: rgb(133 64 127 / 0.16);
+
+  /* ---- Space ----------------------------------------------------------- */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 0.75rem;
+  --space-lg: 1rem;
+  --space-xl: 1.5rem;
+  --space-xxl: 2rem;
+  --space-section: 3rem;
+
+  /* ---- Radius ---------------------------------------------------------- */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 14px;
+  --radius-xl: 22px;
+  --radius-pill: 999px;
+
+  /* ---- Type ------------------------------------------------------------ */
+  --size-xs: 0.6875rem;
+  --size-sm: 0.8125rem;
+  --size-body: 0.9375rem;
+  --size-label: 1rem; /* iOS zooms inputs under 16px */
+  --size-md: 1.125rem;
+  --size-lg: 1.375rem;
+  --size-title: 1.75rem;
+  --size-xl: 2.25rem;
+  --size-hero: 4.5rem;
+
+  --weight-medium: 500;
+  --weight-bold: 700;
+  --weight-heavy: 800;
+  /* Headings in the platform's rounded face: friendly, like a felt-tip
+     heading in an exercise book. System fonts only — no webfont request. */
+  --font-display: ui-rounded, 'SF Pro Rounded', 'Hiragino Maru Gothic ProN', 'Arial Rounded MT Bold', 'Nunito',
+    system-ui, sans-serif;
+
+  /* ---- Motion ---------------------------------------------------------- */
+  --dur-fast: 120ms;
+  --dur-base: 220ms;
+  --dur-slow: 420ms;
+  --ease: cubic-bezier(0.2, 0.8, 0.25, 1);
+
+  /* ---- Layout ---------------------------------------------------------- */
+  --ui-scale: 1;
+  --table-max-width: 560px;
+}
+
+/* Night: an indigo quilt under a lamp. Only colours change. Every text
+   colour keeps at least 4.5:1 on --page; the charcoal paw turns silver. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --page: #1d1a26;
+    --page-raised: #26222f;
+    --page-deep: #141219;
+    --surface: #2a2533;
+    --surface-raised: #3a3445;
+    --border: #4b4358;
+    --grid-line: rgb(220 200 255 / 0.05);
+    --shadow: rgb(0 0 0 / 0.4);
+
+    --accent: #6cc4bf; /* 9.0:1 */
+    --accent-dim: #4f9894;
+    --accent-bright: #85d6d1;
+    --text-on-accent: #10201f;
+
+    --good: #78c98f;
+    --warn: #e2b55a;
+    --bad: #ef8a7c;
+
+    --text: #f1eadf;
+    --text-muted: #cfc5b6;
+    --text-hint: #aaa091;
+    --text-faint: #6f6779;
+
+    --patch-a: #2f2a44;
+    --patch-b: #383257;
+    --seam: #9a8cc0;
+    --button: #d9c58a;
+    --pad: #fff6e6;
+    --pad-1: #1d1a26;
+    --line-hint: rgb(108 196 191 / 0.4);
+
+    --ink-0: #e07a30;
+    --ink-1: #b8bccb;
+    --ink-2: #63ad73;
+    --ink-3: #c27bbb;
+    --wash-0: rgb(224 122 48 / 0.2);
+    --wash-1: rgb(184 188 203 / 0.16);
+    --wash-2: rgb(99 173 115 / 0.2);
+    --wash-3: rgb(194 123 187 / 0.2);
+  }
+}
