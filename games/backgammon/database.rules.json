@@ -50,6 +50,21 @@
             ".validate": "$uid === data.parent().parent().child('meta/host').val() || $uid === data.parent().parent().child('meta/guest').val()"
           }
         },
+        "draft": {
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid",
+            ".validate": "$uid === data.parent().parent().child('meta/host').val() || $uid === data.parent().parent().child('meta/guest').val()",
+            "v": {
+              ".validate": "newData.isNumber()"
+            },
+            "s": {
+              ".validate": "newData.isString() && newData.val().length <= 40"
+            },
+            "$other": {
+              ".validate": false
+            }
+          }
+        },
         "emotes": {
           "$uid": {
             ".write": "auth != null && auth.uid === $uid",

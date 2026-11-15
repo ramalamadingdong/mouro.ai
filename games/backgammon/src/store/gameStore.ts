@@ -7,17 +7,19 @@ import { onAuthStateChanged } from '@mouro/realtime';
 import { onValue, ref, remove } from '@mouro/realtime';
 import { create } from 'zustand';
 import { seatOf } from '@/engine';
-import type { GameState, Move, Seat } from '@/engine/types';
+import type { GameState, Move, Seat, Step } from '@/engine/types';
 import { getCurrentUid } from '@/net/auth';
 import { auth, db } from '@/net/realtime';
 import { attachPresence } from '@/net/presence';
 import {
   matchIdFor,
+  publishDraft as fbPublishDraft,
   sendEmote as fbSendEmote,
   setRoomTarget,
   startMatchIfNeeded,
   submitMove,
   subscribeRoom,
+  type DraftEntry,
   type EmoteEntry,
   type PresenceEntry,
   type RoomMeta,
@@ -33,6 +35,8 @@ interface GameStore {
   presence: Record<string, PresenceEntry>;
   rematchVotes: Record<string, boolean>;
   emotes: Record<string, EmoteEntry>;
+  /** Each player's in-progress turn, keyed by uid. See `publishDraft`. */
+  drafts: Record<string, DraftEntry>;
   mySeat: Seat | null;
   connected: boolean;
   pendingMove: boolean;
@@ -45,6 +49,8 @@ interface GameStore {
   setTarget: (target: number) => void;
   /** Broadcast a reaction to the opponent (throttled). */
   sendEmote: (emoji: string) => void;
+  /** Show the opponent the turn being staged against state `version`. */
+  publishDraft: (version: number, steps: Step[]) => void;
   reset: () => void;
 }
 
@@ -62,6 +68,7 @@ const EMPTY: {
   presence: Record<string, PresenceEntry>;
   rematchVotes: Record<string, boolean>;
   emotes: Record<string, EmoteEntry>;
+  drafts: Record<string, DraftEntry>;
   mySeat: null;
 } = {
   meta: null,
@@ -69,6 +76,7 @@ const EMPTY: {
   presence: {},
   rematchVotes: {},
   emotes: {},
+  drafts: {},
   mySeat: null,
 };
 
@@ -79,6 +87,7 @@ export const useGameStore = create<GameStore>()((set, get) => ({
   presence: {},
   rematchVotes: {},
   emotes: {},
+  drafts: {},
   mySeat: null,
   connected: false,
   pendingMove: false,
@@ -103,6 +112,7 @@ export const useGameStore = create<GameStore>()((set, get) => ({
         presence: room.presence,
         rematchVotes: room.rematch,
         emotes: room.emotes,
+        drafts: room.drafts,
         mySeat,
       });
 
@@ -183,6 +193,12 @@ export const useGameStore = create<GameStore>()((set, get) => ({
     if (now - lastEmoteAt < EMOTE_THROTTLE_MS) return; // anti-spam
     lastEmoteAt = now;
     void fbSendEmote(code, emoji);
+  },
+
+  publishDraft: (version, steps) => {
+    const code = get().code;
+    if (!code) return;
+    void fbPublishDraft(code, version, steps);
   },
 
   reset: () => {

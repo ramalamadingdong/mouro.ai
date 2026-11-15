@@ -6,6 +6,7 @@ import { BackgammonBoard } from '@/components/board/backgammon-board';
 import { Button } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
 import { voteRematch } from '@/net/rooms';
+import { unpackSteps } from '@/util/draft';
 import { useGameStore } from '@/store/gameStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { accent, text } from '@/theme/colors';
@@ -33,6 +34,8 @@ export default function GameScreen() {
   const rematchVotes = useGameStore((s) => s.rematchVotes);
   const emotes = useGameStore((s) => s.emotes);
   const sendEmote = useGameStore((s) => s.sendEmote);
+  const drafts = useGameStore((s) => s.drafts);
+  const publishDraft = useGameStore((s) => s.publishDraft);
 
   const setLastRoom = useSettingsStore((s) => s.setLastRoom);
 
@@ -60,6 +63,10 @@ export default function GameScreen() {
   const myUid = mySeat ? state.players[mySeat] : null;
   const opponentUid = mySeat === 'p0' ? state.players.p1 : state.players.p0;
   const opponentOnline = presence[opponentUid]?.online === true;
+  const theirDraft = drafts[opponentUid];
+  const opponentDraft = theirDraft
+    ? { version: Number(theirDraft.v), steps: unpackSteps(theirDraft.s) }
+    : null;
 
   return (
     <Screen flush>
@@ -79,6 +86,8 @@ export default function GameScreen() {
         onEmote={sendEmote}
         myEmote={myUid ? (emotes[myUid] ?? null) : null}
         opponentEmote={emotes[opponentUid] ?? null}
+        opponentDraft={opponentDraft}
+        onDraftChange={publishDraft}
       />
     </Screen>
   );

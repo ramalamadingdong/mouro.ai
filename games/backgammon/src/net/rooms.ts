@@ -15,6 +15,12 @@
  *   emotes:   { <uid>: { emoji, n } }  // latest reaction each player sent; `n`
  *             bumps per send so the peer re-pops the same emoji. Ephemeral, kept
  *             OUT of `state` so it never touches the move transaction.
+ *   draft:    { <uid>: { v, s } }  // the turn that player is STAGING right now,
+ *             so the opponent can watch it take shape. `v` is the state version
+ *             it was staged against (a draft for any other version is stale and
+ *             ignored — nothing ever has to clear it); `s` is the steps, packed
+ *             as "from:to,from:to" in the stager's own frame. Cosmetic only: a
+ *             turn still counts only when it is committed through `state`.
  *
  * Separate archive (bgMatches/<matchId>), OUTSIDE bgRooms/ so it survives the
  * 24h room reaper (see `matchIdFor`):
@@ -27,7 +33,8 @@
  */
 import { get, onValue, ref, remove, runTransaction, serverTimestamp, set, update } from '@mouro/realtime';
 import { applyMove, initialMatchState, normalize } from '@/engine';
-import type { GameState, Move } from '@/engine/types';
+import type { GameState, Move, Step } from '@/engine/types';
+import { packSteps } from '@/util/draft';
 import { getCurrentUid } from '@/net/auth';
 import { db } from '@/net/realtime';
 import { randomRoomCode } from '@/util/seed';
@@ -55,6 +62,12 @@ export interface EmoteEntry {
   n: number;
 }
 
+/** A player's in-progress turn, as published to the opponent. See `publishDraft`. */
+export interface DraftEntry {
+  v: number;
+  s: string;
+}
+
 export interface RoomSnapshot {
   code: string;
   meta: RoomMeta;
@@ -62,6 +75,7 @@ export interface RoomSnapshot {
   presence: Record<string, PresenceEntry>;
   rematch: Record<string, boolean>;
   emotes: Record<string, EmoteEntry>;
+  drafts: Record<string, DraftEntry>;
 }
 
 const DAY_MS = 86400000;
@@ -190,6 +204,7 @@ export function subscribeRoom(code: string, cb: (room: RoomSnapshot | null) => v
         presence?: Record<string, PresenceEntry>;
         rematch?: Record<string, boolean>;
         emotes?: Record<string, EmoteEntry>;
+        draft?: Record<string, DraftEntry>;
       } | null;
       if (!val || !val.meta) {
         cb(null);
@@ -202,6 +217,7 @@ export function subscribeRoom(code: string, cb: (room: RoomSnapshot | null) => v
         presence: val.presence ?? {},
         rematch: val.rematch ?? {},
         emotes: val.emotes ?? {},
+        drafts: val.draft ?? {},
       });
     },
     () => {
@@ -385,6 +401,21 @@ export async function sendEmote(code: string, emoji: string): Promise<void> {
     await set(ref(db, `bgRooms/${code}/emotes/${uid}`), { emoji, n: Date.now() });
   } catch {
     // permission denied / offline — reactions are cosmetic, ignore.
+  }
+}
+
+/**
+ * Publish the turn this player is staging, so the opponent sees the checkers
+ * move as they are tried rather than all at once on commit. Fire-and-forget:
+ * if it fails the opponent simply sees the turn when it is committed, as before.
+ */
+export async function publishDraft(code: string, version: number, steps: Step[]): Promise<void> {
+  const uid = getCurrentUid();
+  if (!uid) return;
+  try {
+    await set(ref(db, `bgRooms/${code}/draft/${uid}`), { v: version, s: packSteps(steps) });
+  } catch {
+    // permission denied / offline — cosmetic, ignore.
   }
 }
 

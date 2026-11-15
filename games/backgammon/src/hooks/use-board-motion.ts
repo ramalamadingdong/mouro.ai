@@ -47,12 +47,31 @@ export function useMotionEnabled(): boolean {
   return setting && !reduced;
 }
 
+/** How many leading steps two step lists share. */
+function sharedPrefix(a: Step[], b: Step[]): number {
+  let n = 0;
+  while (n < a.length && n < b.length && a[n].from === b[n].from && a[n].to === b[n].to) n += 1;
+  return n;
+}
+
+/**
+ * @param watched  The opponent's turn as it was last seen being staged live
+ *                 (`version` is the state it was staged against). When they
+ *                 commit, the steps the viewer already watched are not replayed
+ *                 — otherwise the checkers would snap back and move again.
+ */
 export function useBoardMotion(
   state: GameState,
   mySeat: Seat | null,
   base: GameState,
   enabled: boolean,
+  watched: { version: number; steps: Step[] } | null = null,
 ): BoardMotion {
+  const watchedRef = useRef(watched);
+  useEffect(() => {
+    watchedRef.current = watched;
+  });
+
   // The state as it was BEFORE the move we are replaying.
   const prevRef = useRef<GameState | null>(null);
   const lastVersion = useRef<number | null>(null);
@@ -95,7 +114,11 @@ export function useBoardMotion(
     }
 
     if (lm.kind === 'play' && lm.seat !== mySeat && prev && lm.steps && lm.steps.length > 0) {
-      setReplay({ from: prev, seat: lm.seat, steps: lm.steps, hits: lm.hits ?? [], k: 0 });
+      const seen = watchedRef.current;
+      const k = seen && seen.version === prev.version ? sharedPrefix(seen.steps, lm.steps) : 0;
+      // Everything was already watched live: there is nothing left to replay.
+      if (k >= lm.steps.length) return;
+      setReplay({ from: prev, seat: lm.seat, steps: lm.steps, hits: lm.hits ?? [], k });
     }
   }, [state, mySeat, enabled]);
 

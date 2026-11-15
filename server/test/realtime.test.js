@@ -171,6 +171,24 @@ describe('backgammon rules', () => {
     // gin's namespace does not exist in backgammon's database
     await denied(get(ref(host.db, `rooms/${code}`)));
   });
+
+  test('a live draft is writable only by its own player, and only in shape', async () => {
+    const host = await player('backgammon');
+    const guest = await player('backgammon');
+    const stranger = await player('backgammon');
+    const code = 'DRAF7';
+    const now = Date.now();
+    await set(ref(host.db, `bgRooms/${code}`), { meta: { host: host.uid, hostName: 'H', status: 'waiting', createdAt: now, updatedAt: now } });
+    await update(ref(guest.db, `bgRooms/${code}/meta`), { guest: guest.uid, guestName: 'G' });
+
+    await set(ref(host.db, `bgRooms/${code}/draft/${host.uid}`), { v: 3, s: '23:20,12:9' });
+    await set(ref(guest.db, `bgRooms/${code}/draft/${guest.uid}`), { v: 4, s: '' });
+    // not someone else's, not a non-member's, not oversized, not extra fields
+    await denied(set(ref(guest.db, `bgRooms/${code}/draft/${host.uid}`), { v: 3, s: '' }));
+    await denied(set(ref(stranger.db, `bgRooms/${code}/draft/${stranger.uid}`), { v: 3, s: '' }));
+    await denied(set(ref(host.db, `bgRooms/${code}/draft/${host.uid}`), { v: 3, s: 'x'.repeat(41) }));
+    await denied(set(ref(host.db, `bgRooms/${code}/draft/${host.uid}`), { v: 3, s: '', extra: 1 }));
+  });
 });
 
 describe('yahtzee rules', () => {

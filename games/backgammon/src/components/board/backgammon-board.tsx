@@ -12,7 +12,8 @@ import { MoveControls } from '@/components/board/move-controls';
 import { PlayerStrip } from '@/components/board/opponent-bar';
 import { TurnBanner } from '@/components/board/turn-banner';
 import { otherSeat, pipCount } from '@/engine/board';
-import type { GameState, Move, Seat } from '@/engine/types';
+import { consumedDice, previewDraft } from '@/engine/moves';
+import type { GameState, Move, Seat, Step } from '@/engine/types';
 import { useBoardMetrics } from '@/hooks/use-board-metrics';
 import { useBoardMotion, useMotionEnabled } from '@/hooks/use-board-motion';
 import { useTurnDraft } from '@/hooks/use-turn-draft';
@@ -49,6 +50,14 @@ export type BackgammonBoardProps = {
   onEmote?: (emoji: string) => void;
   myEmote?: { emoji: string; n: number } | null;
   opponentEmote?: { emoji: string; n: number } | null;
+  /**
+   * Online only: the turn the opponent is staging right now, and the state
+   * version it was staged against. Drawn live so you can watch them try moves;
+   * a draft for any other version is stale and ignored.
+   */
+  opponentDraft?: { version: number; steps: Step[] } | null;
+  /** Online only: called as MY staged turn changes, to publish it. */
+  onDraftChange?: (version: number, steps: Step[]) => void;
 };
 
 /**
@@ -73,6 +82,8 @@ export function BackgammonBoard({
   onEmote,
   myEmote = null,
   opponentEmote = null,
+  opponentDraft = null,
+  onDraftChange,
 }: BackgammonBoardProps) {
   const m = useBoardMetrics();
   const fastTap = useSettingsStore((s) => s.tapToMoveFast);
@@ -95,6 +106,25 @@ export function BackgammonBoard({
   const myTurn = mySeat !== null && state.turn === mySeat;
   const busy = pending || mySeat === null;
 
+
+  // Publish my staged turn as it changes, so the opponent can watch it.
+  useEffect(() => {
+    if (!onDraftChange || !myTurn || state.phase !== 'moving') return;
+    onDraftChange(state.version, draft.draft);
+    // Keyed on the draft itself; `onDraftChange` is a stable store action.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draft.draft, myTurn, state.phase, state.version]);
+
+  // The opponent's staged turn, if it belongs to the position on screen.
+  const watching =
+    !myTurn &&
+    mySeat !== null &&
+    state.phase === 'moving' &&
+    opponentDraft !== null &&
+    opponentDraft.version === state.version &&
+    opponentDraft.steps.length > 0
+      ? opponentDraft
+      : null;
 
   // ── Actions ───────────────────────────────────────────────────────────────
   const doRoll = () => {
@@ -194,12 +224,16 @@ export function BackgammonBoard({
           ...draft.preview,
           dice: [state.opening?.p0 ?? 0, state.opening?.p1 ?? 0].filter((d) => d > 0),
         }
-      : draft.preview;
+      : watching
+        ? // Same `previewDraft` as my own staged turn; it ignores an illegal
+          // sequence, so a bad draft from the wire just shows the real board.
+          previewDraft(state, them, watching.steps)
+        : draft.preview;
 
   // While the opponent's turn is being replayed, the board shows a PARTIAL
   // position built by the very same `previewDraft` that renders my own staged
   // turn — one code path, so the two can never disagree.
-  const motion = useBoardMotion(state, mySeat, baseDisplay, motionOn);
+  const motion = useBoardMotion(state, mySeat, baseDisplay, motionOn, opponentDraft);
   const displayState: GameState = { ...motion.display, dice: motion.dice };
 
   // Pip counts track what is DRAWN, not the authoritative state, so they tick
@@ -234,7 +268,7 @@ export function BackgammonBoard({
             sources={draft.sources}
             selected={draft.selected}
             targets={draft.targets}
-            spent={draft.spent}
+            spent={watching ? consumedDice(state, them, watching.steps) : draft.spent}
             highlight={highlight}
             onTapPoint={tapPoint}
             onTapOff={draft.tapOff}
