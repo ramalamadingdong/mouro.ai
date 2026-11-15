@@ -635,7 +635,8 @@ img {
     line-height: 1.35;
 }
 
-.facts code {
+.facts code,
+.writeup p code {
     font: inherit;
     background: var(--plate);
     padding: 1px 6px;
@@ -1497,6 +1498,146 @@ img {
     }
 
     .shot-panel {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ── Interest lenses (home and projects) ────────────────────────────────── */
+
+/* The chips are unhidden by lens.js; without it the page is the default view.
+   A ?lens= address is held back until lens.js has arranged it. */
+.lens-pending main {
+    visibility: hidden;
+}
+
+/* Lets the sections inside sit in the page's own column and spacing. */
+.lens-group {
+    display: contents;
+}
+
+.lens {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.lens[hidden] {
+    display: none;
+}
+
+.lens-label {
+    margin-right: 8px;
+    font-size: 0.94rem;
+    color: var(--steel);
+}
+
+.chip {
+    padding: 8px 14px;
+    border: 0;
+    border-radius: 3px;
+    background: transparent;
+    color: var(--ink);
+    box-shadow: inset 0 0 0 2px var(--ink);
+    font: inherit;
+    font-size: 0.94rem;
+    font-weight: 650;
+    line-height: 1.3;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.chip:hover {
+    background: var(--yellow);
+    color: var(--on-yellow);
+}
+
+.chip[aria-pressed="true"] {
+    background: var(--ink);
+    color: var(--ground);
+}
+
+/* Outside the lens: quieter, never hidden. Steel on the ground colour keeps
+   body-text contrast in both themes, and every link still works. */
+.work-item.lens-off,
+.writeup.lens-off,
+.event.lens-off,
+.build.lens-off,
+.lens-off .stack-label,
+.lens-off .facts dd {
+    color: var(--steel);
+}
+
+.work-item.lens-off h3,
+.writeup.lens-off > .writeup-head h2,
+.lens-off .event-name,
+.build.lens-off strong {
+    font-weight: 500;
+}
+
+.writeup.lens-off {
+    border-top-color: var(--line);
+}
+
+/* ── Talks and events (home) ────────────────────────────────────────────── */
+
+.events,
+.builds {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.event {
+    display: grid;
+    grid-template-columns: 7.5em minmax(0, 5fr) minmax(0, 6fr);
+    gap: 4px 24px;
+    padding: 14px 0;
+    border-top: 1px solid var(--line);
+    line-height: 1.4;
+}
+
+.event:first-child {
+    padding-top: 0;
+    border-top: 0;
+}
+
+.event-when {
+    color: var(--steel);
+    font-variant-numeric: tabular-nums;
+}
+
+.event-name {
+    font-weight: 650;
+}
+
+/* ── Other builds (projects) ────────────────────────────────────────────── */
+
+.builds {
+    align-self: stretch;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 32px;
+}
+
+.build {
+    padding: 14px 0 16px;
+    border-top: 1px solid var(--line);
+    line-height: 1.4;
+}
+
+.build strong {
+    display: block;
+    font-weight: 650;
+}
+
+@media (max-width: 720px) {
+    .event {
+        grid-template-columns: 1fr;
+    }
+
+    .builds {
         grid-template-columns: 1fr;
     }
 }

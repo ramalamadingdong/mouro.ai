@@ -89,7 +89,7 @@
 
         <p class="tldr-tail">
             All of it is public, and the board this post walks through is in the repo. You can clone it, build it, and
-            get the same gates. That particular board hasn't been fabricated; others designed this way have.
+            get the same gates. I have manufactured 6 board designs with this pipeline.
         </p>
     </aside>
 
@@ -130,11 +130,12 @@
                 MIT. The example board is in the repo with its full design record.
             </p>
             <p>
-                <strong>This particular board has not been fabricated.</strong> It passed its pre-order gates, which means the design files are consistent with each other and with the rules I wrote. It does not mean the board works.
+                Passing the pre-order gates means the design files are consistent with each other and with the rules I wrote. It does not mean a board works.
             </p>
             <p>
-                Boards designed this way have been built, but I'm not ready to publish those. The example is the one
-                you can clone, build and check yourself.
+                <strong>Update, November 15, 2026.</strong> I have now manufactured 6 board designs with this
+                pipeline. Earlier versions of this post described the example board as not yet built, and I
+                have removed those lines. The example is still the one you can clone, build and check yourself.
             </p>
             <p>
                 <strong>Update, September 30, 2026.</strong> A month after sign-off, three new gates found three
@@ -759,8 +760,8 @@
             reference plane, text off the board, fiducials in a keepout, thin power traces. In each case the agent's intent was right, and it had no way to see that the output didn't match. The pipeline works because every check parses a file instead of asking the agent to look at the board.
         </p>
         <p>
-            One gap remains that no pipeline closes. This board passed every gate I know how to write, and it has
-            never been fabricated. Two of its gates can't close until the order is placed: re-verify every part in stock
+            One gap remains that no pipeline closes. A board can pass every gate I know how to write and still not
+            work. Two of the gates can't close until the order is placed: re-verify every part in stock
             at order time, and commit the ordered files byte for byte. After that it either powers on, or the failure becomes a new check and an entry in the next revision plan.
         </p>
         <p>None of this replaces bring-up. A design that passes five levels of checks is consistent with itself, and only a powered board shows that it works.</p>
