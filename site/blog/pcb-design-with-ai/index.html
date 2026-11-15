@@ -38,7 +38,7 @@
         <p><a class="text-link" href="/projects/#pcb-agent">Back to projects</a></p>
         <h1>Designing a circuit board end to end with an AI agent</h1>
         <p class="post-deck">Parts, netlist, placement, routing, gerbers. I review, it does the work.</p>
-        <p class="post-meta"><time datetime="2026-08-16">August 16, 2026</time>, updated <time datetime="2026-08-30">August 30, 2026</time>. 24 min read.</p>
+        <p class="post-meta"><time datetime="2026-08-16">August 16, 2026</time>, updated <time datetime="2026-11-15">November 15, 2026</time>. 24 min read.</p>
         <p class="stack"><span class="stack-label">Topics</span>KiCad, AI Agents, Hardware, Claude Code, PCB</p>
     </header>
 
@@ -53,8 +53,7 @@
                 can be re-run without paying for a re-route.</li>
             <li>Freerouting, single threaded and constrained: plane layers marked unroutable, anything critical
                 pre-routed as fixed copper.</li>
-            <li>Five levels of checking. The one that pays parses the exported gerbers, because the gerbers are what
-                the factory builds.</li>
+            <li>Five levels of checking. The last one parses the exported gerbers, because those are the files the factory builds from.</li>
             <li>Fixes go in the pipeline, never in the board file. The next rebuild wipes anything done by hand.</li>
         </ul>
 
@@ -111,14 +110,10 @@
     <div class="post-body">
     <div class="prose">
         <p class="lede">
-            This is the setup I use to get an AI agent to do a whole PCB. Not help me in KiCad, actually do it. Pick the
-            parts, write the netlist, place everything, route it, output gerbers a fab will build. I review, it does the
-            work.
+            This is the setup I use to have an AI agent design a whole PCB: it picks the parts, writes the netlist, places and routes the board, and exports gerbers a fab will build. My job is review.
         </p>
         <p>
-            All of it is public now, and so is the board I'm going to use as the example the whole way through, so
-            nothing here is a claim you have to take on trust. Clone it, run four commands, and you get the same output
-            I did.
+            The pipeline is public, and so is the board I use as the example throughout. Clone the repo, run four commands, and you should get the same output I did.
         </p>
 
         <aside class="post-update" aria-labelledby="status-heading">
@@ -131,13 +126,20 @@
                 MIT. The example board is in the repo with its full design record.
             </p>
             <p>
-                <strong>This particular board has not been fabricated.</strong> It passed its pre-order gates, and gates
-                are not hardware &mdash; I'd rather say so here than have you infer otherwise from a clean DRC run.
+                <strong>This particular board has not been fabricated.</strong> It passed its pre-order gates, which means the design files are consistent with each other and with the rules I wrote. It does not mean the board works.
             </p>
             <p>
-                Boards designed this way have been built and paid for; those aren't ones I'm ready to publish. So the
-                example is what I can hand you instead: a board you can clone, build and check yourself, rather than one
-                you'd have to take my word for.
+                Boards designed this way have been built, but I'm not ready to publish those. The example is the one
+                you can clone, build and check yourself.
+            </p>
+            <p>
+                <strong>Update, September 30, 2026.</strong> A month after sign-off, three new gates found three
+                defects the earlier ones had passed. The Qwiic connector was rotated 180&deg;, so its socket opened
+                into the board. Sixteen pads on eight rotated passives lay along the part axis instead of across it.
+                And the completion pass had laid about 200 redundant segments and 69 vias on nets that were already
+                routed, because its connectivity model never joined a segment's two ends. All three are fixed and
+                now gated, and the example was rebuilt from <code>netlist.csv</code>. The sign-off numbers further
+                down are the August ones; the repo README has the current set.
             </p>
         </aside>
 
@@ -149,7 +151,7 @@
             headers and 5 V peripherals, Qwiic passthrough, an RGB status LED. Four layers, top side only, 24 BOM lines.
         </p>
         <p>
-            It is deliberately boring, and it is deliberately not a toy. A switching converter sits a few millimetres
+            The circuit is ordinary on purpose, but the layout is not easy. A switching converter sits a few millimetres
             from a 0.5 mm pitch part, inside the UNO form factor &mdash; which fixes the outline, the four mounting
             holes and all 32 header pins before you place anything of your own. Every rule in its config exists for a
             reason you can point at on the board: the buck's exposed pad is its only real heatsink, VIN carries up to
@@ -162,15 +164,14 @@
             <a href="https://docs.arduino.cc/hardware/uno-q" target="_blank" rel="noreferrer">Arduino's own documents</a>
             and fab data for the UNO Q, &copy; Arduino SA, licensed
             <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noreferrer">CC BY-SA 4.0</a>.
-            Pulling the hole pattern out of the manufacturer's drill file rather than a drawing is the kind of thing
-            this whole method is about.
+            Taking the hole pattern from the manufacturer's drill file instead of a drawing is typical of the method: use the data the factory used.
         </p>
         <p>
             Where a number below came off a different board, I say so. The method came out of an earlier project, a
             small data logger &mdash; MCU module with Bluetooth, two sensors, a GNSS receiver, storage, USB-C charging,
-            about 60 parts &mdash; and several of the scars in here were earned there and paid for in fabricated boards.
+            about 60 parts &mdash; and several of the lessons here come from mistakes found on its fabricated boards.
         </p>
-        <p>Here's the whole thing.</p>
+        
 
         <h2 id="csv-source-of-truth">The design lives in a CSV, not in KiCad</h2>
 
@@ -194,9 +195,7 @@
             gets touched by hand. To change the circuit you edit a row and rebuild.
         </p>
         <p>
-            The reason this matters: KiCad files are s-expressions full of coordinates. An agent editing them directly is
-            working on geometry it can't see, in a format where being slightly wrong looks exactly like being right.
-            Nothing errors out. You just get a broken board.
+            KiCad files are s-expressions full of coordinates. An agent editing them directly is changing geometry it cannot see, and a small error in that format is still a valid file: a label a fraction of a millimetre off its pin parses, renders and passes ERC. The first sign of trouble is a board that doesn't work.
         </p>
 
         <div class="table-wrap">
@@ -244,10 +243,8 @@
             the CSV, and fails the build if anything doesn't match.
         </p>
         <p>
-            This is the single most important line of the build. An LLM writing KiCad files will eventually put a label a
-            fraction of a millimetre off a pin. The schematic looks perfect. The net isn't there. ERC reads it as an
-            intentional floating label. DRC doesn't look at schematics at all. Without the round trip check you find out
-            when the board comes back and the part doesn't show up on the bus.
+            If I could keep only one check, it would be this one. An LLM writing KiCad files will eventually put a label a
+            fraction of a millimetre off a pin. The schematic looks correct, but the net doesn't exist. ERC treats the label as intentionally floating, and DRC never looks at the schematic. Without the round trip you find out when the board comes back and the part doesn't answer on the bus.
         </p>
 
         <figure class="post-figure">
@@ -271,30 +268,27 @@
         <h2 id="requirements">Requirements come out of documents</h2>
 
         <blockquote>
-            <p>An LLM's memory of a pin map is a guess that looks like a fact.</p>
+            <p>An LLM does not remember a pin map. It reconstructs one, and the reconstruction is often wrong.</p>
         </blockquote>
 
         <p>
             Before any wiring, the agent writes down what the hardware has to provide, and every line carries a citation
-            to something it actually read in that session. Not a recollection, not a plausible number. A document, a
-            page, a table.
+            to something it read in that session: a document, a page, a table. Anything recalled from training doesn't count.
         </p>
         <p>
             This board had no firmware yet, so every requirement came out of Arduino's own material: the datasheet with
             page numbers as printed, the full pinout, the schematics by sheet number, and the fab data inside their CAD
             files &mdash; the Allegro gerbers and NC drill they actually manufacture from. Sixteen requirements, each
-            with a source. A few of the load-bearing ones:
+            with a source. A few that shaped the design:
         </p>
         <ul>
             <li>
                 All shield-facing logic is 3.3 V. A0 and A1 aren't 5 V tolerant in any mode, and one digital pin is
-                3.6 V max even in digital mode &mdash; which is why the level shifters are the point of the board rather
-                than a nicety
+                3.6 V max even in digital mode &mdash; which is why the board needs level shifters at all
             </li>
             <li>
                 The shield I&sup2;C bus already has 2.2 k&Omega; pull-ups on the UNO Q itself, found on schematic sheet
-                20, so the shield adds none. Two boards' worth of pull-ups on one bus is a classic way to get a marginal
-                bus nobody can explain
+                20, so the shield adds none. A second set in parallel lowers the pull-up resistance and raises the current every device has to sink, which gives a marginal bus that is hard to diagnose
             </li>
             <li>
                 The Wi-Fi antenna occupies a specific rectangle in the top-left corner, extracted from the copper in
@@ -303,19 +297,17 @@
             </li>
             <li>
                 The four mounting holes are &Oslash;3.2 mm NPTH at coordinates taken from the manufacturer's drill file,
-                not from a drawing. They're fixed by the UNO pattern &mdash; not ours to choose
+                not from a drawing. The UNO pattern fixes them
             </li>
         </ul>
         <p>
             When firmware does exist, it's the best requirements source you have, and the agent should read it first.
             On the data logger that's where bus addresses, sample rates and partition sizes came from, each cited to a
             file and a line number. That board also had a headless code path already, so a variant with no display and
-            no I/O expander needed no new code at all, just a pin map. Nothing makes a new board cheaper than finding
-            out the firmware already supports it.
+            no I/O expander needed no new code at all, just a pin map. The cheapest board variant is one the firmware already supports.
         </p>
         <p>
-            The agent then reads every datasheet against the connection table. This is where it earns its keep, because
-            a BOM with the right ICs on it is usually still missing everything that makes them run. On the data logger
+            The agent then reads every datasheet against the connection table. This step finds the most, because a BOM with the right ICs on it is usually still missing the parts around them. On the data logger
             that meant a charger with no load-share path, which reads system load as charge current and trickles the
             cell forever; no battery sense divider on a board whose firmware reports a battery percentage over
             Bluetooth; a GNSS receiver with no antenna connector and no RF front end; and IMU pins floating, which sits
@@ -327,11 +319,11 @@
             Same session, before layout. On this board that's a worst-case VIN current of 3.6 A at the low end of the
             input range, designed to 4 A, which IPC-2221 turns into a 2.0 mm conductor at 1 oz external copper for a
             10 &deg;C rise. The shunt is 10 m&Omega;, so 4 A puts 40 mV across it &mdash; 49% of the INA226's
-            &plusmn;81.92 mV range, which is the right place to sit. Inductor ripple works out at 0.69 A peak to peak
+            &plusmn;81.92 mV range, which leaves headroom above and resolution below. Inductor ripple works out at 0.69 A peak to peak
             worst case, so peak current is 1.9 A against a 3.2 A saturation rating.
         </p>
         <p>
-            The number that changes a design is the one that comes out wrong. On the data logger the logging rate was
+            The calculation earns its place in the cases where the answer is bad. On the data logger the logging rate was
             21 MB/hour into an 896 kB filesystem, which is two and a half minutes of recording. That's why that board
             has a microSD socket.
         </p>
@@ -340,8 +332,7 @@
             names six parts it didn't use and why: a buck in a package with no exposed pad, which would have deleted the
             thermal-via lesson the board exists to teach; a current monitor whose 26 V absolute maximum is too close to
             a 24 V nominal input, because an unloaded 24 V supply drifts above it; a one-chip level shifter whose
-            edge-rate accelerators misbehave on exactly the breadboard wiring a first-time user will do. A rejection
-            with a reason is worth more later than the choice itself.
+            edge-rate accelerators misbehave on exactly the breadboard wiring a first-time user will do. When a part goes out of stock or a requirement changes, the recorded rejections say which alternatives are already ruled out, and why.
         </p>
 
         <h2 id="what-i-use">What I use</h2>
@@ -355,12 +346,11 @@
             <li><strong>Shell and file access across the whole repo</strong>, firmware included.</li>
             <li><strong>Subagents</strong>, so part research and layout and firmware work run at the same time.</li>
             <li>
-                <strong>Persistent memory.</strong> A board takes weeks. What you find on Tuesday has to still be there
-                when you plan the next revision on Thursday.
+                <strong>Persistent memory.</strong> A board takes weeks, and what the agent learns in one session has to be there when it plans the next revision.
             </li>
             <li>
                 <strong>A plan doc per revision</strong> in the repo: what's in scope, what defect it fixes, how, and a
-                list of checks that have to pass before you order. That last list is the important one.
+                list of checks that have to pass before you order. The check list matters most, because it defines when the revision is done.
             </li>
         </ul>
 
@@ -368,7 +358,7 @@
         <p>
             Eleven of them, all from
             <a href="https://github.com/aklofas/kicad-happy" target="_blank" rel="noreferrer">kicad-happy</a>
-            by Andrew Klofas. MIT licensed, works with Claude Code and Codex. This is the install that matters most.
+            by Andrew Klofas. MIT licensed, and it works with Claude Code and Codex. If you install one thing from this post, install this.
         </p>
 
 <pre><code><span class="tok-cmd">/plugin</span> <span class="tok-flag">marketplace add</span> aklofas/kicad-happy
@@ -441,8 +431,7 @@
 
         <blockquote>
             <p>
-                The text and the drawing in a datasheet can disagree, and the drawing is what the factory builds. Pull
-                the figure.
+                When a datasheet's text and its drawing disagree, follow the drawing, because the footprint is built from the land pattern.
             </p>
         </blockquote>
 
@@ -515,9 +504,9 @@
             logger, nine stray vias inside a module's exposed pad.
         </p>
         <p class="lead-in">
-            <strong>Order is load-bearing.</strong> Mounting holes before the placement loop, so their courtyards are
+            <strong>The order matters.</strong> Mounting holes before the placement loop, so their courtyards are
             obstacles. Fiducials before the pour refill, so the pour honours their clearance ring. Keepouts before silk,
-            so the silk dodges the rectangles. Get the order wrong and each pass still succeeds.
+            so the silk dodges the rectangles. With the order wrong, every pass still succeeds and the board is wrong.
         </p>
 
         <h2 id="tool-behaviour-passes">The passes that exist because of specific tool behaviour</h2>
@@ -577,13 +566,11 @@
 
         <h2 id="routing">Routing, and what it actually costs</h2>
         <p>
-            Freerouting, single threaded, version pinned, and it runs headless under <code>xvfb-run</code> whatever
-            you've read to the contrary.
+            Freerouting, single threaded, version pinned, and headless under <code>xvfb-run</code>.
         </p>
         <ul>
             <li>
-                <strong><code>-mt 1</code>.</strong> It warns that multithreaded optimisation makes clearance violations
-                and it's right. On the data logger <code>-mt 4</code> gave about 20 DRC errors; <code>-mt 1</code> on the
+                <strong><code>-mt 1</code>.</strong> Freerouting warns that multithreaded optimisation can introduce clearance violations, and it does. On the data logger <code>-mt 4</code> gave about 20 DRC errors; <code>-mt 1</code> on the
                 same input gave zero, and finished faster (61 s vs 210 s) because it stops when it stops improving
                 instead of running all the passes.
             </li>
@@ -596,45 +583,41 @@
             </li>
         </ul>
         <p>
-            The way to get a good result is to constrain the router, not swap it. Pre-route anything critical as fixed
-            copper, mark plane layers unroutable when you export the DSN, and let it do the rest. Then read the JSON,
-            not the router's mood: segment count must climb, the unfixed list names the nets completion couldn't finish,
+            I get better results from constraining Freerouting than from trying other routers. Pre-route anything critical as fixed
+            copper, mark plane layers unroutable when you export the DSN, and let it do the rest. Then judge the run by its JSON output: the segment count must climb, the unfixed list names the nets completion couldn't finish,
             and the DRC block shows violation <em>kinds</em> across five runs. Stable kinds are real; unstable ones are
             DRC nondeterminism.
         </p>
 
         <blockquote>
-            <p>Setup is push-button. Finishing a board is not.</p>
+            <p>Setup is automated. Finishing a board still takes iteration.</p>
         </blockquote>
 
         <p>
             Getting this board from first placement to zero clearance violations took about 19 rounds, each one an edit
             to <code>board.toml</code> and a rebuild. Placement alone went 26 errors, then 10, then 6, then
-            warnings-only over four iterations. That is the honest cost, and several of those rounds needed judgment no
-            checker was going to supply. Three of them are worth knowing before you start.
+            warnings-only over four iterations. Several of those rounds needed judgment that no checker supplied. Three are worth knowing before you start.
         </p>
         <p class="lead-in">
-            <strong>A copper pour is a wall.</strong> A bounded pour exported to the DSN is fixed copper as far as the
+            <strong>The router cannot cross a pour.</strong> A bounded pour exported to the DSN is fixed copper as far as the
             router is concerned, and it will not cut through it. The VIN pour on this board reached one pad column past
             the buck and closed off the corridor east of the chip. So the router took the only path left, which shoved
             the switch node under the chip and past the feedback pad &mdash; the worst place on the board for it to go.
-            Same violation, round after round, for about six of them. I spent those rounds on the router. The fix was to
-            shrink the pour.
+            The same violation came back for about six rounds while I adjusted router settings. The fix was to shrink the pour.
         </p>
         <p class="lead-in">
             <strong>Place passives by net topology, not by schematic tidiness.</strong> The feedback divider and the
             compensation network started north of the buck, which is where they sit on the schematic. Their pins leave
             the chip south and east. The router's only short path back grazed pads the whole way, and that was the last
             cluster of clearance errors on the board. Putting them into a row south of the chip, each rotation chosen so
-            the pad carrying a net faces the track coming into it, cleared them. Rotation is placement. A part in the
-            right spot facing the wrong way is a part in the wrong spot.
+            the pad carrying a net faces the track coming into it, cleared them. Rotation is part of placement: a part in the right position facing the wrong way routes as badly as one in the wrong position.
         </p>
         <p class="lead-in">
             <strong>Congestion is a floorplan problem.</strong> When completion leaves nets unfixed it usually means a
             corner is too tight. Give the parts room rather than fighting the router for a path that isn't there.
         </p>
         <p>
-            And a few traps paid for in blood, in the order I'd want to be warned about them. KiCad 10 writes the
+            Four smaller traps, in the order I'd want to be warned about them. KiCad 10 writes the
             netclass name <code>"Power,Default"</code>, and the comma splits the token in the Specctra DSN, so the
             router reads a class that isn't there and those nets route at the default width. A second
             <code>pcbnew.LoadBoard</code> after editing zones hands back a bare <code>SwigPyObject</code> with no
@@ -664,8 +647,8 @@
             <strong>Level 3, the agent reviewing the board.</strong> Useful, and the one to trust least, because it
             reasons from what the build was supposed to do rather than what it did.
         </p>
-        <p><strong>Level 4, parse the gerbers.</strong> The gerbers are what the factory builds. Nothing else is.</p>
-        <p>Level 4 is a script, and it's the one that pays. Things it catches that nothing above it does:</p>
+        <p><strong>Level 4, parse the gerbers.</strong> The gerbers are the only files the factory sees.</p>
+        <p>Level 4 is a script. It catches things nothing above it does:</p>
         <ul>
             <li>
                 Signal routing on a layer you declared a plane. The data logger had 60 track segments across 17 nets on
@@ -699,8 +682,7 @@
             <li>The board outline lands where the config says it does, so coordinate rules aren't looking at empty space</li>
         </ul>
         <p>
-            One PASS or FAIL per line, non-zero exit if anything fails, run after every export. Rules you don't configure
-            report SKIP, not PASS &mdash; a check you haven't written isn't a check that passed.
+            One PASS or FAIL per line, non-zero exit if anything fails, run after every export. Rules you haven't configured report SKIP instead of PASS, so a missing check can't be mistaken for a passing one.
         </p>
 
         <blockquote>
@@ -723,8 +705,7 @@
             </li>
         </ul>
         <p>
-            That ledger is the part I'd look at first if I were reviewing someone else's board. A residual violation
-            with a written reason is a decision. A residual violation without one is a defect nobody has met yet.
+            That ledger is the first thing I'd read when reviewing someone else's board. A residual violation with a written reason has been looked at; one without a reason has not.
         </p>
 
         <h2 id="rules">Rules</h2>
@@ -735,11 +716,11 @@
             hop needs vias at both ends. A track on one layer that ends under a pad on another layer connects nothing.)
         </p>
         <p class="lead-in">
-            <strong>Save the exact files you order.</strong> Not a regenerated approximation, the literal package.
+            <strong>Save the exact files you order.</strong> That means the literal package, not a regenerated copy.
             Auditing an order only means something if you can prove the zip you're reading is identical to what shipped.
         </p>
         <p><strong>Don't trust what a tool says about itself.</strong> Verify with an independent check.</p>
-        <p><strong>Don't wave off a warning from a checker.</strong> That's swapping a measurement for an assumption.</p>
+        <p><strong>Don't wave off a warning from a checker.</strong> Dismissing it replaces a measurement with an assumption.</p>
         <p class="lead-in">
             <strong>Don't assume generated defaults match your names.</strong> Netclass patterns, layer names, part
             rotation conventions. Nothing errors, the output is just wrong.
@@ -759,7 +740,7 @@
         </p>
         <p class="lead-in">
             <strong>Stop twice before the netlist.</strong> The agent interviews you, then stops. It writes the plan,
-            then stops. Those two stops are the safety story. An idea-to-board prompt with no stops produces sixty
+            then stops. Those two stops are where wrong assumptions get caught cheaply. Without them, an idea-to-board prompt produces sixty
             confident rows of hallucinated pin numbers, and you find out when the boards arrive.
         </p>
 
@@ -770,19 +751,15 @@
             the fixes are in code.
         </p>
         <p>
-            The thing to understand about where an agent fails on a board is that it isn't reasoning. It's sight.
-            Corrupted pad coordinates, dropped rotations, a fanout that doesn't check its own spacing, signals on a
-            reference plane, text off the board, fiducials in a keepout, thin power traces. The agent knows what it wants.
-            It has no way to check what it got. Once you stop asking it to look at the board and start making it parse the
-            board, this works.
+            Almost every failure in this post is a failure of observation, not of reasoning: corrupted pad coordinates, dropped rotations, a fanout that doesn't check its own spacing, signals on a
+            reference plane, text off the board, fiducials in a keepout, thin power traces. In each case the agent's intent was right, and it had no way to see that the output didn't match. The pipeline works because every check parses a file instead of asking the agent to look at the board.
         </p>
         <p>
-            And then there's the part no pipeline closes. This board passed every gate I know how to write, and it has
+            One gap remains that no pipeline closes. This board passed every gate I know how to write, and it has
             never been fabricated. Two of its gates can't close until the order is placed: re-verify every part in stock
-            at order time, and commit the ordered files byte for byte. After that it either comes back and powers on, or
-            the pipeline learns something and the next revision plan says what.
+            at order time, and commit the ordered files byte for byte. After that it either powers on, or the failure becomes a new check and an entry in the next revision plan.
         </p>
-        <p>It doesn't replace bring-up. Done and clean and checked five ways isn't the same as working.</p>
+        <p>None of this replaces bring-up. A design that passes five levels of checks is consistent with itself, and only a powered board shows that it works.</p>
 
         <h2 id="tools">Tools</h2>
         <ul class="tool-grid">
