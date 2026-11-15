@@ -8,6 +8,10 @@
   "start_url": "/games/",
   "scope": "/",
   "display": "standalone",
+  "_comment_launch": "Same as the multiplayer games: when the app is installed and a link to it is opened, reuse the window that is already open instead of starting a second copy. Chromium-only; iOS ignores it.",
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
   "theme_color": "#14211c",
   "background_color": "#0c1512",
   "categories": ["games"],
