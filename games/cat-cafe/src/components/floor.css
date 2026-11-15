@@ -1,0 +1,77 @@
+/* The floor and cat artwork. Colours here are the artwork's own (wood, cream
+   tiles), not UI tokens. */
+.floor {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  border-radius: 16px;
+  background: #8a5b38;
+  box-shadow:
+    0 0 0 5px #6f4628,
+    0 12px 28px var(--shadow);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.floor * {
+  pointer-events: none;
+}
+
+.floor[data-arming='true'] {
+  touch-action: none;
+  cursor: pointer;
+}
+
+.floor--mini {
+  border-radius: 9px;
+  box-shadow: 0 0 0 3px #6f4628;
+}
+
+.cat--settle {
+  animation: cat-settle 0.36s cubic-bezier(0.2, 1.4, 0.4, 1);
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@keyframes cat-settle {
+  from {
+    transform: scale(0.82);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+.cat--ghost {
+  opacity: 0.9;
+}
+
+.cat--ghost .cat__shape {
+  stroke-width: 7;
+}
+
+.cat--ok .cat__shape {
+  stroke: #2fa873;
+}
+
+.cat--bad {
+  opacity: 0.75;
+}
+
+.cat--bad .cat__shape {
+  stroke: #d6452f;
+}
+
+.cat__veto {
+  fill: #e4573d;
+  opacity: 0.42;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cat--settle {
+    animation: none;
+  }
+}

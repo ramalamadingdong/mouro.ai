@@ -3,5 +3,6 @@
   { "name": "backgammon", "rules": "games/backgammon/database.rules.json", "reap": ["bgRooms"] },
   { "name": "yahtzee", "rules": "games/yahtzee/database.rules.json", "reap": ["rooms"] },
   { "name": "holdem", "rules": "games/holdem/database.rules.json", "reap": ["rooms"] },
-  { "name": "dots", "rules": "games/dots/database.rules.json", "reap": ["rooms"] }
+  { "name": "dots", "rules": "games/dots/database.rules.json", "reap": ["rooms"] },
+  { "name": "cat-cafe", "rules": "games/cat-cafe/database.rules.json", "reap": ["rooms"] }
 ]

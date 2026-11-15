@@ -1,13 +1,13 @@
 # mouro.ai — notes for coding agents
 
-Monorepo for the personal site, five family games, and their realtime server.
+Monorepo for the personal site, six family games, and their realtime server.
 Read the root `README.md` first, then the `AGENTS.md` in whichever folder you
 are working in — those hold each project's non-negotiables.
 
 ## Layout
 
 - `site/` — static HTML/CSS. No build step. Edit the HTML directly.
-  `site/games/` (the games hub), `site/games/sudoku/` and `site/games/cat-cafe/` are deliberately
+  `site/games/` (the games hub) and `site/games/sudoku/` are deliberately
   separate from the portfolio: self-contained pages with their own styles,
   manifest and icons — they must not load `static/css/site.css`. Their icon
   PNGs come from the SVGs beside them via `scripts/render-icons.mjs`.
@@ -28,8 +28,8 @@ are working in — those hold each project's non-negotiables.
   by `server/src/rules.js`. Changing a rule changes production behaviour on the
   next deploy — add or adjust a case in `server/test/realtime.test.js`.
 - **Game namespaces are fixed** in `server/games.json` (`gin-rummy`,
-  `backgammon`, `yahtzee`, `holdem`, `dots`). Renaming one orphans its data.
-- **URLs are fixed** — `/backgammon/`, `/gin-rummy/`, `/yahtzee/`, `/holdem/`, `/dots/`. Each is set
+  `backgammon`, `yahtzee`, `holdem`, `dots`, `cat-cafe`). Renaming one orphans its data.
+- **URLs are fixed** — `/backgammon/`, `/gin-rummy/`, `/yahtzee/`, `/holdem/`, `/dots/`, `/cat-cafe/`. Each is set
   in the app (Expo `experiments.baseUrl` + `WEB_BASE_PATH`, or Vite `base` +
   router `basename`) and in `infra/Caddyfile`; change them together.
 - Don't commit `.env` files, `server/data/`, or build output.

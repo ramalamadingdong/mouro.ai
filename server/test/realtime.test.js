@@ -41,6 +41,7 @@ before(async () => {
       { name: 'yahtzee', rules: rules('games/yahtzee/database.rules.json'), reap: ['rooms'] },
       { name: 'holdem', rules: rules('games/holdem/database.rules.json'), reap: ['rooms'] },
       { name: 'dots', rules: rules('games/dots/database.rules.json'), reap: ['rooms'] },
+      { name: 'cat-cafe', rules: rules('games/cat-cafe/database.rules.json'), reap: ['rooms'] },
     ],
   });
   await new Promise((r) => server.http.listen(0, '127.0.0.1', r));
@@ -396,6 +397,96 @@ describe('dots rules', () => {
     const outsider = await player('dots');
     await denied(set(state(outsider), dotsState(uids, { version: 2, toAct: 2, by: outsider.uid, kind: 'away' })));
     await set(state(b), dotsState(uids, { version: 2, toAct: 2, by: b.uid, kind: 'away' }));
+  });
+});
+
+describe('cat-cafe rules', () => {
+  // A structurally valid GameState for `uids`, as the engine would write it.
+  // The rules bound shape and authority, not the game, so the cats are arbitrary.
+  const cafeState = (uids, { version, toAct = null, by, kind, market = 'g0s1t2w3g4'.slice(0, (uids.length + 2) * 2), floors }) => ({
+    version,
+    players: uids.map((uid, i) => ({ uid, name: `P${i}`, isHuman: true, sitOut: false })),
+    market,
+    floors: floors ?? uids.map(() => ''),
+    picks: toAct === null ? 12 * uids.length : 0,
+    phase: toAct === null ? 'gameover' : 'playing',
+    starter: 0,
+    gameNo: 1,
+    ...(toAct === null ? { turnUid: '*' } : { toAct, turnUid: uids[toAct] }),
+    lastMove: { by, kind, seat: 0, ...(kind === 'seat' || kind === 'away' ? { tile: 'g0', cat: 'g0000' } : {}) },
+  });
+
+  async function room(code, seats = 3) {
+    const players = [];
+    for (let i = 0; i < seats; i++) players.push(await player('cat-cafe'));
+    const [host] = players;
+    const now = Date.now();
+    await set(ref(host.db, `rooms/${code}`), {
+      meta: { host: host.uid, status: 'waiting', createdAt: now, updatedAt: now },
+      seats: { [host.uid]: `${now}|Host` },
+    });
+    for (const p of players.slice(1)) {
+      await update(ref(p.db, `rooms/${code}`), { [`seats/${p.uid}`]: `${now}|Guest`, 'meta/updatedAt': serverTimestamp() });
+    }
+    const uids = players.map((p) => p.uid);
+    const state = (p) => ref(p.db, `rooms/${code}/state`);
+    return { players, uids, state };
+  }
+
+  test('only the host writes the first state, and it must be a start', async () => {
+    const { players: [host, guest], uids, state } = await room('CAT22', 2);
+    await denied(set(state(guest), cafeState(uids, { version: 1, toAct: 0, by: guest.uid, kind: 'start' })));
+    await denied(set(state(host), cafeState(uids, { version: 1, toAct: 0, by: host.uid, kind: 'seat' })));
+    await denied(set(state(host), cafeState(uids, { version: 1, toAct: 0, by: guest.uid, kind: 'start' })));
+    await set(state(host), cafeState(uids, { version: 1, toAct: 0, by: host.uid, kind: 'start' }));
+    // Empty floors and a zero pick count survive the round trip.
+    const stored = (await get(state(guest))).val();
+    assert.equal(stored.picks, 0);
+    assert.equal(stored.market, 'g0s1t2w3');
+  });
+
+  test('only the player on turn picks; version rises; the shape is closed', async () => {
+    const { players: [host, a, b], uids, state } = await room('CAT44');
+    await set(state(host), cafeState(uids, { version: 1, toAct: 1, by: host.uid, kind: 'start' }));
+    const seated = { floors: ['', 'g0000', ''], market: '..s1t2w3g4' };
+    await denied(set(state(b), cafeState(uids, { version: 2, toAct: 2, by: b.uid, kind: 'seat', ...seated })));
+    await denied(set(state(host), cafeState(uids, { version: 2, toAct: 2, by: host.uid, kind: 'seat', ...seated })));
+    await denied(set(state(a), cafeState(uids, { version: 1, toAct: 2, by: a.uid, kind: 'seat', ...seated })));
+    await denied(set(state(a), cafeState(uids, { version: 2, toAct: 2, by: b.uid, kind: 'seat', ...seated })));
+    await denied(set(state(a), { ...cafeState(uids, { version: 2, toAct: 2, by: a.uid, kind: 'seat', ...seated }), turnUid: a.uid }));
+    await denied(set(state(a), { ...cafeState(uids, { version: 2, toAct: 2, by: a.uid, kind: 'seat', ...seated }), junk: 1 }));
+    await denied(set(state(a), cafeState(uids, { version: 2, toAct: 2, by: a.uid, kind: 'seat', ...seated, market: 'zzs1t2w3g4' })));
+    await denied(set(state(a), cafeState(uids, { version: 2, toAct: 2, by: a.uid, kind: 'seat', ...seated, floors: ['', 'g0090', ''] })));
+    await denied(set(state(a), cafeState(uids, { version: 2, toAct: 2, by: a.uid, kind: 'rematch', ...seated })));
+    await set(state(a), cafeState(uids, { version: 2, toAct: 2, by: a.uid, kind: 'seat', ...seated }));
+    // Sending a cat away is the other move the player on turn may make.
+    await set(state(b), cafeState(uids, { version: 3, toAct: 0, by: b.uid, kind: 'pass', ...seated }));
+    await denied(set(ref(b.db, 'rooms/CAT44/state/floors/2'), 'g0000g0010g0020'));
+    const outsider = await player('cat-cafe');
+    await denied(set(state(outsider), cafeState(uids, { version: 4, toAct: 1, by: outsider.uid, kind: 'seat', ...seated })));
+  });
+
+  test('after the game any seated player may start a rematch, and only a rematch', async () => {
+    const { players: [host, a, b], uids, state } = await room('CAT55');
+    await set(state(host), cafeState(uids, { version: 1, toAct: 0, by: host.uid, kind: 'start' }));
+    await set(state(host), cafeState(uids, { version: 2, by: host.uid, kind: 'pass' })); // game over
+    await denied(set(state(b), cafeState(uids, { version: 3, toAct: 1, by: b.uid, kind: 'seat' })));
+    await remove(ref(a.db, `rooms/CAT55/seats/${a.uid}`));
+    await denied(set(state(a), cafeState(uids, { version: 3, toAct: 1, by: a.uid, kind: 'rematch' })));
+    await set(state(b), cafeState(uids, { version: 3, toAct: 1, by: b.uid, kind: 'rematch' }));
+  });
+
+  test('away: another player may pick for the one on turn only while their presence is gone', async () => {
+    const { players: [host, a, b], uids, state } = await room('CAT66');
+    await set(state(host), cafeState(uids, { version: 1, toAct: 1, by: host.uid, kind: 'start' }));
+    const presence = ref(a.db, `rooms/CAT66/presence/${a.uid}`);
+    await set(presence, serverTimestamp());
+    await denied(set(state(b), cafeState(uids, { version: 2, toAct: 2, by: b.uid, kind: 'away' })));
+    await remove(presence);
+    await denied(set(state(b), cafeState(uids, { version: 2, toAct: 2, by: b.uid, kind: 'seat' })));
+    const outsider = await player('cat-cafe');
+    await denied(set(state(outsider), cafeState(uids, { version: 2, toAct: 2, by: outsider.uid, kind: 'away' })));
+    await set(state(b), cafeState(uids, { version: 2, toAct: 2, by: b.uid, kind: 'away' }));
   });
 });
 

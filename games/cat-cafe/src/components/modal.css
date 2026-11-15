@@ -1,0 +1,116 @@
+/*
+ * Native <dialog> styling.
+ *
+ * The UA stylesheet gives a dialog a white background, a solid border, and
+ * `max-width: calc(100% - 6px - 2em)`. All three have to be overridden
+ * explicitly or the modal renders as a white box on a dark app.
+ */
+
+.modal {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+
+  /* The dialog is the sizing box; the panel inside does the painting. */
+  width: min(30rem, calc(100vw - 2 * var(--space-lg)));
+  max-width: none;
+  max-height: calc(100dvh - 2 * var(--space-xl));
+
+  /* A closed dialog is display:none; opening it puts it in the top layer, so
+     no z-index is needed anywhere in this file. */
+  overflow: visible;
+}
+
+.modal::backdrop {
+  /* Cannot use var() reliably inside ::backdrop in every engine — the pseudo
+     element does not inherit from the dialog in older Safari — so this is a
+     literal, and it is the one place in the app that is allowed one. */
+  background: rgba(8, 9, 18, 0.72);
+  backdrop-filter: blur(2px);
+}
+
+.modal__panel {
+  display: flex;
+  flex-direction: column;
+  /* The dialog is capped by max-height; the panel has to be able to shrink so
+     the body (not the whole modal) is what scrolls. */
+  max-height: inherit;
+
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+}
+
+.modal__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: var(--space-lg) var(--space-lg) var(--space-md);
+}
+
+.modal__title {
+  font-size: var(--size-lg);
+  font-weight: var(--weight-heavy);
+  color: var(--text);
+}
+
+.modal__close {
+  flex: 0 0 auto;
+  /* 44px minimum touch target at scale 1, even though the glyph is small. */
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: var(--radius-pill);
+  font-size: var(--size-lg);
+  line-height: 1;
+  text-align: center;
+  color: var(--text-muted);
+  transition: background-color var(--dur-fast) var(--ease);
+}
+
+.modal__close:hover {
+  background: var(--surface-raised);
+  color: var(--text);
+}
+
+.modal__body {
+  padding: 0 var(--space-lg) var(--space-lg);
+  /* Long content (a final scorecard) scrolls INSIDE the modal, so the page
+     behind it never gains a scrollbar. */
+  overflow-y: auto;
+  color: var(--text-muted);
+  font-size: var(--size-body);
+}
+
+.modal__foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+  padding: var(--space-md) var(--space-lg);
+  background: var(--surface-raised);
+  border-top: 1px solid var(--border);
+}
+
+/*
+ * Entrance. transform + opacity only, and the whole rule is inside the
+ * open-state selector so a closed dialog is never animating. The global
+ * prefers-reduced-motion block in base.css collapses this to 0.01ms.
+ */
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modal[open] .modal__panel {
+  animation: modal-in var(--dur-base) var(--ease);
+}

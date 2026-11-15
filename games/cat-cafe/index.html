@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+
+    <!--
+      viewport-fit=cover lets the page paint into the notch/home-indicator area;
+      base.css pays that back with env(safe-area-inset-*) padding on body.
+      Without it iOS letterboxes the page and the room colour stops short of
+      the screen edge.
+
+      No maximum-scale / user-scalable=no: pinch-zoom is an accessibility
+      affordance, and somebody WILL want to zoom in on a big board.
+    -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+    <!--
+      Root-relative, on purpose. Vite prefixes each of these with `base` from
+      vite.config.ts itself, in dev and in the build.
+
+      DO NOT write the base into these hrefs yourself, literally or with a
+      %BASE_URL% placeholder: the dev server applies base to any root-relative
+      path it finds in this file, so a path that already carries it gets it
+      twice and every icon plus the manifest 404s under `npm run dev` while the
+      production build looks perfect. (That rewrite is plain text substitution
+      and does not skip comments, which is why the prefix is not spelled out
+      here.)
+
+      Plain relative paths ('./icons/...') are wrong too: this same HTML is
+      served for deep routes such as the per-room table URL, and would resolve
+      against that route's directory instead of the app root.
+    -->
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+
+    <!-- Matches --page in src/theme/tokens.css. Colours the browser chrome so
+         the status bar blends into the wall instead of framing it. -->
+    <meta name="theme-color" content="#0f2e34" />
+
+    <!-- Legacy iOS install hints. Modern iOS reads the manifest, but these are
+         what older Safari versions honour, and they cost four lines. -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Cat Café" />
+
+    <title>Cat Café</title>
+    <meta
+      name="description"
+      content="Cat Café with no sign-up: draft cat-shaped tiles onto your café floor, match coats, keep rivals apart and fill rows. Play the computer cats offline, or share a room code and play up to four friends online."
+    />
+
+    <!--
+      ANTI-FLASH. Inline and in the <head> on purpose: the stylesheet that
+      carries --page is loaded by the JS bundle, so between first paint and
+      hydration the browser would otherwise show its default white canvas — a
+      flash of the wrong colour on every reload. The hex values are
+      duplicated from --page and --text in tokens.css by necessity: a var()
+      cannot resolve before the file that defines it has loaded.
+    -->
+    <style>
+      html,
+      body {
+        margin: 0;
+        background: #0f2e34;
+        color: #f7efdf;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

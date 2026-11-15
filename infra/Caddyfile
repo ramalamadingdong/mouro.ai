@@ -7,6 +7,8 @@
 #   /yahtzee/          yahtzee SPA (Vite)           /srv/mouro.ai/yahtzee
 #   /holdem/           Texas Hold'em SPA (Vite)     /srv/mouro.ai/holdem
 #   /dots/             Dots and Boxes SPA (Vite)    /srv/mouro.ai/dots
+#   /cat-cafe/         Cat Café SPA (Vite)          /srv/mouro.ai/cat-cafe
+#   /games/cat-cafe/*  301 → /cat-cafe/ (its address when it was a single static page)
 #   /rt                realtime server (WebSocket)  127.0.0.1:8787
 #
 # Deploys rsync each build into /srv/mouro.ai/<app>.new and swap it into place
@@ -35,7 +37,7 @@ www.mouro.ai {
 	}
 
 	# Content-hashed build output can be cached forever.
-	@hashed path_regexp hashed ^/(backgammon|gin-rummy)/_expo/static/|^/(yahtzee|holdem|dots)/assets/
+	@hashed path_regexp hashed ^/(backgammon|gin-rummy)/_expo/static/|^/(yahtzee|holdem|dots|cat-cafe)/assets/
 	header @hashed Cache-Control "public, max-age=31536000, immutable"
 
 	# ── realtime server ─────────────────────────────────────────────────────
@@ -89,6 +91,14 @@ www.mouro.ai {
 	redir /dots /dots/ permanent
 	handle /dots/* {
 		try_files {path} /dots/index.html
+		file_server
+	}
+
+	redir /cat-cafe /cat-cafe/ permanent
+	redir /games/cat-cafe /cat-cafe/ permanent
+	redir /games/cat-cafe/* /cat-cafe/ permanent
+	handle /cat-cafe/* {
+		try_files {path} /cat-cafe/index.html
 		file_server
 	}
 
