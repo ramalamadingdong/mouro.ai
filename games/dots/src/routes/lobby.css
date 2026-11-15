@@ -1,0 +1,111 @@
+/* Waiting room. */
+
+.lobby {
+  max-width: 28rem;
+}
+
+.lobby--empty {
+  align-items: center;
+  text-align: center;
+}
+
+.lobby__spinner {
+  align-self: center;
+}
+
+.lobby__code-panel {
+  align-items: center;
+  text-align: center;
+}
+
+/*
+ * The room code is the largest thing on the screen on purpose: its job is to be
+ * read off this phone by someone holding another one, often across a table.
+ * --size-hero exists for exactly this.
+ */
+.lobby__code {
+  font-size: var(--size-hero);
+  font-weight: var(--weight-heavy);
+  line-height: 1.1;
+  color: var(--accent);
+  /* Long-press to copy is the fallback everyone already knows; base.css turns
+     selection off globally, and `.selectable` on the element turns it back on. */
+}
+
+.lobby__copied {
+  font-size: var(--size-sm);
+  font-weight: var(--weight-medium);
+  color: var(--good);
+}
+
+/* Shown when the clipboard API is missing or refuses. --warn, not --bad:
+   nothing has gone wrong with the room, the player just has to copy the link
+   below by hand. Sized at --size-sm to sit with the hint it points at. */
+.lobby__copy-failed {
+  font-size: var(--size-sm);
+  color: var(--warn);
+  margin-top: var(--space-xs);
+}
+
+.lobby__seats {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.lobby__seat {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--page-raised);
+  border-radius: var(--radius-md);
+}
+
+.lobby__seat-name {
+  flex: 1;
+  font-size: var(--size-md);
+  color: var(--text);
+  /* A 24-character name on a narrow phone must not push the tags off the row. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lobby__seat-tags {
+  display: flex;
+  gap: var(--space-xs);
+  flex-shrink: 0;
+}
+
+.lobby__tag {
+  font-size: var(--size-xs);
+  font-weight: var(--weight-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.1rem var(--space-sm);
+  border-radius: var(--radius-pill);
+  background: var(--surface-raised);
+  color: var(--text-muted);
+}
+
+.lobby__tag--away {
+  color: var(--bad);
+}
+
+/*
+ * Presence dot. Colour is NOT the only signal — an "Away" text tag renders
+ * alongside it — because a green/grey pair is invisible to a red-green
+ * colourblind player and unreadable to a screen reader.
+ */
+.lobby__dot {
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: var(--radius-pill);
+  flex-shrink: 0;
+  background: var(--text-faint);
+}
+
+.lobby__dot[data-online='true'] {
+  background: var(--good);
+}

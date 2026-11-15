@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Dots and Boxes app icon. Full-bleed so it also serves as a maskable icon:
+       everything that matters sits inside the middle 80%. -->
+  <defs>
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M32 0H0V32" fill="none" stroke="#466eaa" stroke-opacity="0.16" stroke-width="2"/>
+    </pattern>
+  </defs>
+  <rect width="512" height="512" fill="#f5efe0"/>
+  <rect width="512" height="512" fill="url(#grid)"/>
+  <rect x="74" y="0" width="5" height="512" fill="#cd5046" fill-opacity="0.45"/>
+  <!-- claimed boxes -->
+  <rect x="134" y="134" width="108" height="108" rx="12" fill="#2a4fa8" fill-opacity="0.18"/>
+  <rect x="270" y="270" width="108" height="108" rx="12" fill="#c23b2e" fill-opacity="0.18"/>
+  <!-- a cat face in the blue box -->
+  <g transform="translate(188 196)" fill="#2a4fa8">
+    <path d="M-34 -6 -30 -40 -10 -22Z M34 -6 30 -40 10 -22Z"/>
+    <ellipse cx="0" cy="2" rx="36" ry="30"/>
+    <ellipse cx="-13" cy="-2" rx="5" ry="7" fill="#f5efe0"/>
+    <ellipse cx="13" cy="-2" rx="5" ry="7" fill="#f5efe0"/>
+    <path d="M-5 12h10l-5 6z" fill="#f5efe0"/>
+  </g>
+  <!-- a paw print in the red box -->
+  <g transform="translate(324 330)" fill="#c23b2e">
+    <ellipse cx="0" cy="8" rx="20" ry="16"/>
+    <ellipse cx="-22" cy="-14" rx="8" ry="10"/>
+    <ellipse cx="-8" cy="-26" rx="8" ry="10"/>
+    <ellipse cx="8" cy="-26" rx="8" ry="10"/>
+    <ellipse cx="22" cy="-14" rx="8" ry="10"/>
+  </g>
+  <!-- lines -->
+  <g stroke-width="16" stroke-linecap="round">
+    <g stroke="#2a4fa8">
+      <path d="M120 120H256M120 256H256M120 120V256M256 120V256M120 392H256M392 120V256"/>
+    </g>
+    <g stroke="#c23b2e">
+      <path d="M256 256H392M256 392H392M256 256V392M392 256V392M256 120H392"/>
+    </g>
+  </g>
+  <!-- dots -->
+  <g fill="#3a342b">
+    <circle cx="120" cy="120" r="15"/><circle cx="256" cy="120" r="15"/><circle cx="392" cy="120" r="15"/>
+    <circle cx="120" cy="256" r="15"/><circle cx="256" cy="256" r="15"/><circle cx="392" cy="256" r="15"/>
+    <circle cx="120" cy="392" r="15"/><circle cx="256" cy="392" r="15"/><circle cx="392" cy="392" r="15"/>
+  </g>
+</svg>
