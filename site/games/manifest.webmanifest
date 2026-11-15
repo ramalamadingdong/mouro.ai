@@ -11,6 +11,11 @@
   "theme_color": "#14211c",
   "background_color": "#0c1512",
   "categories": ["games"],
+  "_comment_links": "Invite links (/yahtzee/join/ABCDE and friends) are inside this app's scope too, so someone who installed the hub rather than the individual game should also land in their installed app. 'handle_links: preferred' asks the browser to route in-scope links into the app, and 'navigate-existing' points the already-open window at the invite instead of opening a second one. Where a game is installed as well, its narrower scope wins. Chromium-only; iOS ignores both and always opens links in Safari.",
+  "handle_links": "preferred",
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
   "icons": [
     { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
