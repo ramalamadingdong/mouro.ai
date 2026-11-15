@@ -11,6 +11,10 @@ are working in — those hold each project's non-negotiables.
   separate from the portfolio: self-contained pages with their own styles,
   manifest and icons — they must not load `static/css/site.css`. Their icon
   PNGs come from the SVGs beside them via `scripts/render-icons.mjs`.
+  `site/static/share/*.png` (link-preview cards) and `site/projects/<id>/index.html`
+  (per-project share addresses) are written by `scripts/render-share-cards.mjs` —
+  change the list in that script and re-run it, don't edit them by hand.
+  `site/404.html` can be served at any path: root-relative addresses only.
 - `games/<game>/` — independent apps with their own `package.json` and lockfile.
   Run npm inside the game folder. Never introduce npm workspaces or hoisting.
 - `server/` — Node ≥22.13, plain ESM JavaScript, `ws` + built-in `node:sqlite`.

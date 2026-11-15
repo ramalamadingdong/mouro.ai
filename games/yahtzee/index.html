@@ -55,6 +55,20 @@
       content="Play Yahtzee online with friends — no sign-up. Share a five-character room code, or pass one phone around the table."
     />
 
+    <!-- Link previews (Slack, iMessage, WhatsApp). Absolute addresses on purpose:
+         previews need them, and Vite leaves them alone. The card is drawn by
+         scripts/render-share-cards.mjs and lives with the site. -->
+    <meta property="og:title" content="Yahtzee" />
+    <meta property="og:description" content="Play Yahtzee online with friends — no sign-up. Share a five-character room code, or pass one phone around the table." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://mouro.ai/yahtzee/" />
+    <meta property="og:site_name" content="Mouro Games" />
+    <meta property="og:image" content="https://mouro.ai/static/share/yahtzee.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Yahtzee, online with friends" />
+    <meta name="twitter:card" content="summary_large_image" />
+
     <!--
       ANTI-FLASH. This is inline, and in the <head>, on purpose: the stylesheet
       that carries --felt is loaded by the JS bundle, so between first paint and

@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Page not found — Rami Mouro</title>
+    <meta name="robots" content="noindex">
+    <meta name="theme-color" content="#e7eaec" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#131b24" media="(prefers-color-scheme: dark)">
+    <link rel="icon" href="/static/img/favicon.svg" type="image/svg+xml">
+    <link rel="preload" href="/static/fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="/static/css/site.css">
+    <!--
+      The page Caddy answers with for any address that is not on the site
+      (infra/Caddyfile → handle_errors). It can be served at ANY path, so every
+      address in here is root-relative or absolute, never relative.
+
+      Only this page's own pieces are styled here; the rest is site.css.
+    -->
+    <style>
+        .lost {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 28px;
+        }
+
+        /* "404", with the cat sitting in for the zero. */
+        .lost-number {
+            display: flex;
+            align-items: center;
+            gap: 0.04em;
+            font-size: clamp(6.5rem, 31vw, 19rem);
+            font-weight: 800;
+            line-height: 0.8;
+            letter-spacing: -0.035em;
+            margin: 0.1em 0 0 -0.045em;
+            user-select: none;
+        }
+
+        .cat {
+            flex: none;
+            height: 0.86em;
+            width: auto;
+            margin: -0.12em 0.02em 0 0.05em;
+            overflow: visible;
+        }
+
+        .cat-body { fill: var(--ink); }
+        .cat-belly { fill: var(--ground); }
+        .cat-eye { fill: var(--yellow); }
+        .cat-pupil { fill: #16202b; }
+        .cat-inner-ear { fill: var(--steel); }
+        .cat-line {
+            fill: none;
+            stroke: var(--ground);
+            stroke-width: 3;
+            stroke-linecap: round;
+        }
+        .cat-tail {
+            fill: none;
+            stroke: var(--ink);
+            stroke-width: 15;
+            stroke-linecap: round;
+            transform-origin: 150px 222px;
+            animation: tail 3.2s ease-in-out infinite;
+        }
+        .cat-lids {
+            fill: var(--ink);
+            transform-box: fill-box;
+            transform-origin: center top;
+            transform: scaleY(0);
+            animation: blink 5.5s infinite;
+        }
+
+        @keyframes tail {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(-13deg); }
+        }
+        @keyframes blink {
+            0%, 95.5%, 100% { transform: scaleY(0); }
+            97.5% { transform: scaleY(1); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .cat-tail, .cat-lids { animation: none; }
+        }
+
+        .lost h1 {
+            font-size: clamp(1.9rem, 5vw, 3rem);
+        }
+
+        .lost-path {
+            font-weight: 650;
+            color: var(--ink);
+            overflow-wrap: anywhere;
+        }
+    </style>
+</head>
+<body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="site-header">
+        <div class="site-header-inner">
+            <a class="wordmark" href="/">Rami Mouro</a>
+            <nav class="nav" aria-label="Main">
+                <a class="nav-link" href="/">Home</a>
+                <a class="nav-link" href="/projects/">Projects</a>
+                <a class="nav-link" href="/games/">Games</a>
+                <a class="nav-link" href="https://www.linkedin.com/in/rami-mouro/" target="_blank" rel="noreferrer">LinkedIn</a>
+                <a class="nav-link" href="https://github.com/ramalamadingdong" target="_blank" rel="noreferrer">GitHub</a>
+            </nav>
+        </div>
+    </header>
+    <main class="page" id="main">
+
+<section class="lost">
+    <p class="lost-number" aria-hidden="true">
+        <span>4</span>
+        <svg class="cat" id="cat" viewBox="0 0 200 250" focusable="false">
+            <path class="cat-tail" d="M150 222 q44 6 42 -34 q-2 -26 -22 -22"/>
+            <path class="cat-body" d="M30 78 L40 6 L88 40 Q100 37 112 40 L160 6 L170 78 Q184 108 184 146 C184 208 150 246 100 246 C50 246 16 208 16 146 Q16 108 30 78 Z"/>
+            <path class="cat-inner-ear" d="M48 60 L52 30 L74 46 Z M152 60 L148 30 L126 46 Z"/>
+            <ellipse class="cat-belly" cx="100" cy="186" rx="34" ry="42"/>
+            <g id="cat-eyes">
+                <circle class="cat-eye" cx="66" cy="98" r="19"/>
+                <circle class="cat-eye" cx="134" cy="98" r="19"/>
+                <ellipse class="cat-pupil" cx="66" cy="98" rx="6.5" ry="13"/>
+                <ellipse class="cat-pupil" cx="134" cy="98" rx="6.5" ry="13"/>
+            </g>
+            <path class="cat-lids" d="M45 77 h42 v42 h-42 z M113 77 h42 v42 h-42 z"/>
+            <path class="cat-belly" d="M93 122 h14 l-7 8 z"/>
+            <path class="cat-line" d="M89 135 q5.5 6 11 0 q5.5 6 11 0"/>
+            <path class="cat-line" d="M52 128 l-26 -4 M52 136 l-26 6 M148 128 l26 -4 M148 136 l26 6"/>
+        </svg>
+        <span>4</span>
+    </p>
+    <h1>This page wandered off.</h1>
+    <p class="lead">
+        There is nothing at <span class="lost-path" id="lost-path">this address</span>.
+        The cat has looked under everything and is done looking.
+    </p>
+    <div class="button-row">
+        <a class="button" href="/games/cat-cafe/">Play Cat Café instead</a>
+        <a class="button button-quiet" href="/games/">All the games</a>
+        <a class="button button-quiet" href="/">Back home</a>
+    </div>
+</section>
+
+    </main>
+    <script>
+        // Name the address that was asked for. textContent, never innerHTML:
+        // the path is whatever somebody typed.
+        (function () {
+            var path = decodeURI(location.pathname);
+            if (path.length > 60) path = path.slice(0, 57) + '…';
+            document.getElementById('lost-path').textContent = path;
+        })();
+
+        // The cat watches the pointer (or the last place a finger touched).
+        (function () {
+            var cat = document.getElementById('cat');
+            var pupils = cat.querySelectorAll('.cat-pupil');
+            var REACH = 9; // how far a pupil may travel inside its eye, in SVG units
+            addEventListener('pointermove', look, { passive: true });
+            addEventListener('pointerdown', look, { passive: true });
+            function look(e) {
+                var box = cat.getBoundingClientRect();
+                if (!box.width) return;
+                var scale = 200 / box.width;
+                for (var i = 0; i < pupils.length; i++) {
+                    var cx = pupils[i].cx.baseVal.value;
+                    var cy = pupils[i].cy.baseVal.value;
+                    var dx = (e.clientX - box.left) * scale - cx;
+                    var dy = (e.clientY - box.top) * scale - cy;
+                    var far = Math.hypot(dx, dy) || 1;
+                    var go = Math.min(REACH, far / 12);
+                    pupils[i].setAttribute('transform', 'translate(' + (dx / far) * go + ' ' + (dy / far) * go * 0.6 + ')');
+                }
+            }
+        })();
+    </script>
+</body>
+</html>

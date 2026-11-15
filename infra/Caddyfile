@@ -8,6 +8,7 @@
 #   /holdem/           Texas Hold'em SPA (Vite)     /srv/mouro.ai/holdem
 #   /dots/             Dots and Boxes SPA (Vite)    /srv/mouro.ai/dots
 #   /rt                realtime server (WebSocket)  127.0.0.1:8787
+#   anything else      404 page                     /srv/mouro.ai/site/404.html
 #
 # Deploys rsync each build into /srv/mouro.ai/<app>.new and swap it into place
 # with a rename, so a request never sees a half-copied directory.
@@ -97,5 +98,18 @@ www.mouro.ai {
 		root * /srv/mouro.ai/site
 		try_files {path} {path}/index.html {path}.html
 		file_server
+	}
+
+	# ── not found ───────────────────────────────────────────────────────────
+	# Anything that matched no file gets the site's 404 page (with the cat),
+	# still answered as a 404. The games never reach this: each falls back to
+	# its own index.html and shows its own "no such room" screen.
+	handle_errors {
+		@notfound expression `{err.status_code} == 404`
+		handle @notfound {
+			root * /srv/mouro.ai/site
+			rewrite * /404.html
+			file_server
+		}
 	}
 }

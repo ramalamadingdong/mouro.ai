@@ -42,6 +42,20 @@ export default function Root({ children }: PropsWithChildren) {
         <meta name="apple-mobile-web-app-title" content="Backgammon" />
         <link rel="apple-touch-icon" href={`${baseUrl}/icons/apple-touch-icon.png`} />
 
+        {/* Link previews (Slack, iMessage, WhatsApp). Absolute addresses, because
+            previews need them. The card is drawn by scripts/render-share-cards.mjs
+            at the repo root and lives with the site. */}
+        <meta property="og:title" content="Backgammon" />
+        <meta property="og:description" content="Backgammon with Tawleh rules and no sign-up: play a friend online with a room code, or the Professor, a computer cat." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://mouro.ai/backgammon/" />
+        <meta property="og:site_name" content="Mouro Games" />
+        <meta property="og:image" content="https://mouro.ai/static/share/backgammon.png" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:image:alt" content="Backgammon, Tawleh rules, online or against a computer cat" />
+        <meta name="twitter:card" content="summary_large_image" />
+
         {/*
           Disable body scrolling on web so the fixed-height board doesn't bounce.
           This must be added since the root <body> is undefined on native.
