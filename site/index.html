@@ -11,37 +11,32 @@
     <meta property="og:url" content="https://mouro.ai/">
     <meta property="og:site_name" content="Rami Mouro">
     <meta property="og:image" content="https://mouro.ai/static/img/Rami_Pic.jpg">
-    <meta name="theme-color" content="#0f1117">
+    <meta name="theme-color" content="#e7eaec" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#131b24" media="(prefers-color-scheme: dark)">
     <link rel="icon" href="/static/img/favicon.svg" type="image/svg+xml">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="preload" href="/static/fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="/static/css/site.css">
-    <script>document.documentElement.classList.add("js");</script>
-    <script src="/static/js/site.js" defer></script>
 </head>
 <body>
     <a class="skip-link" href="#main">Skip to content</a>
     <header class="site-header">
-        <div class="nav-wrap">
-            <a class="logo" href="/" aria-label="Rami Mouro — home">
-                <img class="logo-mark" src="/static/img/favicon.svg" alt="" width="28" height="28">
-                <span class="logo-text">Rami Mouro</span>
-            </a>
-            <nav class="nav-links" aria-label="Main">
-                <a class="nav-link" href="/" aria-current="page">Home</a>
-                <a class="nav-link" href="/projects/">Projects</a>
-                <a class="nav-link" href="/games/">Games</a>
-                <a class="nav-link" href="https://www.linkedin.com/in/rami-mouro/" target="_blank" rel="noreferrer">LinkedIn<svg class="ext-icon" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 9l6-6M4.5 3H9v4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
-            </nav>
-        </div>
+        <a class="wordmark" href="/" aria-current="page">Rami Mouro</a>
+        <nav class="nav" aria-label="Main">
+            <a class="nav-link" href="/projects/">Projects</a>
+            <a class="nav-link" href="/games/">Games</a>
+            <a class="nav-link" href="https://www.linkedin.com/in/rami-mouro/" target="_blank" rel="noreferrer">LinkedIn</a>
+            <a class="nav-link" href="https://github.com/ramalamadingdong" target="_blank" rel="noreferrer">GitHub</a>
+        </nav>
     </header>
     <main class="page" id="main">
 
-<section class="hero" data-reveal>
+<section class="hero">
+    <h1 class="name">Rami Mouro</h1>
+    <figure class="frame">
+        <img src="/static/img/Rami_Pic.jpg" alt="Rami Mouro" width="1024" height="1024">
+    </figure>
     <div class="hero-copy">
-        <p class="eyebrow">Staff Software Engineer · Qualcomm</p>
-        <h1 class="title">Rami Mouro</h1>
+        <p class="role">Staff software engineer at Qualcomm</p>
         <p class="tagline">Building the bridge between edge AI and the next generation of roboticists.</p>
         <p class="lead">
             Embedded software engineer at Qualcomm focused on AI and developer relations for edge computing platforms.
@@ -50,22 +45,17 @@
         </p>
         <div class="button-row">
             <a class="button" href="/projects/">View projects</a>
-            <a class="button ghost" href="https://www.linkedin.com/in/rami-mouro/" target="_blank" rel="noreferrer">LinkedIn</a>
-            <a class="button ghost" href="https://github.com/ramalamadingdong" target="_blank" rel="noreferrer">GitHub</a>
+            <a class="button button-quiet" href="https://www.linkedin.com/in/rami-mouro/" target="_blank" rel="noreferrer">LinkedIn</a>
+            <a class="button button-quiet" href="https://github.com/ramalamadingdong" target="_blank" rel="noreferrer">GitHub</a>
         </div>
     </div>
-    <figure class="hero-figure">
-        <img class="hero-photo" src="/static/img/Rami_Pic.jpg" alt="Rami Mouro" width="1024" height="1024" loading="eager">
-        <figcaption><span class="dot" aria-hidden="true"></span>Edge AI · Colorado</figcaption>
-    </figure>
 </section>
 
-<section class="section" data-reveal>
-    <div class="section-heading">
-        <p class="eyebrow">About</p>
+<section class="section">
+    <div class="section-head">
         <h2>Engineer, mentor, and builder of communities.</h2>
     </div>
-    <div class="split">
+    <div class="section-body">
         <div class="prose">
             <p>
                 Living in Colorado where I built my foundation in embedded systems at the University of Colorado
@@ -74,137 +64,87 @@
                 Robotics. I mentor FRC Team 2972, serve as Colorado FTA for FTC, and speak at FIRST and Qualcomm events to help
                 students and mentors adopt modern edge AI tools.
             </p>
-            <div class="inline-links">
+            <p class="link-row">
                 <a href="https://podcasts.apple.com/us/podcast/rami-mouro/id1450870331?i=1000437179473" target="_blank" rel="noreferrer">Operation Code podcast</a>
                 <a href="https://cafirst.org/2024/10/30/qualcomm-career-chat-takeaways/" target="_blank" rel="noreferrer">California FIRST career chat</a>
-            </div>
+            </p>
         </div>
-        <aside class="card">
-            <p class="card-label">Current focus</p>
-            <ul class="check-list">
+        <div class="now">
+            <h3>Current focus</h3>
+            <ul class="now-list">
                 <li>Edge AI developer relations</li>
                 <li>Making advanced IoT chipsets and NPUs accessible to everyone</li>
                 <li>FIRST Robotics Vision Platform</li>
                 <li>Mentor enablement and workshops</li>
             </ul>
-        </aside>
+        </div>
     </div>
 </section>
 
-<section class="section" data-reveal>
-    <div class="heading-row">
-        <div class="section-heading">
-            <p class="eyebrow">Featured projects</p>
-            <h2>Selected work</h2>
-        </div>
-        <a class="arrow-link" href="/projects/">All write-ups</a>
+<section class="section">
+    <div class="section-head">
+        <h2>Selected work</h2>
+        <a class="text-link" href="/projects/">Read all write-ups</a>
     </div>
-    <div class="grid-2">
-        <article class="card is-link">
-            <div>
-                <h3><a class="stretched" href="/projects/#agentic-csa">FIRST Agentic CSA</a></h3>
-                <p class="card-kicker">AI-powered FRC documentation search</p>
-            </div>
+    <ul class="work">
+        <li class="work-item">
+            <h3><a href="/projects/#agentic-csa">FIRST Agentic CSA</a></h3>
+            <p class="kicker">AI-powered FRC documentation search</p>
             <p>
                 MCP server that unifies WPILib, REV, CTRE, Redux Robotics, and PhotonVision docs into a single natural
                 language search surface for FRC teams.
             </p>
-            <div class="badge-row">
-                <span class="badge">Python</span>
-                <span class="badge">MCP Protocol</span>
-                <span class="badge">VS Code Integration</span>
-            </div>
-            <div class="card-foot"><span class="arrow-link" aria-hidden="true">Full write-up</span></div>
-        </article>
-
-        <article class="card is-link">
-            <div>
-                <h3><a class="stretched" href="/projects/#shooter-selector">FRC Shooter Selector</a></h3>
-                <p class="card-kicker">Ballistics analysis and optimization tool</p>
-            </div>
+            <p class="stack"><span class="stack-label">Built with</span>Python, MCP Protocol, VS Code Integration</p>
+        </li>
+        <li class="work-item">
+            <h3><a href="/projects/#shooter-selector">FRC Shooter Selector</a></h3>
+            <p class="kicker">Ballistics analysis and optimization tool</p>
             <p>
                 Physics simulation toolkit for REBUILT (game element) shooters with drag modeling, motor torque analysis, and
                 plot-driven optimization outputs.
             </p>
-            <div class="badge-row">
-                <span class="badge">Python</span>
-                <span class="badge">Django</span>
-                <span class="badge">Plotly</span>
-            </div>
-            <div class="card-foot"><span class="arrow-link" aria-hidden="true">Full write-up</span></div>
-        </article>
-
-        <article class="card is-link">
-            <div>
-                <h3><a class="stretched" href="/projects/#rubik-tflite">Rubik TFLite</a></h3>
-                <p class="card-kicker">TFLite + libQnn on Qualcomm NPU</p>
-            </div>
+            <p class="stack"><span class="stack-label">Built with</span>Python, Django, Plotly</p>
+        </li>
+        <li class="work-item">
+            <h3><a href="/projects/#rubik-tflite">Rubik TFLite</a></h3>
+            <p class="kicker">TFLite + libQnn on Qualcomm NPU</p>
             <p>
                 Worked with a student to make Qualcomm NPU access easy using the TFLite libQnn delegate, with C and Python
                 demos for image transformation models.
             </p>
-            <div class="badge-row">
-                <span class="badge">C++</span>
-                <span class="badge">TFLite</span>
-                <span class="badge">QNN</span>
-                <span class="badge">Python</span>
-            </div>
-            <div class="card-foot"><span class="arrow-link" aria-hidden="true">Full write-up</span></div>
-        </article>
-
-        <article class="card is-link">
-            <div>
-                <h3><a class="stretched" href="/projects/#military-service">Military Service Leadership</a></h3>
-                <p class="card-kicker">Maintenance, logistics, and mission support</p>
-            </div>
+            <p class="stack"><span class="stack-label">Built with</span>C++, TFLite, QNN, Python</p>
+        </li>
+        <li class="work-item">
+            <h3><a href="/projects/#military-service">Military Service Leadership</a></h3>
+            <p class="kicker">Maintenance, logistics, and mission support</p>
             <p>
                 Deployed overseas on HIMARS maintenance while serving as a local interpreter. Led a 35-soldier platoon,
                 automated logistics workflows, and earned the Army Commendation Medal for hands-on repairs and system
-                reprogramming. Built <a class="link" href="/projects/#auto-xo">Auto XO</a> and
-                <a class="link" href="/projects/#dd-1750">DD Form 1750 automation</a> to streamline TOC and logistics
+                reprogramming. Built <a href="/projects/#auto-xo">Auto XO</a> and
+                <a href="/projects/#dd-1750">DD Form 1750 automation</a> to streamline TOC and logistics
                 workflows.
             </p>
-            <div class="badge-row">
-                <span class="badge">Platoon Leadership</span>
-                <span class="badge">Logistics Automation</span>
-                <span class="badge">Field Maintenance</span>
-            </div>
-            <div class="card-foot"><span class="arrow-link" aria-hidden="true">Full write-up</span></div>
-        </article>
-    </div>
-    <div class="banner">
-        <div>
-            <p class="card-label">Media</p>
-            <h3>Qualcomm YouTube talks and demos</h3>
+            <p class="stack"><span class="stack-label">Areas</span>Platoon Leadership, Logistics Automation, Field Maintenance</p>
+        </li>
+        <li class="work-item">
+            <h3><a href="/projects/#qualcomm-youtube">Qualcomm YouTube talks and demos</a></h3>
             <p>Short, practical sessions on edge AI tooling, robotics vision, and developer workflows.</p>
-        </div>
-        <a class="button ghost" href="/projects/#qualcomm-youtube">Watch the talks</a>
-    </div>
+        </li>
+    </ul>
 </section>
 
-<section class="feature" data-reveal>
-    <div class="feature-copy">
-        <p class="eyebrow">Games</p>
+<section class="band">
+    <div class="band-copy">
         <h2>Off the clock: family game night.</h2>
-        <p class="lead">Games for family and friends, running on our own server. No accounts, no ads — share a code and play.</p>
+        <p>Games for family and friends, running on our own server. No accounts, no ads — share a code and play.</p>
         <a class="button" href="/games/">See all games</a>
     </div>
-    <ul class="tile-list">
-        <li><a class="tile" href="/holdem/">
-            <span class="game-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3c-3.6 3.9-6 5.900-6 8.700 0 2 1.500 3.500 3.400 3.500.900 0 1.700-.3 2.200-.9-.2 1.600-.9 2.700-1.900 3.700h4.600c-1-1-1.700-2.100-1.900-3.700.5.6 1.300.9 2.200.9 1.900 0 3.400-1.500 3.400-3.500 0-2.800-2.400-4.800-6-8.700z"/></svg></span>
-            Texas Hold’em</a></li>
-        <li><a class="tile" href="/backgammon/">
-            <span class="game-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 4v16M5.5 4l1.75 7L9 4M15 4l1.75 7L18.5 4M5.5 20l1.75-7L9 20M15 20l1.75-7 1.75 7"/></svg></span>
-            Backgammon</a></li>
-        <li><a class="tile" href="/gin-rummy/">
-            <span class="game-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><rect x="4" y="6" width="10" height="14" rx="2" transform="rotate(-10 9 13)"/><rect x="10" y="4" width="10" height="14" rx="2" transform="rotate(10 15 11)"/></svg></span>
-            Gin Rummy</a></li>
-        <li><a class="tile" href="/yahtzee/">
-            <span class="game-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="4" width="16" height="16" rx="3.5"/><g fill="currentColor" stroke="none"><circle cx="8.5" cy="8.5" r="1.3"/><circle cx="15.5" cy="8.5" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="8.5" cy="15.5" r="1.3"/><circle cx="15.5" cy="15.5" r="1.3"/></g></svg></span>
-            Yahtzee</a></li>
-        <li><a class="tile" href="/games/sudoku/">
-            <span class="game-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9.33 4v16M14.67 4v16M4 9.33h16M4 14.67h16"/></svg></span>
-            Sudoku</a></li>
+    <ul class="game-list">
+        <li><a class="game" href="/holdem/"><svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3c-3.6 3.9-6 5.900-6 8.700 0 2 1.500 3.500 3.400 3.500.900 0 1.700-.3 2.200-.9-.2 1.600-.9 2.700-1.900 3.700h4.600c-1-1-1.700-2.100-1.900-3.700.5.6 1.300.9 2.200.9 1.900 0 3.400-1.500 3.400-3.500 0-2.800-2.400-4.800-6-8.700z"/></svg>Texas Hold’em</a></li>
+        <li><a class="game" href="/backgammon/"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 4v16M5.5 4l1.75 7L9 4M15 4l1.75 7L18.5 4M5.5 20l1.75-7L9 20M15 20l1.75-7 1.75 7"/></svg>Backgammon</a></li>
+        <li><a class="game" href="/gin-rummy/"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><rect x="4" y="6" width="10" height="14" rx="2" transform="rotate(-10 9 13)"/><rect x="10" y="4" width="10" height="14" rx="2" transform="rotate(10 15 11)"/></svg>Gin Rummy</a></li>
+        <li><a class="game" href="/yahtzee/"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="4" width="16" height="16" rx="3.5"/><g fill="currentColor" stroke="none"><circle cx="8.5" cy="8.5" r="1.3"/><circle cx="15.5" cy="8.5" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="8.5" cy="15.5" r="1.3"/><circle cx="15.5" cy="15.5" r="1.3"/></g></svg>Yahtzee</a></li>
+        <li><a class="game" href="/games/sudoku/"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9.33 4v16M14.67 4v16M4 9.33h16M4 14.67h16"/></svg>Sudoku</a></li>
     </ul>
 </section>
 
@@ -214,7 +154,7 @@
         <p>Open to collaboration, mentoring, and conversations about edge AI in robotics.</p>
         <div class="button-row">
             <a class="button" href="https://www.linkedin.com/in/rami-mouro/" target="_blank" rel="noreferrer">LinkedIn</a>
-            <a class="button ghost" href="https://github.com/ramalamadingdong" target="_blank" rel="noreferrer">GitHub</a>
+            <a class="button button-quiet" href="https://github.com/ramalamadingdong" target="_blank" rel="noreferrer">GitHub</a>
         </div>
     </div>
     <div class="footer-meta">
