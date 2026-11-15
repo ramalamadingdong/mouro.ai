@@ -2,7 +2,7 @@
    The games hub and Sudoku are self-contained and do not load this file.
 
    The look: aluminium-grey ground, steel ink, safety yellow as the only accent,
-   one typeface (Archivo, set wide for headings). The name across the top of the
+   one typeface (Archivo). The name across the top of the
    home page is the one loud element; yellow is kept for the things you can
    press and for what is under the pointer. */
 
@@ -31,7 +31,7 @@
 
     --measure: 64ch;
     --gutter: 24px;
-    --wide: 125%;
+    --wide: 100%;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -98,7 +98,7 @@ img {
 }
 
 [id] {
-    scroll-margin-top: 24px;
+    scroll-margin-top: 92px;
 }
 
 :focus-visible {
@@ -129,10 +129,19 @@ img {
 
 /* ── Header ─────────────────────────────────────────────────────────────── */
 
+/* Stays at the top while scrolling, so Home is always in reach. */
 .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--ground);
+    border-bottom: 1px solid var(--line);
+}
+
+.site-header-inner {
     max-width: 1168px;
     margin: 0 auto;
-    padding: 22px var(--gutter);
+    padding: 18px var(--gutter);
     display: flex;
     flex-wrap: wrap;
     align-items: baseline;
@@ -174,7 +183,7 @@ img {
 .page {
     max-width: 1168px;
     margin: 0 auto;
-    padding: 0 var(--gutter) 72px;
+    padding: 40px var(--gutter) 72px;
     display: flex;
     flex-direction: column;
     gap: 112px;
@@ -289,11 +298,12 @@ img {
     align-items: end;
 }
 
-/* The name runs the full width of the page. The divisor is the width of
-   "Rami Mouro" in ems at this weight and width, so it always fits one line. */
+/* The name fills the width on a phone and stops growing on larger screens.
+   The divisor is the width of "Rami Mouro" in ems at this weight, so it
+   always fits one line. */
 .name {
     grid-column: 1 / -1;
-    font-size: min(calc((100vw - 2 * var(--gutter)) / 7.1), 9.95rem);
+    font-size: min(calc((100vw - 2 * var(--gutter)) / 5.65), 7.5rem);
     font-weight: 800;
     line-height: 0.92;
     letter-spacing: -0.035em;
@@ -509,7 +519,6 @@ img {
     display: flex;
     flex-direction: column;
     gap: 22px;
-    padding-top: 24px;
 }
 
 .page-title h1 {
@@ -529,7 +538,7 @@ img {
 
 .index {
     position: sticky;
-    top: 24px;
+    top: 92px;
     padding-top: 28px;
     border-top: 2px solid var(--ink);
 }
@@ -820,15 +829,8 @@ img {
 }
 
 @media (max-width: 600px) {
-    /* Wide headings read as stretched on a narrow screen: set them at normal
-       width here, which also lets the name stand taller. */
     :root {
         --gutter: 20px;
-        --wide: 100%;
-    }
-
-    .name {
-        font-size: calc((100vw - 2 * var(--gutter)) / 5.65);
     }
 
     body {
@@ -839,17 +841,21 @@ img {
         gap: 72px;
     }
 
-    .site-header {
-        padding-top: 16px;
-        padding-bottom: 16px;
+    .site-header-inner {
+        padding-top: 14px;
+        padding-bottom: 14px;
+    }
+
+    .page {
+        padding-top: 28px;
     }
 
     .nav {
         gap: 4px 18px;
     }
 
-    /* On the home page the name is the headline right below; don't say it twice. */
-    .wordmark[aria-current="page"] {
+    /* The nav's Home link does the wordmark's job; keep the bar to one row. */
+    .wordmark {
         display: none;
     }
 
