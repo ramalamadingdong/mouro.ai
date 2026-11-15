@@ -1,0 +1,92 @@
+/* The board. Seat colours come from --ink-N / --wash-N in tokens.css. */
+
+.board {
+  display: block;
+  width: 100%;
+  height: auto;
+  /* Never taller than the screen leaves room for: the scoreboard above and
+     the status line below. `svh` so the iOS address bar is accounted for. */
+  max-height: calc(100svh - 15rem);
+  touch-action: manipulation;
+  overflow: visible;
+}
+
+[data-seat='0'] { --ink: var(--ink-0); --wash: var(--wash-0); }
+[data-seat='1'] { --ink: var(--ink-1); --wash: var(--wash-1); }
+[data-seat='2'] { --ink: var(--ink-2); --wash: var(--wash-2); }
+[data-seat='3'] { --ink: var(--ink-3); --wash: var(--wash-3); }
+
+.board__dots circle {
+  fill: var(--dot);
+}
+
+.board__line,
+.board__preview,
+.board__halo {
+  stroke: var(--ink, var(--accent));
+  stroke-width: 9;
+  stroke-linecap: round;
+}
+
+/* The newest line draws itself in, like a pen stroke. 100 is longer than any
+   line (CELL), so the dash covers it whole. */
+.board__line--last {
+  stroke-dasharray: 100;
+  animation: board-draw var(--dur-slow) var(--ease) both;
+}
+
+@keyframes board-draw {
+  from {
+    stroke-dashoffset: 100;
+  }
+}
+
+/* A soft highlight under the most recent line, so you can see what the
+   other player just did after looking away. */
+.board__halo {
+  stroke-width: 20;
+  stroke-linecap: butt;
+  opacity: 0.2;
+}
+
+.board__preview {
+  opacity: 0.45;
+  stroke-dasharray: 2 15;
+}
+
+.board__box rect {
+  fill: var(--wash);
+  animation: board-claim var(--dur-slow) var(--ease) both;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.board__box text {
+  fill: var(--ink);
+  font-family: var(--font-display);
+  font-size: 44px;
+  font-weight: var(--weight-heavy);
+  animation: board-claim var(--dur-slow) var(--ease) both;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@keyframes board-claim {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+
+.board__hits polygon {
+  fill: transparent;
+  cursor: pointer;
+  outline: none;
+}
+
+/* Keyboard focus: show the focused diamond faintly (the preview line shows
+   which line it is). */
+.board__hits polygon:focus-visible {
+  fill: var(--line-hint);
+  opacity: 0.25;
+}

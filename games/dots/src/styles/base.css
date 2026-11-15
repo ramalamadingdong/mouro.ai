@@ -1,0 +1,223 @@
+/*
+ * Global base styles: a light reset, the page chrome, and accessibility
+ * defaults. Component styles live next to their components; nothing
+ * app-specific belongs here.
+ *
+ * Tokens are imported here rather than left to the entry module so that this
+ * file is valid on its own and the cascade order is guaranteed — a bare
+ * `var(--page)` resolving to nothing paints the page white, which on a dark
+ * theme is a full-screen flash. Importing tokens.css twice (here and from
+ * main.tsx) is harmless; importing it *after* this file would not be.
+ */
+@import '../theme/tokens.css';
+
+/* border-box everywhere: seats and cards are fixed-size boxes with borders. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* The reset. Deliberately small — we drop the browser's default margins on
+   things we always style ourselves, and nothing else. */
+body,
+h1,
+h2,
+h3,
+h4,
+p,
+figure,
+blockquote,
+dl,
+dd,
+ul,
+ol {
+  margin: 0;
+}
+
+ul,
+ol {
+  padding: 0;
+  list-style: none;
+}
+
+html {
+  /* Both html and body carry the room colour — see the note on body. */
+  background: var(--page);
+
+  /*
+   * --ui-scale is the one knob that scales the whole rem-based token system
+   * (type AND spacing) together. It stays at 1 in this app; it is applied
+   * here so the screens ported from yahtzee keep working unchanged.
+   */
+  font-size: calc(100% * var(--ui-scale));
+
+  /* Tell form controls and scrollbars we are a dark UI. */
+  color-scheme: light;
+
+  /* iOS rotates to landscape and helpfully inflates text. We size everything
+     off one root value, so let it not. */
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  min-height: 100svh;
+
+  /*
+   * Locked to the room colour. Overscroll on iOS reveals the element behind
+   * the body, so this must be on BOTH html and body or a rubber-band bounce
+   * shows a white band above the header.
+   */
+  /* Squared exercise-book paper: a faint 24px grid, fixed so it does not
+     slide under the board while the page scrolls. */
+  background-color: var(--page);
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 24px 24px;
+  background-attachment: fixed;
+  color: var(--text);
+
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+  font-size: var(--size-body);
+  line-height: 1.45;
+
+  /* Numbers are half this UI (stacks, bets, the pot). Tabular figures stop
+     them jittering as chips move. */
+  font-variant-numeric: tabular-nums;
+
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+
+  /*
+   * Safe-area insets: on a notched iPhone in landscape the home indicator and
+   * the sensor housing both intrude, and this app is played in the hand. The
+   * `max()` keeps a sane minimum on devices that report 0.
+   */
+  padding-top: env(safe-area-inset-top);
+  padding-right: max(var(--space-sm), env(safe-area-inset-right));
+  padding-bottom: max(var(--space-sm), env(safe-area-inset-bottom));
+  padding-left: max(var(--space-sm), env(safe-area-inset-left));
+
+  /* A card table is a tap target, not a text document: a stray double-tap
+     that selects a seat label looks broken. Text that IS meant to be read or
+     copied (the room code) opts back in via .selectable. */
+  -webkit-user-select: none;
+  user-select: none;
+
+  /* Kill the grey flash iOS paints over any tapped element. */
+  -webkit-tap-highlight-color: transparent;
+
+  /* The whole game fits one screen; the page itself must never rubber-band. */
+  overscroll-behavior-y: none;
+}
+
+/* Opt back in to selection for content a player will want to copy. */
+.selectable {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* Media never overflows its column. */
+img,
+svg,
+video,
+canvas {
+  display: block;
+  max-width: 100%;
+}
+
+/* Form controls do not inherit type by default; on iOS they render in
+   Helvetica at 11px if you let them. */
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+}
+
+button {
+  border: 0;
+  padding: 0;
+  background: none;
+  cursor: pointer;
+  /* Safari gives buttons a default text-align: center that differs from other
+     elements; pin it so button styles are predictable. */
+  text-align: inherit;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+a {
+  color: var(--accent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.15em;
+}
+
+/*
+ * Focus rings. `:focus-visible` only, so a mouse click on a button does not leave
+ * a ring behind, but keyboard and switch-control users always see one. The
+ * outline is drawn OUTSIDE the box (offset) so it stays visible on the dark
+ * brass-on-walnut combination that the ring would otherwise disappear into.
+ */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* Remove the default ring only where we have replaced it above — never
+   blanket-remove it. */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/*
+ * Screen-reader-only text. The 1px clip-path technique rather than
+ * `display: none` (which removes it from the accessibility tree) or a negative
+ * text-indent (which breaks in RTL).
+ */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/*
+ * Vestibular safety: an OS-level "reduce motion" preference kills every
+ * animation and transition globally (cards sliding in, the thinking pulse)
+ * rather than trusting each component to check.
+ *
+ * `0.01ms` instead of `0`: a zero-duration animation may never fire its
+ * `animationend`/`transitionend` event in some engines, and any component that
+ * advances its state on that event would hang forever.
+ *
+ * All motion in this app is CSS, so this block is the whole implementation of
+ * the preference. The PACING of computer players is not motion and is kept.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

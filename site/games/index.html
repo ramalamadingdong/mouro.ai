@@ -120,6 +120,9 @@
   .backgammon { --a: #1f5a47; --b: #12362a; --ink: #e0b64a; }
   .gin        { --a: #8a3443; --b: #561d28; --ink: #f5f0e1; }
   .yahtzee    { --a: #2d3360; --b: #171a30; --ink: #f0a830; }
+  .dots       { --a: #5b3a7a; --b: #2e1c42; --ink: #f2a35e; }
+  /* An odd card out at the end of the shelf takes the whole row. */
+  .shelf > .game:last-child:nth-child(even) { grid-column: 1 / -1; }
   .sudoku     { --a: #27437a; --b: #14213f; --ink: #7bb8ff; }
 
   .links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
@@ -197,6 +200,15 @@
           <p>Classic two-player gin. Share a room code, or play Marmalade, a computer cat.</p>
           <div class="meta">
             <div class="tags"><span>2 players</span><span>Online</span><span>vs computer cat</span></div>
+            <span class="play">Play</span>
+          </div>
+        </a>
+        <a class="game dots" href="/dots/">
+          <img src="/dots/icons/icon-192.png" alt="" width="92" height="92">
+          <h3>Dots and Boxes</h3>
+          <p>Draw a line, close a box, go again. Quick rounds with up to four friends, or outfox the computer cats.</p>
+          <div class="meta">
+            <div class="tags"><span>2–4 players</span><span>Online</span><span>vs computer cats</span></div>
             <span class="play">Play</span>
           </div>
         </a>

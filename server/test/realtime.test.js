@@ -40,6 +40,7 @@ before(async () => {
       { name: 'backgammon', rules: rules('games/backgammon/database.rules.json'), reap: ['bgRooms'] },
       { name: 'yahtzee', rules: rules('games/yahtzee/database.rules.json'), reap: ['rooms'] },
       { name: 'holdem', rules: rules('games/holdem/database.rules.json'), reap: ['rooms'] },
+      { name: 'dots', rules: rules('games/dots/database.rules.json'), reap: ['rooms'] },
     ],
   });
   await new Promise((r) => server.http.listen(0, '127.0.0.1', r));
@@ -313,6 +314,88 @@ describe('holdem rules', () => {
     const outsider = await player('holdem');
     await denied(set(state(outsider), holdemState(uids, { version: 2, toAct: 2, by: outsider.uid, kind: 'away' })));
     await set(state(b), holdemState(uids, { version: 2, toAct: 2, by: b.uid, kind: 'away' }));
+  });
+});
+
+describe('dots rules', () => {
+  // A structurally valid 2x2 GameState for `uids`, as the engine would write it.
+  // The rules bound shape and authority, not the game, so the lines are arbitrary.
+  const dotsState = (uids, { version, toAct = null, by, kind, edges = '............', boxes = '....' }) => ({
+    version,
+    config: { cols: 2, rows: 2 },
+    players: uids.map((uid, i) => ({ uid, name: `P${i}`, isHuman: true, sitOut: false })),
+    edges,
+    boxes,
+    phase: toAct === null ? 'gameover' : 'playing',
+    starter: 0,
+    gameNo: 1,
+    ...(toAct === null ? { turnUid: '*' } : { toAct, turnUid: uids[toAct] }),
+    lastMove: { by, kind, seat: 0, edge: 3, closed: 0 },
+  });
+
+  async function room(code, seats = 3) {
+    const players = [];
+    for (let i = 0; i < seats; i++) players.push(await player('dots'));
+    const [host] = players;
+    const now = Date.now();
+    await set(ref(host.db, `rooms/${code}`), {
+      meta: { host: host.uid, status: 'waiting', createdAt: now, updatedAt: now },
+      seats: { [host.uid]: `${now}|Host` },
+    });
+    for (const p of players.slice(1)) {
+      await update(ref(p.db, `rooms/${code}`), { [`seats/${p.uid}`]: `${now}|Guest`, 'meta/updatedAt': serverTimestamp() });
+    }
+    const uids = players.map((p) => p.uid);
+    const state = (p) => ref(p.db, `rooms/${code}/state`);
+    return { players, uids, state };
+  }
+
+  test('only the host writes the first state, and it must be a start', async () => {
+    const { players: [host, guest], uids, state } = await room('DTS22', 2);
+    await denied(set(state(guest), dotsState(uids, { version: 1, toAct: 0, by: guest.uid, kind: 'start' })));
+    await denied(set(state(host), dotsState(uids, { version: 1, toAct: 0, by: host.uid, kind: 'line' })));
+    await denied(set(state(host), dotsState(uids, { version: 1, toAct: 0, by: guest.uid, kind: 'start' })));
+    await set(state(host), dotsState(uids, { version: 1, toAct: 0, by: host.uid, kind: 'start' }));
+  });
+
+  test('only the player on turn draws; version rises; the shape is closed', async () => {
+    const { players: [host, a, b], uids, state } = await room('DTS44');
+    await set(state(host), dotsState(uids, { version: 1, toAct: 1, by: host.uid, kind: 'start' }));
+    await denied(set(state(b), dotsState(uids, { version: 2, toAct: 2, by: b.uid, kind: 'line' })));
+    await denied(set(state(host), dotsState(uids, { version: 2, toAct: 2, by: host.uid, kind: 'line' })));
+    await denied(set(state(a), dotsState(uids, { version: 1, toAct: 2, by: a.uid, kind: 'line' })));
+    await denied(set(state(a), dotsState(uids, { version: 2, toAct: 2, by: b.uid, kind: 'line' })));
+    await denied(set(state(a), { ...dotsState(uids, { version: 2, toAct: 2, by: a.uid, kind: 'line' }), turnUid: a.uid }));
+    await denied(set(state(a), { ...dotsState(uids, { version: 2, toAct: 2, by: a.uid, kind: 'line' }), junk: 1 }));
+    await denied(set(state(a), dotsState(uids, { version: 2, toAct: 2, by: a.uid, kind: 'line', edges: '...x........' })));
+    await denied(set(state(a), dotsState(uids, { version: 2, toAct: 2, by: a.uid, kind: 'rematch' })));
+    await set(state(a), dotsState(uids, { version: 2, toAct: 2, by: a.uid, kind: 'line', edges: '...1........' }));
+    await denied(set(ref(b.db, 'rooms/DTS44/state/edges'), '222222222222'));
+    const outsider = await player('dots');
+    await denied(set(state(outsider), dotsState(uids, { version: 3, toAct: 0, by: outsider.uid, kind: 'line' })));
+  });
+
+  test('after the game any seated player may start a rematch, and only a rematch', async () => {
+    const { players: [host, a, b], uids, state } = await room('DTS55');
+    await set(state(host), dotsState(uids, { version: 1, toAct: 0, by: host.uid, kind: 'start' }));
+    await set(state(host), dotsState(uids, { version: 2, by: host.uid, kind: 'line' })); // game over
+    await denied(set(state(b), dotsState(uids, { version: 3, toAct: 1, by: b.uid, kind: 'line' })));
+    await remove(ref(a.db, `rooms/DTS55/seats/${a.uid}`));
+    await denied(set(state(a), dotsState(uids, { version: 3, toAct: 1, by: a.uid, kind: 'rematch' })));
+    await set(state(b), dotsState(uids, { version: 3, toAct: 1, by: b.uid, kind: 'rematch' }));
+  });
+
+  test('away: another player may draw for the one on turn only while their presence is gone', async () => {
+    const { players: [host, a, b], uids, state } = await room('DTS66');
+    await set(state(host), dotsState(uids, { version: 1, toAct: 1, by: host.uid, kind: 'start' }));
+    const presence = ref(a.db, `rooms/DTS66/presence/${a.uid}`);
+    await set(presence, serverTimestamp());
+    await denied(set(state(b), dotsState(uids, { version: 2, toAct: 2, by: b.uid, kind: 'away' })));
+    await remove(presence);
+    await denied(set(state(b), dotsState(uids, { version: 2, toAct: 2, by: b.uid, kind: 'line' })));
+    const outsider = await player('dots');
+    await denied(set(state(outsider), dotsState(uids, { version: 2, toAct: 2, by: outsider.uid, kind: 'away' })));
+    await set(state(b), dotsState(uids, { version: 2, toAct: 2, by: b.uid, kind: 'away' }));
   });
 });
 

@@ -25,6 +25,7 @@ const dirs = {
   'gin-rummy': join(repo, 'games/gin-rummy/dist'),
   yahtzee: join(repo, 'games/yahtzee/dist'),
   holdem: join(repo, 'games/holdem/dist'),
+  dots: join(repo, 'games/dots/dist'),
   site: join(repo, 'site'),
 };
 
@@ -65,12 +66,12 @@ function firstFile(root, candidates) {
 }
 
 function resolveFile(pathname) {
-  const m = pathname.match(/^\/(backgammon|gin-rummy|yahtzee|holdem)(\/.*)?$/);
+  const m = pathname.match(/^\/(backgammon|gin-rummy|yahtzee|holdem|dots)(\/.*)?$/);
   if (m) {
     const [, app, rest = '/'] = m;
     const root = dirs[app];
     const dyn = rest.match(/^\/(join|lobby|game)\/[A-HJKMNP-Z2-9]{5}\/?$/);
-    const vite = app === 'yahtzee' || app === 'holdem';
+    const vite = app === 'yahtzee' || app === 'holdem' || app === 'dots';
     if (dyn && !vite) return firstFile(root, [`/${dyn[1]}/[code].html`, '/index.html']);
     if (vite) return firstFile(root, [rest, '/index.html']);
     return firstFile(root, [rest, `${rest}.html`, `${rest}/index.html`, '/index.html']);
@@ -91,7 +92,7 @@ const server = createServer((req, res) => {
   }
   const old = p.match(/^\/gin-rummey(\/.*)?$/);
   if (old) return res.writeHead(301, { location: `/gin-rummy${old[1] ?? '/'}${url.search}` }).end();
-  if (/^\/(backgammon|gin-rummy|yahtzee|holdem)$/.test(p)) return res.writeHead(301, { location: `${p}/` }).end();
+  if (/^\/(backgammon|gin-rummy|yahtzee|holdem|dots)$/.test(p)) return res.writeHead(301, { location: `${p}/` }).end();
   const file = resolveFile(p);
   if (!file) return res.writeHead(404).end('not found');
   res.writeHead(200, { 'content-type': types[extname(file)] ?? 'application/octet-stream' });

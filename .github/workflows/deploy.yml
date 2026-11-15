@@ -53,7 +53,7 @@ jobs:
           set -euo pipefail
           mkdir -p out/web out/rt/server out/rt/games
           cp -r site out/web/site
-          for g in backgammon gin-rummy yahtzee holdem; do
+          for g in backgammon gin-rummy yahtzee holdem dots; do
             cp -r "dist-$g" "out/web/$g"
             mkdir -p "out/rt/games/$g"
             cp "games/$g/database.rules.json" "out/rt/games/$g/"
@@ -96,7 +96,7 @@ jobs:
         if: steps.cfg.outputs.ready == 'true'
         run: |
           set -euo pipefail
-          for u in / /games/ /backgammon/ /gin-rummy/ /yahtzee/ /holdem/ /rt/health; do
+          for u in / /games/ /backgammon/ /gin-rummy/ /yahtzee/ /holdem/ /dots/ /rt/health; do
             code=$(curl -s -o /dev/null -w '%{http_code}' "https://mouro.ai$u")
             echo "$u → $code"; [ "$code" = 200 ]
           done

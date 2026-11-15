@@ -10,6 +10,7 @@ and the small realtime server the games play through. One repo, one VPS.
 | [`games/gin-rummy/`](games/gin-rummy/) | Two-player gin rummy (Expo PWA, Expo Go on phones) | `/gin-rummy/` |
 | [`games/yahtzee/`](games/yahtzee/) | 1–4 player Yahtzee (Vite PWA) | `/yahtzee/` |
 | [`games/holdem/`](games/holdem/) | 2–6 player Texas Hold'em online, or solo against computer cats (Vite PWA) | `/holdem/` |
+| [`games/dots/`](games/dots/) | 2–4 player Dots and Boxes online, or solo against computer cats (Vite PWA) | `/dots/` |
 | [`server/`](server/) | Realtime server: WebSocket + SQLite, enforces each game's rules | `/rt` |
 | [`packages/realtime/`](packages/realtime/) | `@mouro/realtime`, the client the games use | — |
 | [`infra/`](infra/) | Caddyfile, systemd unit, VPS provisioning, deploy activation | — |

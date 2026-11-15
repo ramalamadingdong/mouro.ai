@@ -1,0 +1,113 @@
+/*
+ * Design tokens — the canonical list. Every other stylesheet uses these names
+ * and invents no colours, sizes or durations of its own. The non-colour scales
+ * (space, radius, type, motion) are the same names and steps as the other
+ * Vite games: the shared screens (join, lobby, code input) were ported from
+ * them and read these tokens unchanged.
+ *
+ * The palette is a school notebook: cream squared paper, pencil-grey dots,
+ * and one ink per player. Blue ink is also the accent for anything you press.
+ *
+ * CONTRAST (WCAG: 4.5:1 body text, 3:1 large text / UI), against --page.
+ */
+
+:root {
+  /* ---- Paper ----------------------------------------------------------- */
+  --page: #f5efe0;
+  /* A card lying on the page: notices, rows. */
+  --page-raised: #fbf7ec;
+  /* Input wells. Lighter than the page, like a fresh sheet. */
+  --page-deep: #fffdf8;
+  /* Panels and modals. */
+  --surface: #fffaf0;
+  /* Secondary buttons, selected segments. */
+  --surface-raised: #ece3cf;
+  /* Hairlines. DECORATION ONLY. */
+  --border: #d3c6a8;
+  /* The faint squares printed on the paper. */
+  --grid-line: rgb(70 110 170 / 0.12);
+  /* Shadows are warm pencil-grey, never black. */
+  --shadow: rgb(70 55 30 / 0.16);
+
+  /* ---- Accent (blue ink) ---------------------------------------------- */
+  /* 7.0:1 on --page; white on it is 7.6:1. */
+  --accent: #2a4fa8;
+  --accent-dim: #5670b3;
+  --accent-bright: #3560c8;
+
+  /* ---- Status ---------------------------------------------------------- */
+  --good: #2c7a4b; /* 5.0:1 */
+  --warn: #8a5d00; /* 5.3:1 */
+  --bad: #b2372a; /* 5.6:1 */
+
+  /* ---- Text (pencil) --------------------------------------------------- */
+  --text: #2b2720; /* 13.7:1 */
+  --text-muted: #554d3e; /* 7.6:1 */
+  --text-hint: #6a604d; /* 5.6:1 */
+  /* FAILS AA for body text — placeholders and decoration only. */
+  --text-faint: #a0957d;
+  --text-on-accent: #ffffff;
+
+  /* ---- The board ------------------------------------------------------- */
+  --dot: #3a342b;
+  /* An undrawn line you can draw, while hovering or pressing it. */
+  --line-hint: rgb(42 79 168 / 0.35);
+
+  /* ---- One ink per seat ------------------------------------------------ */
+  /* Lines in full ink; claimed boxes in a light wash of the same colour.
+     The four differ in lightness as well as hue, and every claimed box also
+     carries its owner's initial, so colour is never the only cue. */
+  --ink-0: #2a4fa8; /* blue */
+  --ink-1: #c23b2e; /* red */
+  --ink-2: #23804f; /* green */
+  --ink-3: #8a46b8; /* purple */
+  --wash-0: rgb(42 79 168 / 0.16);
+  --wash-1: rgb(194 59 46 / 0.16);
+  --wash-2: rgb(35 128 79 / 0.16);
+  --wash-3: rgb(138 70 184 / 0.16);
+
+  /* ---- Space ----------------------------------------------------------- */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 0.75rem;
+  --space-lg: 1rem;
+  --space-xl: 1.5rem;
+  --space-xxl: 2rem;
+  --space-section: 3rem;
+
+  /* ---- Radius ---------------------------------------------------------- */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 14px;
+  --radius-xl: 22px;
+  --radius-pill: 999px;
+
+  /* ---- Type ------------------------------------------------------------ */
+  --size-xs: 0.6875rem;
+  --size-sm: 0.8125rem;
+  --size-body: 0.9375rem;
+  --size-label: 1rem; /* iOS zooms inputs under 16px */
+  --size-md: 1.125rem;
+  --size-lg: 1.375rem;
+  --size-title: 1.75rem;
+  --size-xl: 2.25rem;
+  --size-hero: 4.5rem;
+
+  --weight-medium: 500;
+  --weight-bold: 700;
+  --weight-heavy: 800;
+  /* Headings in the platform's rounded face: friendly, like a felt-tip
+     heading in an exercise book. System fonts only — no webfont request. */
+  --font-display: ui-rounded, 'SF Pro Rounded', 'Hiragino Maru Gothic ProN', 'Arial Rounded MT Bold', 'Nunito',
+    system-ui, sans-serif;
+
+  /* ---- Motion ---------------------------------------------------------- */
+  --dur-fast: 120ms;
+  --dur-base: 220ms;
+  --dur-slow: 420ms;
+  --ease: cubic-bezier(0.2, 0.8, 0.25, 1);
+
+  /* ---- Layout ---------------------------------------------------------- */
+  --ui-scale: 1;
+  --table-max-width: 560px;
+}
