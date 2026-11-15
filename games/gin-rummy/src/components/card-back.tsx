@@ -2,6 +2,7 @@ import { Image } from 'expo-image';
 import { memo } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { CatFace, COATS, type CatId } from '@/components/cat-face';
 import { CARD_WIDTH, CARD_HEIGHT } from '@/components/playing-card';
 import { useSettingsStore } from '@/store/settingsStore';
 import { card as cardColors } from '@/theme/colors';
@@ -15,16 +16,71 @@ export type CardBackProps = {
    * Explicit back image to render. Pass the OPPONENT's synced back here so their
    * face-down cards show THEIR photo, not this device's. Omit (`undefined`) to
    * use this device's own `customCardBack`; pass `null` to force the default
-   * lattice regardless of local settings.
+   * lattice regardless of local settings. `cat:<id>` (see `catDeck`) draws that
+   * computer cat's own deck.
    */
   uri?: string | null;
 };
+
+/** The `uri` that asks for a computer cat's deck instead of a photo. */
+export function catDeck(cat: CatId): string {
+  return `cat:${cat}`;
+}
+
+function catFromUri(uri: string | null | undefined): CatId | null {
+  if (!uri?.startsWith('cat:')) return null;
+  const id = uri.slice(4);
+  return id in COATS ? (id as CatId) : null;
+}
 
 function CardBackBase({ width = CARD_WIDTH, height = CARD_HEIGHT, uri }: CardBackProps) {
   const ownBack = useSettingsStore((s) => s.customCardBack);
   // `undefined` means "no override" → fall back to this device's own back.
   const customBack = uri === undefined ? ownBack : uri;
   const radius = Math.max(3, Math.round(width * 0.12));
+  const cat = catFromUri(customBack);
+
+  // A computer cat's deck: its coat colour, a lattice in its markings, and its
+  // face on a cream medallion in the middle.
+  if (cat) {
+    const coat = COATS[cat];
+    const ink = coat.stripe ?? '#f6f1e7';
+    const unit = Math.max(8, Math.round(width * 0.34));
+    const cells = Math.ceil(width / unit) * Math.ceil(height / unit);
+    const diamond = Math.round(unit * 0.62);
+    const medal = Math.round(width * 0.78);
+    return (
+      <View
+        style={[styles.back, { width, height, borderRadius: radius, backgroundColor: coat.fur, borderColor: ink }]}
+        accessibilityElementsHidden
+      >
+        <View style={styles.lattice} pointerEvents="none">
+          {Array.from({ length: cells }).map((_, i) => (
+            <View key={i} style={{ width: unit, height: unit, alignItems: 'center', justifyContent: 'center' }}>
+              <View style={[styles.diamond, { width: diamond, height: diamond, borderColor: ink }]} />
+            </View>
+          ))}
+        </View>
+        <View style={[styles.inset, { borderRadius: Math.max(2, radius - 3), borderColor: ink }]} />
+        <View style={styles.medalWrap} pointerEvents="none">
+          <View
+            style={{
+              width: medal,
+              height: medal,
+              borderRadius: medal / 2,
+              backgroundColor: '#f6f1e7',
+              borderWidth: Math.max(1, width * 0.03),
+              borderColor: ink,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <CatFace cat={cat} size={Math.round(medal * 0.86)} />
+          </View>
+        </View>
+      </View>
+    );
+  }
 
   // A player's own photo, center-cropped to fill the card at any size. The
   // rounded/neutral frame + inset ring keep it reading as a card, not a sticker.
@@ -81,6 +137,11 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: cardColors.backAccent,
     overflow: 'hidden', // clip the lattice / photo to the rounded corners
+  },
+  medalWrap: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   photoBack: {
     // Neutral frame so an arbitrary photo doesn't clash with the felt-red back.

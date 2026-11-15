@@ -11,6 +11,7 @@ import { MatchEndModal } from '@/components/board/match-end-modal';
 import { MoveControls } from '@/components/board/move-controls';
 import { PlayerStrip } from '@/components/board/opponent-bar';
 import { TurnBanner } from '@/components/board/turn-banner';
+import type { CatId } from '@/components/cat-face';
 import { otherSeat, pipCount } from '@/engine/board';
 import { consumedDice, previewDraft } from '@/engine/moves';
 import type { GameState, Move, Seat, Step } from '@/engine/types';
@@ -46,6 +47,8 @@ export type BackgammonBoardProps = {
   rematchVotes?: Record<string, boolean>;
   /** Solo: a rematch takes effect immediately, with nobody to vote. */
   soloRematch?: boolean;
+  /** Solo only: the computer cat in the opponent's chair, drawn by its name. */
+  opponentCat?: CatId;
   /** Omitted in solo, which hides the whole reaction UI. */
   onEmote?: (emoji: string) => void;
   myEmote?: { emoji: string; n: number } | null;
@@ -76,6 +79,7 @@ export function BackgammonBoard({
   connected = true,
   opponentOnline = true,
   opponentTurnLabel,
+  opponentCat,
   opponentThinking = false,
   rematchVotes = {},
   soloRematch = false,
@@ -258,6 +262,7 @@ export function BackgammonBoard({
           online={opponentOnline}
           active={state.turn === them && state.phase !== 'gameOver' && state.phase !== 'matchOver'}
           side="top"
+          cat={opponentCat}
         />
 
         <View style={styles.boardArea}>

@@ -87,7 +87,7 @@ export default function HomeScreen() {
   return (
     <Screen center>
       <Text style={styles.title}>Gin Rummy</Text>
-      <Text style={styles.subtitle}>Two-player online · or vs computer</Text>
+      <Text style={styles.subtitle}>Two-player online · or vs a computer cat</Text>
 
       {!isOnlineConfigured && (
         <View style={styles.notice}>
@@ -128,7 +128,7 @@ export default function HomeScreen() {
         />
         {/* Offline — intentionally NOT gated on Firebase/auth readiness. */}
         <Button
-          title="Play vs Computer"
+          title="Play vs Marmalade the cat"
           onPress={() => router.push('/solo')}
           variant="secondary"
           style={styles.action}

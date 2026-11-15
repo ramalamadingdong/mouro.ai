@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
 import { DIFFICULTIES, DIFFICULTY_BLURB, DIFFICULTY_LABEL } from '@/ai/difficulty';
 import { useSettingsStore } from '@/store/settingsStore';
-import { useSoloStore } from '@/store/soloStore';
+import { CPU_CAT, CPU_NAME, useSoloStore } from '@/store/soloStore';
 import { accent, felt, text } from '@/theme/colors';
 
 /**
@@ -43,7 +43,7 @@ export default function SoloScreen() {
   if (!state) {
     return (
       <Screen scroll>
-        <Text style={styles.title}>Play the computer</Text>
+        <Text style={styles.title}>Play the Professor</Text>
         <Text style={styles.subtitle}>Offline — no connection needed</Text>
 
         <View style={styles.tiers}>
@@ -93,9 +93,10 @@ export default function SoloScreen() {
         error={error}
         connected
         opponentOnline
-        opponentTurnLabel={cpuThinking ? 'Computer is thinking…' : "Computer's turn"}
+        opponentTurnLabel={cpuThinking ? `${CPU_NAME} is thinking…` : `${CPU_NAME}'s turn`}
         opponentThinking={cpuThinking}
         soloRematch
+        opponentCat={CPU_CAT}
       />
     </Screen>
   );

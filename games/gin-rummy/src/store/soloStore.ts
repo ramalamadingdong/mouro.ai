@@ -18,7 +18,9 @@ import { randomSeed } from '@/util/seed';
 /** Fixed local identities. */
 export const HUMAN_UID = 'p0-local';
 export const CPU_UID = 'cpu';
-export const CPU_NAME = 'Computer';
+/** The computer player is a cat: Marmalade, the orange tabby on the app icon. */
+export const CPU_NAME = 'Marmalade';
+export const CPU_CAT = 'marmalade' as const;
 
 /**
  * CPU pacing, in ms: [shortest, longest] pause before each visible step. Tuned

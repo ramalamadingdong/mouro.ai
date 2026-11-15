@@ -18,6 +18,9 @@ import { randomSeed } from '@/util/seed';
 
 export const HUMAN_UID = 'p0-local';
 export const CPU_UID = 'cpu';
+/** The computer player is a cat: the Professor, who plays the long game. */
+export const CPU_NAME = 'Professor';
+export const CPU_CAT = 'professor' as const;
 
 /**
  * CPU pacing, in ms: [shortest, longest] pause before each visible step. Tuned
@@ -117,7 +120,7 @@ export const useSoloStore = create<SoloStore>()((set, get) => {
         hostUid: HUMAN_UID,
         guestUid: CPU_UID,
         hostName: playerName || 'You',
-        guestName: 'Computer',
+        guestName: CPU_NAME,
         target,
       });
       set({ state, mySeat: 'p0', difficulty, error: null, cpuThinking: false, pendingMove: false });

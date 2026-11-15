@@ -2,6 +2,7 @@ import { memo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { CardBack } from '@/components/card-back';
+import { CatFace, type CatId } from '@/components/cat-face';
 import { accent, felt, text } from '@/theme/colors';
 
 export type OpponentBarProps = {
@@ -22,6 +23,8 @@ export type OpponentBarProps = {
    * `null`/omitted → the default lattice. Never the local player's own back.
    */
   cardBack?: string | null;
+  /** Set when the opponent is a computer cat: draws its face by the name. */
+  cat?: CatId;
 };
 
 /** Fan a few face-down cards to hint the size of the opponent's hand. */
@@ -41,6 +44,7 @@ function OpponentBarBase({
   isTurn,
   reconnecting,
   cardBack,
+  cat,
 }: OpponentBarProps) {
   const fanned = Math.min(handCount, MAX_FANNED);
 
@@ -54,6 +58,7 @@ function OpponentBarBase({
               { backgroundColor: online ? accent.online : accent.offline },
             ]}
           />
+          {cat ? <CatFace cat={cat} size={34} /> : null}
           <Text style={styles.name} numberOfLines={1}>
             {name}
           </Text>

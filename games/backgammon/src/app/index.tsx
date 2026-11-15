@@ -55,7 +55,7 @@ export default function Home() {
     <Screen scroll>
       <View style={styles.hero}>
         <Text style={styles.title}>Backgammon</Text>
-        <Text style={styles.subtitle}>Two-player online · or vs the computer</Text>
+        <Text style={styles.subtitle}>Two-player online · or vs a computer cat</Text>
       </View>
 
       <View style={styles.nameBlock}>
@@ -79,7 +79,7 @@ export default function Home() {
           <Text style={styles.noticeBody}>
             Copy <Text style={styles.code}>.env.example</Text> to{' '}
             <Text style={styles.code}>.env</Text> and add your Firebase config. Playing the
-            computer works either way.
+            computer cat works either way.
           </Text>
         </View>
       )}
@@ -129,7 +129,7 @@ export default function Home() {
           works greyed out on a bad connection.
         */}
         <Button
-          title="Play the computer"
+          title="Play the Professor (a cat)"
           variant="secondary"
           onPress={() => router.push('/solo')}
           style={styles.action}
