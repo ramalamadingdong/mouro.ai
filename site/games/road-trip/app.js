@@ -29,12 +29,13 @@
   // ── Polite fetching ─────────────────────────────────────────────────────
   // One queue per host, with a gap after each request. Nominatim and the OSRM
   // demo server both ask for no more than one request a second.
-  const GAP = { "nominatim.openstreetmap.org": 1100, "router.project-osrm.org": 1100, "commons.wikimedia.org": 400 };
+  const GAP = { "nominatim.openstreetmap.org": 1100, "router.project-osrm.org": 1100, "commons.wikimedia.org": 400, "query.wikidata.org": 1000 };
   const chains = {};
   function getJSON(url) {
     const host = new URL(url).host;
     const run = (chains[host] || Promise.resolve()).then(async () => {
-      const res = await fetch(url, { headers: { Accept: "application/json" } });
+      // A stuck request would hold up the whole queue for its host, so give up after 15 s.
+      const res = await fetch(url, { headers: { Accept: "application/json" }, signal: AbortSignal.timeout?.(15000) });
       if (!res.ok) throw new Error(`${host} answered ${res.status}`);
       return res.json();
     });
@@ -493,27 +494,156 @@
       return { question: `Which of these is the county seat of ${label}?`, ...choices(name(seat.id), wrong) };
     }]);
 
-    if (!kinds.length) return null;
-    // Vary the question: avoid the kinds asked most recently, and lead with the seat for counties.
-    const recent = trip.triviaTypes.slice(-2);
-    const ordered = [...kinds.filter(([k]) => !recent.includes(k)), ...kinds.filter(([k]) => recent.includes(k))];
-    const pick = ordered[0][0] === "seat" ? ordered : [ordered[0], ...shuffle(ordered.slice(1))];
+    // The plain facts above are the fallback. First try the exciting kinds:
+    // who was born here, what was filmed here, landmarks, nicknames, namesakes
+    // and sister cities, with wrong answers taken from the towns nearby.
+    const exciting = await excitingKinds(item, e, label);
+    const recent = trip.triviaTypes.slice(-3);
+    const fresh = (list) => [...shuffle(list.filter(([k]) => !recent.includes(k))), ...shuffle(list.filter(([k]) => recent.includes(k)))];
+    const seatFirst = kinds[0]?.[0] === "seat" && !recent.includes("seat") ? [kinds.shift()] : [];
+    const pick = [...seatFirst, ...fresh(exciting), ...fresh(kinds)];
+    if (!pick.length) return null;
     let q = null, kind = null;
-    for (const [k, make] of pick.slice(0, 2)) { q = await make(); if (q) { kind = k; break; } }
+    for (const [k, make] of pick.slice(0, 7)) {
+      try { q = await make(); } catch { q = null; }
+      if (q) { kind = k; break; }
+    }
     if (!q) return null;
     trip.triviaTypes.push(kind);
 
     const title = e.sitelinks?.enwiki?.title;
-    let fact = "", link = title ? `https://en.wikipedia.org/wiki/${encodeURIComponent(title.replace(/ /g, "_"))}` : "";
+    const link = title ? `https://en.wikipedia.org/wiki/${encodeURIComponent(title.replace(/ /g, "_"))}` : "";
+    let fact = "";
     if (title) {
-      try {
-        const s = await getJSON(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title.replace(/ /g, "_"))}`);
-        fact = trimFact(s.extract || "");
-        if (s.content_urls?.mobile?.page) link = s.content_urls.mobile.page;
-      } catch { /* the question still works without the fact */ }
+      try { fact = await bestSentence(title); } catch { fact = ""; }
+      if (!fact) {
+        try {
+          const sum = await getJSON(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title.replace(/ /g, "_"))}`);
+          fact = trimFact(sum.extract || "");
+        } catch { /* the question still works without the fact */ }
+      }
     }
     return { ...q, title: label, kind: item.kind, fact, link, firstFix: item.firstFix };
   }
+
+  // ── Exciting trivia from Wikidata's query service ──────────────────────
+  // The planner hint keeps these quick (well under two seconds even for a big
+  // city); without it some take a minute.
+  const WDQS = "https://query.wikidata.org/sparql";
+  async function sparql(query) {
+    const d = await getJSON(`${WDQS}?${qs({ query, format: "json" })}`);
+    const ENTITY = "http://www.wikidata.org/entity/";
+    return (d.results?.bindings || []).map((b) => Object.fromEntries(Object.entries(b).map(([k, v]) => [k, v.value.startsWith(ENTITY) ? v.value.slice(ENTITY.length) : v.value])));
+  }
+  // Populated places within 40 km of a town or county, biggest first.
+  async function nearbyPlaces(qid) {
+    const rows = await sparql(`SELECT ?p ?pop WHERE {
+      wd:${qid} wdt:P625 ?c.
+      SERVICE wikibase:around { ?p wdt:P625 ?loc. bd:serviceParam wikibase:center ?c; wikibase:radius "40". }
+      ?p wdt:P1082 ?pop. FILTER(?pop >= 2000 && ?p != wd:${qid})
+    } ORDER BY DESC(?pop) LIMIT 24`);
+    return [...new Set(rows.map((r) => r.p))].filter((id) => /^Q\d+$/.test(id));
+  }
+  // For one relation, everything linked to this place and to its neighbours,
+  // most famous first (by number of Wikipedia languages).
+  const POOLS = {
+    born: { pattern: "?x wdt:P19 ?p.", min: 12 },
+    filmed: { pattern: "?x wdt:P915 ?p.", min: 8 },
+    landmark: { pattern: "?x wdt:P131 ?p. FILTER NOT EXISTS { ?x wdt:P1082 [] } FILTER NOT EXISTS { ?x wdt:P31 wd:Q5 }", min: 10 },
+    namesake: { pattern: "?p wdt:P138 ?x.", min: 5 },
+    twin: { pattern: "?p wdt:P190 ?x.", min: 5 },
+  };
+  async function pool(kind, here, near) {
+    const { pattern, min } = POOLS[kind];
+    const places = [here, ...near].map((id) => `wd:${id}`).join(" ");
+    const rows = await sparql(`SELECT ?p ?x ?links WHERE {
+      hint:Query hint:optimizer "None".
+      VALUES ?p { ${places} } ${pattern}
+      ?x wikibase:sitelinks ?links. FILTER(?links >= ${min})
+    } ORDER BY DESC(?links) LIMIT 150`);
+    const mine = [...new Set(rows.filter((r) => r.p === here).map((r) => r.x))];
+    const theirs = [...new Set(rows.filter((r) => r.p !== here && !mine.includes(r.x)).map((r) => r.x))];
+    return { mine, theirs };
+  }
+  // Labels and one-line descriptions, dropping any that give the answer away
+  // (a landmark called "Boulder Creek" in a question about Boulder).
+  async function named(ids, giveaway) {
+    const ents = await entities(ids, "labels|descriptions");
+    const out = {};
+    for (const id of ids) {
+      const name = ents[id]?.labels?.en?.value;
+      if (!name || /^Q\d+$/.test(name) || name.length > 60) continue;
+      if (giveaway && name.toLowerCase().includes(giveaway.toLowerCase())) continue;
+      out[id] = { name, desc: ents[id]?.descriptions?.en?.value || "" };
+    }
+    return out;
+  }
+  const personish = (desc) => /\b(1[5-9]\d\d|20\d\d)\b|\b(politician|president|general|explorer|officer|governor|senator|soldier|chief|missionary|settler|pioneer|businessman|businesswoman|merchant|surveyor|judge|inventor|writer|activist|leader|founder)\b/i.test(desc);
+  const pickFew = (list, n, top) => shuffle(list.slice(0, top)).slice(0, n);
+  const lead = (desc) => (desc ? `, ${desc}` : "");
+
+  async function excitingKinds(item, e, label) {
+    let near = null;
+    const nearby = async () => (near ??= await nearbyPlaces(e.id));
+    const short = label.split(",")[0];
+    // One relation, as a question: the right answer belongs to this place, the wrong ones to neighbours.
+    const fromPool = (kind, ask, explain) => async () => {
+      const { mine, theirs } = await pool(kind, e.id, (await nearby()).slice(0, 16));
+      if (!mine.length || theirs.length < 3) return null;
+      const right = pickFew(mine, 1, 3), wrong = pickFew(theirs, 6, 14);
+      const names = await named([...right, ...wrong], kind === "namesake" || kind === "twin" ? null : short);
+      const answer = names[right[0]];
+      let others = wrong.map((id) => names[id]).filter((n) => n && n.name !== answer?.name);
+      // Named after a person? Then the wrong answers should be people too, not places.
+      if (answer && kind === "namesake") {
+        const alike = others.filter((n) => personish(n.desc) === personish(answer.desc));
+        if (alike.length >= 3) others = alike;
+      }
+      others = others.map((n) => n.name);
+      if (!answer || others.length < 3) return null;
+      return { question: ask, ...choices(answer.name, [...new Set(others)].slice(0, 3)), detail: explain(answer) };
+    };
+    const out = [];
+    if (item.kind === "town") {
+      out.push(["born", fromPool("born", `Which of these famous people was born in ${short}?`, (a) => `${a.name}${lead(a.desc)}, was born here.`)]);
+      out.push(["filmed", fromPool("filmed", `Which of these was filmed in ${short}?`, (a) => `${a.name}${lead(a.desc)}, was filmed here.`)]);
+      out.push(["twin", fromPool("twin", `Which of these is a sister city of ${short}?`, (a) => `${a.name}${lead(a.desc)}, is ${short}’s sister city.`)]);
+    }
+    out.push(["landmark", fromPool("landmark", `Which of these is in ${short}?`, (a) => `${a.name}${lead(a.desc)}, is here.`)]);
+    if (e.claims?.P138) out.push(["namesake", fromPool("namesake", `Who or what is ${short} named after?`, (a) => `${short} is named after ${a.name}${lead(a.desc)}.`)]);
+    const nick = (e.claims?.P1449 || []).map((c) => c.mainsnak?.datavalue?.value).find((v) => v?.language === "en" && v.text.length <= 50);
+    if (nick && item.kind === "town") out.push(["nickname", async () => {
+      // Wrong answers: other towns nearby (by their descriptions, not counties or metro areas).
+      const ents = await entities((await nearby()).slice(0, 20), "labels|descriptions");
+      const towns = Object.values(ents)
+        .filter((x) => /\b(city|town|village|municipality|borough|capital)\b/i.test(x.descriptions?.en?.value || "") && !/\b(county|metropolitan|area|region|district|census)\b/i.test(x.descriptions?.en?.value || ""))
+        .map((x) => x.labels?.en?.value?.split(",")[0]).filter((n) => n && n !== short);
+      const wrong = pickFew([...new Set(towns)], 3, 8);
+      if (wrong.length < 3) return null;
+      return { question: `Which of these places is nicknamed “${nick.text}”?`, ...choices(short, wrong), detail: `${short} is nicknamed “${nick.text}”.` };
+    }]);
+    return out;
+  }
+
+  // "Did you know?": the most interesting sentence in the Wikipedia article,
+  // scored on words like first, oldest, world, birthplace, filmed, haunted;
+  // census, election and policy sentences are left out.
+  const LIVELY = /\b(first|only|oldest|largest|biggest|highest|longest|tallest|smallest|deepest|world'?s?|famous|famously|known as|nicknamed|home to|birthplace|invented|record|filmed|named (?:after|for)|legend|legendary|haunted|gold rush|discovered|nation'?s|America'?s|unique|claim to fame|best known|inspired|ghost|outlaw|dinosaur|olympic|president|movie|film|song|hollywood|rodeo|festival|museum)\b/gi;
+  const DULL = /\b(census|median|household|per capita|percent|%|square mile|km2|population density|racial|makeup|income|poverty|ZIP|area code|school district|elected|council|mayor|commissioner|Köppen|precipitation|average temperature|vote|votes|voted|election|Democratic|Republican|regulation|ordinance|zoning|budget|tax)\b/i;
+  const ORPHAN = /^(He|She|They|These|Those|His|Her|Their|Construction|Later|Afterward|Afterwards|The (campus|building|park|school|church|team|company|station|museum|site|house|mine|bridge|lake|dam|hotel|store|club|event|race|festival|show|band|film|song|book|game))\b/;
+  async function bestSentence(title) {
+    const d = await getJSON(`https://en.wikipedia.org/w/api.php?${qs({ action: "query", prop: "extracts", explaintext: 1, exsectionformat: "plain", redirects: 1, titles: title, format: "json", formatversion: 2, origin: "*" })}`);
+    const text = (d.query?.pages?.[0]?.extract || "").slice(0, 120000);
+    const sentences = text.split(/\n+/)
+      .flatMap((para) => para.split(/(?<=[a-z0-9)\]"”’][.!?])\s+(?=[A-Z“"])/))
+      .map((x) => x.trim()).filter((x) => x.length >= 60 && x.length <= 260 && /[.!?]$/.test(x));
+    const scored = sentences
+      // Sentences that lean on the one before ("He…", "The campus…") make no sense alone.
+      .map((x, i) => ({ x, score: (x.match(LIVELY) || []).length * 3 - (DULL.test(x) ? 10 : 0) + (/\b1[6-9]\d\d\b/.test(x) ? 1 : 0) - (ORPHAN.test(x) ? 6 : 0) - i / 400 }))
+      .filter((c) => c.score > 2.5).sort((a, b) => b.score - a.score);
+    return scored.length ? pickFew(scored, 1, 3)[0].x : "";
+  }
+
   // Two or three sentences from the Wikipedia summary, skipping the bare "X is a town in Y" opener when there's more.
   function trimFact(text) {
     // Split after ". " only when a lowercase letter or digit ends the sentence, so "U.S. Senator" and "Stephen A. Douglas" stay whole.
@@ -549,14 +679,15 @@
     const right = i === q.answer;
     trip.answered++;
     if (right) { trip.correct++; addScore(10); }
-    $("triviaResult").textContent = right ? "Right! +10 points." : `Not quite. It’s ${q.options[q.answer]}.`;
-    $("triviaFact").textContent = q.fact;
+    const why = q.detail || `It’s ${q.options[q.answer]}.`;
+    $("triviaResult").textContent = right ? `Right! +10 points. ${why}` : `Not quite. ${why}`;
+    $("triviaFact").textContent = q.fact ? `Did you know? ${q.fact}` : "";
     $("triviaFact").hidden = !q.fact;
     $("triviaLink").href = q.link; $("triviaLink").hidden = !q.link;
     $("triviaAfter").hidden = false;
     const t = trip;
     // Leave the fact up a while, then move on to anything waiting.
-    setTimeout(() => { if (trip === t && t.showing && $("triviaAfter").hidden === false) { t.showing = null; if (t.queue.length) nextTrivia(); else $("triviaWait").textContent = "Next question when we cross into a new town or county."; } }, 8000);
+    setTimeout(() => { if (trip === t && t.showing && $("triviaAfter").hidden === false) { t.showing = null; if (t.queue.length) nextTrivia(); else $("triviaWait").textContent = "Next question when we cross into a new town or county."; } }, 15000);
   }
 
   // ── Photo guess ─────────────────────────────────────────────────────────
