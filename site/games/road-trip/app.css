@@ -126,6 +126,8 @@
   .chips span { padding: 5px 12px; border-radius: 999px; background: var(--deep); font-weight: 600; font-size: .9rem; }
   .chips span.now { background: var(--line); color: #1d1503; }
   .chips span.out { opacity: .4; text-decoration: line-through; }
+  .ideas { display: flex; flex-direction: column; gap: 8px; }
+  .ideas .chips span { background: rgba(95, 208, 192, .12); border: 1px solid rgba(95, 208, 192, .3); font-weight: 500; }
   .controls { display: grid; gap: 10px; }
   .btn.huge { font-size: 1.6rem; padding: 26px 20px; border-radius: 22px; }
 

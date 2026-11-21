@@ -480,19 +480,6 @@
       })]);
     }
 
-    // County seat: wrong answers are the seats of the counties next door.
-    const seat = item.kind === "county" ? bestClaim(c, "P36") : null;
-    const neighbours = (c.P47 || []).map((x) => x.mainsnak?.datavalue?.value?.id).filter(Boolean).slice(0, 12);
-    if (seat?.id && neighbours.length >= 3) kinds.unshift(["seat", async () => {
-      const near = await entities(neighbours, "claims");
-      const seats = shuffle(Object.values(near).map((n) => bestClaim(n.claims, "P36")?.id).filter((id) => id && id !== seat.id)).slice(0, 3);
-      if (seats.length < 3) return null;
-      const names = await entities([seat.id, ...seats], "labels");
-      const name = (id) => names[id]?.labels?.en?.value;
-      const wrong = seats.map(name).filter(Boolean);
-      if (!name(seat.id) || wrong.length < 3) return null;
-      return { question: `Which of these is the county seat of ${label}?`, ...choices(name(seat.id), wrong) };
-    }]);
 
     // The plain facts above are the fallback. First try the exciting kinds:
     // who was born here, what was filmed here, landmarks, nicknames, namesakes
@@ -504,8 +491,7 @@
     if (article?.history.length) exciting.push(["history", async () => historyQuestion(article)]);
     const recent = trip.triviaTypes.slice(-3);
     const fresh = (list) => [...shuffle(list.filter(([k]) => !recent.includes(k))), ...shuffle(list.filter(([k]) => recent.includes(k)))];
-    const seatFirst = kinds[0]?.[0] === "seat" && !recent.includes("seat") ? [kinds.shift()] : [];
-    const pick = [...seatFirst, ...fresh(exciting), ...fresh(kinds)];
+    const pick = [...fresh(exciting), ...fresh(kinds)];
     if (!pick.length) return null;
     let q = null, kind = null;
     for (const [k, make] of pick.slice(0, 7)) {
@@ -1156,7 +1142,10 @@
       const name = s.players[s.event.who]?.name || "Someone";
       const text = s.event.kind === "out" ? `${name} is out.` : s.event.kind === "win" ? `${name} wins the round!` : `${s.event.n} answer${s.event.n === 1 ? "" : "s"}. ${s.event.n >= (s.players[0]?.score || 0) && s.event.n > 0 ? "Your best yet." : ""}`;
       if (c.role !== "remote") { beep(220, 380, 0.2); navigator.vibrate?.(200); }
-      if (speaks) setTimeout(() => { if (cat === c) speak(s.event.kind === "out" ? `${text} ${s.players[s.turn]?.name || ""}, go.` : text); }, 350);
+      // At the end of a round, read out a few ideas too, so the driver hears them.
+      const ideas = s.event.kind === "out" ? [] : answersFor(s.category, s.letter).slice(0, 4);
+      const more = ideas.length ? ` Some answers: ${ideas.join(", ")}.` : "";
+      if (speaks) setTimeout(() => { if (cat === c) speak(s.event.kind === "out" ? `${text} ${s.players[s.turn]?.name || ""}, go.` : text + more); }, 350);
     } else if (s?.phase === "turn" && s.step !== c.seenStep && prev?.phase === "turn" && s.players.length > 1) {
       if (speaks) speak(s.players[s.turn].name);
       if (c.role !== "remote") beep(660, 70, 0.1);
@@ -1200,6 +1189,15 @@
     if (left < -grace && c.timedOut !== s.step) { c.timedOut = s.step; catDo({ type: "out", step: s.step }); }
   }
 
+  // Answers from the built-in list that start with the letter (ignoring
+  // accents and a leading "The"), in alphabetical order.
+  function answersFor(category, letter) {
+    const all = (window.CATEGORY_ANSWERS?.[category] || "").split(",").map((w) => w.trim()).filter(Boolean);
+    const plain = (w) => w.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+    return all.filter((w) => plain(w).startsWith(letter) || plain(w).replace(/^THE /, "").startsWith(letter))
+      .sort((a, b) => a.localeCompare(b));
+  }
+
   function renderCat() {
     const c = cat;
     if (!c) return;
@@ -1211,7 +1209,8 @@
     }
     $("catSetup").hidden = !(setup && controls);
     $("catBoard").hidden = setup && controls;
-    $("turnline").hidden = setup;
+    // Once a round is over the timer has nothing to show: give its room to the answers.
+    $("turnline").hidden = setup || s?.phase === "roundover";
     $("catBoard").dataset.phase = s?.phase || "setup";
     if (setup) {
       if (!$("names").children.length) fillNames(s?.players?.map((p) => p.name));
@@ -1234,9 +1233,20 @@
     const ev = $("catEvent");
     if (s.event) {
       const name = s.players[s.event.who]?.name || "Someone";
-      ev.textContent = s.event.kind === "out" ? `${name} stalled and is out.` : s.event.kind === "win" ? `${name} wins the round! ${s.event.n} answers in all.` : `Round over: ${s.event.n} answer${s.event.n === 1 ? "" : "s"}.`;
+      ev.textContent = s.event.kind === "out" ? `${name} stalled and is out.` : s.event.kind === "win" ? `${name} wins the round! ${s.event.n} answer${s.event.n === 1 ? "" : "s"} in all.` : `Round over: ${s.event.n} answer${s.event.n === 1 ? "" : "s"}.`;
       ev.hidden = false;
     } else ev.hidden = true;
+    // Round over: ideas from the built-in list (categories/answers.js).
+    const ideas = s.phase === "roundover" ? answersFor(s.category, s.letter) : null;
+    $("catIdeas").hidden = !ideas;
+    if (ideas) {
+      $("ideasTitle").textContent = `Possible answers: ${s.letter} · ${s.category}`;
+      const box = $("ideasList"); box.textContent = "";
+      for (const word of ideas.slice(0, c.role === "screen" ? 10 : 24)) {
+        const el = document.createElement("span"); el.textContent = word; box.append(el);
+      }
+      $("ideasNone").hidden = ideas.length > 0;
+    }
     const turn = s.phase === "turn";
     $("gotOne").hidden = !(controls && turn); $("stuck").hidden = !(controls && turn);
     $("spunRow").hidden = !(controls && s.phase === "spun");
