@@ -1,0 +1,127 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "rooms": {
+      "$code": {
+        ".read": "auth != null && (data.child('meta/host').val() === auth.uid || data.child('members').hasChild(auth.uid))",
+        ".write": "auth != null && (($code.matches(/^[A-HJKMNP-Z2-9]{5}$/) && !data.exists() && newData.child('meta/host').val() === auth.uid && newData.child('meta').hasChildren(['host', 'createdAt', 'updatedAt']) && !newData.hasChild('state') && !newData.hasChild('members')) || (!newData.exists() && (data.child('meta/host').val() === auth.uid || (data.child('meta/updatedAt').isNumber() && now - data.child('meta/updatedAt').val() > 86400000))))",
+        ".validate": "$code.matches(/^[A-HJKMNP-Z2-9]{5}$/)",
+        "meta": {
+          ".validate": "newData.hasChildren(['host', 'createdAt', 'updatedAt'])",
+          "host": {
+            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 128 && (!data.exists() || newData.val() === data.val())"
+          },
+          "createdAt": {
+            ".validate": "newData.isNumber() && (data.exists() ? newData.val() === data.val() : (newData.val() <= now + 60000 && newData.val() > now - 86400000))"
+          },
+          "updatedAt": {
+            ".write": "auth != null && newData.isNumber() && root.child('rooms').child($code).child('meta').exists() && (root.child('rooms').child($code).child('meta/host').val() === auth.uid || root.child('rooms').child($code).child('members').hasChild(auth.uid))",
+            ".validate": "newData.isNumber() && newData.val() <= now + 60000 && newData.val() > now - 3600000"
+          },
+          "$other": {
+            ".validate": false
+          }
+        },
+        "members": {
+          "$uid": {
+            ".write": "auth != null && root.child('rooms').child($code).child('meta').exists() && (auth.uid === $uid || (root.child('rooms').child($code).child('meta/host').val() === auth.uid && !newData.exists()))",
+            ".validate": "$uid.length <= 128 && newData.isNumber() && newData.val() <= now + 60000 && newData.val() > now - 3600000"
+          }
+        },
+        "state": {
+          ".write": "auth != null && root.child('rooms').child($code).child('meta').exists() && (root.child('rooms').child($code).child('meta/host').val() === auth.uid || root.child('rooms').child($code).child('members').hasChild(auth.uid)) && newData.child('by').val() === auth.uid && newData.child('version').isNumber() && (!data.exists() || newData.child('version').val() > data.child('version').val())",
+          ".validate": "newData.hasChildren(['version', 'by', 'phase', 'step'])",
+          "version": {
+            ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 100000000"
+          },
+          "by": {
+            ".validate": "newData.isString() && newData.val().length <= 128"
+          },
+          "phase": {
+            ".validate": "newData.isString() && newData.val().matches(/^(setup|spun|turn|roundover)$/)"
+          },
+          "step": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000000"
+          },
+          "players": {
+            "$i": {
+              ".validate": "$i.matches(/^[0-7]$/) && newData.hasChildren(['name', 'score'])",
+              "name": {
+                ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 24"
+              },
+              "score": {
+                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000"
+              },
+              "$other": {
+                ".validate": false
+              }
+            }
+          },
+          "alive": {
+            "$i": {
+              ".validate": "$i.matches(/^[0-7]$/) && newData.isBoolean()"
+            }
+          },
+          "turn": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 7"
+          },
+          "starter": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 7"
+          },
+          "letter": {
+            ".validate": "newData.isString() && newData.val().matches(/^[A-Z]$/)"
+          },
+          "category": {
+            ".validate": "newData.isString() && newData.val().length <= 60"
+          },
+          "limit": {
+            ".validate": "newData.isNumber() && newData.val() >= 3 && newData.val() <= 60"
+          },
+          "deadline": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000000000000"
+          },
+          "answers": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000"
+          },
+          "round": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000000"
+          },
+          "voice": {
+            ".validate": "newData.isBoolean()"
+          },
+          "hard": {
+            ".validate": "newData.isBoolean()"
+          },
+          "used": {
+            ".validate": "newData.isString() && newData.val().length <= 600"
+          },
+          "event": {
+            ".validate": "newData.hasChildren(['kind', 'who', 'id'])",
+            "kind": {
+              ".validate": "newData.isString() && newData.val().matches(/^(out|win|solo)$/)"
+            },
+            "who": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 7"
+            },
+            "n": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000"
+            },
+            "id": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000000"
+            },
+            "$other": {
+              ".validate": false
+            }
+          },
+          "$other": {
+            ".validate": false
+          }
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
+    }
+  }
+}

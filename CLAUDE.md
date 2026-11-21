@@ -8,7 +8,7 @@ are working in — those hold each project's non-negotiables.
 ## Layout
 
 - `site/` — static HTML/CSS. No build step. Edit the HTML directly.
-  `site/games/` (the games hub), `site/games/sudoku/` and `site/games/cat-cafe/` are deliberately
+  `site/games/` (the games hub), `site/games/sudoku/`, `site/games/cat-cafe/` and `site/games/road-trip/` are deliberately
   separate from the portfolio: self-contained pages with their own styles,
   manifest and icons — they must not load `static/css/site.css`. Their icon
   PNGs come from the SVGs beside them via `scripts/render-icons.mjs`.
@@ -33,7 +33,7 @@ are working in — those hold each project's non-negotiables.
   by `server/src/rules.js`. Changing a rule changes production behaviour on the
   next deploy — add or adjust a case in `server/test/realtime.test.js`.
 - **Game namespaces are fixed** in `server/games.json` (`gin-rummy`,
-  `backgammon`, `yahtzee`, `holdem`, `dots`, `pawprints`). Renaming one orphans its data.
+  `backgammon`, `yahtzee`, `holdem`, `dots`, `pawprints`, `road-trip`). Renaming one orphans its data.
 - **URLs are fixed** — `/backgammon/`, `/gin-rummy/`, `/yahtzee/`, `/holdem/`, `/dots/`, `/pawprints/`. Each is set
   in the app (Expo `experiments.baseUrl` + `WEB_BASE_PATH`, or Vite `base` +
   router `basename`) and in `infra/Caddyfile`; change them together.
@@ -41,6 +41,12 @@ are working in — those hold each project's non-negotiables.
   "This week's game" spot); when a new one lands, the previous tile is removed
   from the hub, but its folder, namespace, rules, Caddy route, CI/deploy
   entries and tests all stay so its invite links keep working.
+- **Road Trip never shares a player's location.** `site/games/road-trip/` sends
+  the position only from the browser to OpenStreetMap and Wikimedia, keeps it
+  in memory, and stores no places in localStorage. Its `road-trip` realtime
+  namespace (rules in `games/road-trip/`) is for the Categories word game only;
+  its rules reject any other field. Never put a town, county, photo or position
+  in a room.
 - Don't commit `.env` files, `server/data/`, or build output.
 
 ## Verify before finishing

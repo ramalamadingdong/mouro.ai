@@ -1,0 +1,24 @@
+{
+  "_comment": "Relative URLs resolve against this file, so everything lands under /games/road-trip/. No service worker — see the hub manifest one folder up.",
+  "id": "/games/road-trip/",
+  "name": "Road Trip",
+  "short_name": "Road Trip",
+  "description": "Games for the car: trivia about each town and county you cross into, guess when you’ll pass a photo of the road ahead, and Categories, a word game everyone can play out loud.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "_comment_launch": "Same as the other games: when the app is installed and a link to it is opened, reuse the window that is already open instead of starting a second copy. Chromium-only; iOS ignores it.",
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
+  "theme_color": "#1a2230",
+  "background_color": "#1a2230",
+  "categories": ["games", "travel"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

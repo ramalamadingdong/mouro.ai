@@ -58,6 +58,9 @@ jobs:
             mkdir -p "out/rt/games/$g"
             cp "games/$g/database.rules.json" "out/rt/games/$g/"
           done
+          # Road Trip is a static page in site/, so only its realtime rules are copied here.
+          mkdir -p out/rt/games/road-trip
+          cp games/road-trip/database.rules.json out/rt/games/road-trip/
           cp -r infra out/web/infra
           cp -r server/src server/games.json server/package.json server/package-lock.json out/rt/server/
 

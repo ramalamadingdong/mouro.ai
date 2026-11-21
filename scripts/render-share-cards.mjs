@@ -217,6 +217,15 @@ const games = [
     a: '#1f6f78', b: '#123f47', ink: '#f2b560',
     icon: 'site/games/cat-cafe/icons/icon-512.png',
   },
+  {
+    name: 'road-trip',
+    title: 'Road Trip',
+    text: 'Trivia about each town and county you cross into, guess when you’ll pass a photo of the road ahead, and Categories out loud.',
+    tags: ['Live GPS', 'Word game', 'Car screen'],
+    path: 'mouro.ai/games/road-trip',
+    a: '#2f4a66', b: '#172433', ink: '#f4c542',
+    icon: 'site/games/road-trip/icons/icon-512.png',
+  },
 ];
 
 // ── Templates ───────────────────────────────────────────────────────────────
