@@ -45,12 +45,16 @@ are working in — those hold each project's non-negotiables.
   trip games (`/games/#road-trip`). The road trip games are `site/games/road-trip/{trivia,photo,categories}/`,
   each a page of markup sharing `site/games/road-trip/app.js` and `app.css`;
   `site/games/road-trip/index.html` only redirects old links.
-- **Road trip games never share a player's location.** `site/games/road-trip/` sends
-  the position only from the browser to OpenStreetMap and Wikimedia, keeps it
-  in memory, and stores no places in localStorage. Its `road-trip` realtime
-  namespace (rules in `games/road-trip/`) is for the Categories word game only;
-  its rules reject any other field. Never put a town, county, photo or position
-  in a room.
+- **No user may ever see another user's location.** That is the rule (the
+  owner's words: "I don't mind it sent to mouro.ai, I just don't want a
+  different user to see a different person's location"). Today the road trip
+  pages send position only from the browser to OpenStreetMap and Wikimedia
+  and store no places in localStorage, and their privacy notes say so; if
+  that changes (e.g. a mouro.ai lookup service), update the notes, never log
+  or store positions where anyone else could read them, and keep them out of
+  every realtime room. The `road-trip` realtime namespace (rules in
+  `games/road-trip/`) is for the Categories word game only; its rules reject
+  any other field.
 - Don't commit `.env` files, `server/data/`, or build output.
 
 ## Verify before finishing

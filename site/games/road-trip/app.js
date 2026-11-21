@@ -29,7 +29,7 @@
   // ── Polite fetching ─────────────────────────────────────────────────────
   // One queue per host, with a gap after each request. Nominatim and the OSRM
   // demo server both ask for no more than one request a second.
-  const GAP = { "nominatim.openstreetmap.org": 1100, "router.project-osrm.org": 1100, "commons.wikimedia.org": 400, "query.wikidata.org": 1000 };
+  const GAP = { "nominatim.openstreetmap.org": 1100, "router.project-osrm.org": 1100, "commons.wikimedia.org": 400, "query.wikidata.org": 1000, "en.wikipedia.org": 300 };
   const chains = {};
   function getJSON(url) {
     const host = new URL(url).host;
@@ -379,11 +379,11 @@
   // Human settlement, unincorporated community (US), census-designated place,
   // US town/city, city, town, village, hamlet, municipality, big city.
   const PLACE_TYPES = "wd:Q486972 wd:Q17343829 wd:Q498162 wd:Q15127012 wd:Q1093829 wd:Q515 wd:Q3957 wd:Q532 wd:Q5084 wd:Q2154459 wd:Q1549591";
-  async function nearbyTowns(pos, countyQid) {
+  async function nearbyTowns(pos, countyQid, km = 25) {
     const lon = pos[0].toFixed(2), lat = pos[1].toFixed(2);
     const inCounty = countyQid && /^Q\d+$/.test(countyQid) ? `?p wdt:P131 wd:${countyQid}.` : "";
     const rows = await sparql(`SELECT ?p ?dist WHERE {
-      SERVICE wikibase:around { ?p wdt:P625 ?loc. bd:serviceParam wikibase:center "Point(${lon} ${lat})"^^geo:wktLiteral; wikibase:radius "25"; wikibase:distance ?dist. }
+      SERVICE wikibase:around { ?p wdt:P625 ?loc. bd:serviceParam wikibase:center "Point(${lon} ${lat})"^^geo:wktLiteral; wikibase:radius "${km}"; wikibase:distance ?dist. }
       ${inCounty}
       ?p wdt:P31 ?type. VALUES ?type { ${PLACE_TYPES} }
       ?p wikibase:sitelinks ?links. FILTER(?links >= 2)
@@ -397,19 +397,34 @@
       .filter((x) => x.name && !/\b(metropolitan|statistical area|census tract|region)\b/i.test(x.desc) && !/^county\b/i.test(x.desc));
   }
 
+  // Look small first, then wider: 5, 15 and 30 km in this county, then 60
+  // and 100 km anywhere. The card says how far it's looking, and the question
+  // says how far away the town is.
+  const SEARCH = [[5, true], [15, true], [30, true], [60, false], [100, false]];
+  const far = (km) => trip?.imperial ? `${Math.max(1, Math.round(km / 1.609))} mi` : `${Math.max(1, Math.round(km))} km`;
   async function queueNearby() {
     const t = trip;
     if (!t || t.nearbyBusy) return;
     t.nearbyBusy = true;
+    const unseen = (list) => list.find((x) => !t.seenPlaces.has(`town:${x.qid}`) && x.name !== t.town);
     try {
-      if (!t.nearby || t.nearbyCounty !== t.countyQid || dist(t.nearbyAt, t.pos) > 8000) {
-        t.nearby = await nearbyTowns(t.pos, t.countyQid);
-        t.nearbyAt = t.pos; t.nearbyCounty = t.countyQid;
+      let next = null;
+      for (const [km, inCounty] of SEARCH) {
+        if (trip !== t) return;
+        if (!t.showing) $("triviaWait").textContent = `Looking for a town within ${far(km)}…`;
+        const key = `${km}:${inCounty ? t.countyQid : ""}`;
+        // Reuse a search until we've moved 8 km.
+        if (!t.nearbyCache || dist(t.nearbyAt, t.pos) > 8000) { t.nearbyCache = {}; t.nearbyAt = t.pos; }
+        t.nearbyCache[key] ??= await nearbyTowns(t.pos, inCounty ? t.countyQid : null, km);
+        next = unseen(t.nearbyCache[key]);
+        if (next) break;
       }
       if (trip !== t) return;
-      const next = t.nearby.find((x) => !t.seenPlaces.has(`town:${x.qid}`) && x.name !== t.town);
       if (next) enqueue({ kind: "town", name: next.name, qid: next.qid, nearby: next.km });
-      else t.lastAsked = tripClock(); // nothing new around here: wait another quiet stretch
+      else {
+        t.lastAsked = tripClock(); // nothing new within 100 km: wait another quiet stretch
+        if (!t.showing) $("triviaWait").textContent = "No towns we haven’t asked about within 100 km. Next question at the next town.";
+      }
     } catch { /* try again on a later fix */ }
     finally { t.nearbyBusy = false; }
   }
@@ -532,7 +547,8 @@
     const recent = trip.triviaTypes.slice(-3);
     const fresh = (list) => [...shuffle(list.filter(([k]) => !recent.includes(k))), ...shuffle(list.filter(([k]) => recent.includes(k)))];
     const PRIME = ["building", "event", "story", "landmark"];
-    const pick = [...fresh(exciting.filter(([k]) => PRIME.includes(k))), ...fresh(exciting.filter(([k]) => !PRIME.includes(k))), ...fresh(kinds)];
+    const known = exciting.filter(([k]) => k === "known");
+    const pick = [...known, ...fresh(exciting.filter(([k]) => PRIME.includes(k))), ...fresh(exciting.filter(([k]) => !PRIME.includes(k) && k !== "known")), ...fresh(kinds)];
     if (!pick.length) return null;
     let q = null, kind = null;
     for (const [k, make] of pick.slice(0, 8)) {
@@ -542,9 +558,9 @@
     if (!q) return null;
     trip.triviaTypes.push(kind);
 
-    const link = title ? `https://en.wikipedia.org/wiki/${encodeURIComponent(title.replace(/ /g, "_"))}` : "";
-    // Never repeat the sentence the question was built from.
-    let fact = article ? pickFew(article.lively.filter((x) => x !== q.source), 1, 3)[0] || "" : "";
+    const link = q.storyLink || (title ? `https://en.wikipedia.org/wiki/${encodeURIComponent(title.replace(/ /g, "_"))}` : "");
+    // Never repeat the sentence the question was built from; a story question's fact is the story.
+    let fact = q.storyFact || (article ? pickFew(article.lively.filter((x) => x !== q.source), 1, 3)[0] || "" : "");
     const lately = article?.recent.find((x) => x !== q.source) || "";
     if (title) {
       if (!fact) {
@@ -569,10 +585,10 @@
   // Populated places within 40 km of a town, biggest first: never places
   // inside it, the county or metro area around it, or anything centred within
   // 3 km (Denver County is Denver), or a wrong answer could be right too.
-  async function nearbyPlaces(qid) {
+  async function nearbyPlaces(qid, km = 40) {
     const rows = await sparql(`SELECT ?p ?pop WHERE {
       wd:${qid} wdt:P625 ?c.
-      SERVICE wikibase:around { ?p wdt:P625 ?loc. bd:serviceParam wikibase:center ?c; wikibase:radius "40"; wikibase:distance ?dist. }
+      SERVICE wikibase:around { ?p wdt:P625 ?loc. bd:serviceParam wikibase:center ?c; wikibase:radius "${km}"; wikibase:distance ?dist. }
       FILTER(?dist > 3)
       OPTIONAL { ?p schema:description ?d. FILTER(LANG(?d) = "en") }
       FILTER(!BOUND(?d) || !REGEX(?d, "metropolitan|urban|corridor|diocese|region|statistical", "i"))
@@ -648,6 +664,47 @@
     return out.charAt(0).toUpperCase() + out.slice(1);
   }
 
+  // ── "What is X known for?" ─────────────────────────────────────────────
+  // Articles that link to the town's article and are stories (crimes,
+  // disasters, legends, films, festivals…) that name the town in their opening
+  // lines, most read first. That's how Granby gets Marvin Heemeyer and his
+  // bulldozer, which no database lists as an event.
+  const STORY = /\b(incident|rampage|attack|shooting|murder|murders|killing|heist|robbery|crash|disaster|fire|flood|floods|explosion|scandal|hoax|legend|ghost|UFO|mystery|massacre|battle|strike|riot|outlaw|gunfighter|criminal|serial killer|bombing|kidnapping|escape|manhunt|film|documentary|novel|song|festival|tradition|haunted|treasure|meteorite|monster|bigfoot|record|cult|commune|gold rush|stampede|derailment|avalanche|eruption|tornado|blizzard|plane crash|hijacking)\b/i;
+  const NOT_STORY = /\b(census|unincorporated|town in|city in|county in|county seat|neighborhood|school district|high school|elementary|middle school|radio station|television station|highway|state route|road|river in|creek|mountain in|lake in|reservoir|politician|member of the|American football|baseball|basketball|ice hockey|soccer|athlete)\b/i;
+  const storyCache = new Map();
+  async function townStories(title, short) {
+    if (storyCache.has(title)) return storyCache.get(title);
+    const wiki = (params) => getJSON(`https://en.wikipedia.org/w/api.php?${qs({ format: "json", formatversion: 2, origin: "*", ...params })}`);
+    const links = await wiki({ action: "query", generator: "backlinks", gbltitle: title, gblnamespace: 0, gbllimit: 500, gblfilterredir: "nonredirects", prop: "description" });
+    const linking = new Set((links.query?.pages || []).map((pg) => pg.title));
+    const candidates = (links.query?.pages || []).filter((pg) => STORY.test(pg.description || "") && !NOT_STORY.test(pg.description || "")).slice(0, 20);
+    let stories = [];
+    if (candidates.length) {
+      const info = await wiki({ action: "query", titles: candidates.map((pg) => pg.title).join("|"), prop: "extracts|pageviews|description", exintro: 1, explaintext: 1, exsentences: 3, exlimit: 20, pvipdays: 30 });
+      const views = (pg) => Object.values(pg.pageviews || {}).reduce((a, b) => a + (b || 0), 0);
+      stories = (info.query?.pages || [])
+        .filter((pg) => pg.description && (pg.extract || "").toLowerCase().includes(short.toLowerCase()))
+        .map((pg) => ({ title: pg.title, desc: pg.description, intro: pg.extract, views: views(pg) }))
+        .sort((a, b) => b.views - a.views);
+    }
+    const out = { stories, linking };
+    storyCache.set(title, out);
+    return out;
+  }
+  // A story as an answer option: "Marvin Heemeyer: American known for
+  // bulldozer rampage". The title's disambiguation ("(film)") and state
+  // ("…, Colorado"), the description's life dates, and the town itself are
+  // left out.
+  function storyOption(story, town) {
+    const esc = town.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const title = story.title.replace(/ \([^)]*\)$/, "").replace(/, [A-Z][a-z]+( [A-Z][a-z]+)?$/, "");
+    const desc = story.desc
+      .replace(/ ?\(\d{3,4}\s*[–-]\s*\d{0,4}\)/g, "")
+      .replace(new RegExp(`,? (in|near|at) ${esc}(, [A-Z][\\w .]+)*`, "g"), "");
+    const text = `${title}: ${desc}`.replace(new RegExp(`\\b${esc}\\b`, "g"), "the town").trim();
+    return text.length > 95 ? `${text.slice(0, 92).replace(/\s+\S*$/, "")}…` : text;
+  }
+
   async function excitingKinds(item, e, label, article) {
     let near = null;
     // For a county, the neighbours are the counties next door (anything
@@ -690,6 +747,43 @@
       out.push(["filmed", fromPool("filmed", `Which of these was filmed in ${short}?`, (a) => `${a.name}${lead(a.desc)}, was filmed here.`)]);
       out.push(["twin", fromPool("twin", `Which of these is a sister city of ${short}?`, (a) => `${a.name}${lead(a.desc)}, is ${short}’s sister city.`)]);
     }
+    const enTitle = e.sitelinks?.enwiki?.title;
+    if (enTitle) out.push(["known", async () => {
+      const mine = await townStories(enTitle, short);
+      if (!mine.stories.length) return null;
+      const story = mine.stories[0]; // the most-read one
+      // Wrong answers: the best-known story of each of a few nearby places,
+      // as long as it isn't about this town too. Look close first, then wider
+      // (40, 120, 250 km): out in the country the nearest towns can be far.
+      const others = [], tried = new Set();
+      for (const km of [40, 120, 250]) {
+        if (others.length >= 3) break;
+        const ring = item.kind === "county" && km === 40 ? await nearby() : await nearbyPlaces(e.id, km);
+        const ids = ring.filter((id) => !tried.has(id)).slice(0, 8);
+        ids.forEach((id) => tried.add(id));
+        if (!ids.length) continue;
+        const ents = await entities(ids, "sitelinks|labels");
+        for (const id of ids) {
+          if (others.length >= 3) break;
+          const t = ents[id]?.sitelinks?.enwiki?.title, name = ents[id]?.labels?.en?.value?.split(",")[0];
+          if (!t || !name) continue;
+          try {
+            const theirs = await townStories(t, name);
+            const s = theirs.stories.find((x) => !mine.linking.has(x.title) && x.title !== story.title && !x.intro.toLowerCase().includes(short.toLowerCase()));
+            if (s) others.push(storyOption(s, name));
+          } catch { /* try the next town */ }
+        }
+      }
+      const answer = storyOption(story, short);
+      const wrong = [...new Set(others)].filter((o) => o !== answer);
+      if (wrong.length < 3) return null;
+      const intro = story.intro.split(/(?<=[a-z0-9)\]"”’][.!?])(?<!\b(?:St|Mt|Ft|Dr|Jr|Sr|Mr|Mrs|Ms|Gen|Gov|Rev|Lt|Col|Capt|Sgt|Co|Inc|Ltd|vs|No)\.)\s+(?=[A-Z“"])/).slice(0, 2).join(" ");
+      return {
+        question: `What is ${short} known for?`, ...choices(answer, wrong.slice(0, 3)),
+        detail: `It’s ${story.title}: ${story.desc}.`,
+        storyFact: intro, storyLink: `https://en.wikipedia.org/wiki/${encodeURIComponent(story.title.replace(/ /g, "_"))}`,
+      };
+    }]);
     out.push(["event", fromPool("event", `Which of these happened in ${short}?`, (a) => `It was the ${a.full || a.name}${lead(a.desc)}.`)]);
     // "What is this building?": a photo of a landmark here; wrong answers are landmarks nearby.
     out.push(["building", async () => {
@@ -750,7 +844,7 @@
   // memorable history (the owner said so).
   const LIVELY = /\b(first|only|oldest|largest|biggest|highest|longest|tallest|smallest|deepest|world'?s?|famous|famously|known as|nicknamed|home to|birthplace|invented|record|filmed|named (?:after|for)|legend|legendary|haunted|gold rush|gold|silver|discovered|nation'?s|America'?s|unique|claim to fame|best known|inspired|ghost|outlaw|dinosaur|olympic|president|movie|film|song|hollywood|rodeo|festival|museum|railroad|railway|treaty|founded|stagecoach|pioneer|homestead|fort|mine|mining|brewery|opened|built|visited|celebrated|won|champion|championship|hosted)\b/gi;
   const DULL = /\b(census|median|household|per capita|percent|%|square mile|km2|population density|racial|makeup|income|poverty|ZIP|area code|school district|elected|council|mayor|commissioner|Köppen|precipitation|average temperature|vote|votes|voted|election|Democratic|Republican|regulation|ordinance|zoning|budget|tax|homeowners|Biden|Trump|Obama|Harris|Clinton|Romney|McCain|swung|swing|margin|carried|presidential election|Community Survey|labor force|employed|unemployed|funding|grant|granted|USDOT|plan|plans|planned|proposal|proposed)\b/i;
-  const ORPHAN = /^(He|She|They|These|Those|This|That|His|Her|Their|It was|But|And|However|Also|Instead|Construction|Later|Afterward|Afterwards|The (campus|building|park|school|church|team|company|station|museum|site|house|mine|bridge|lake|dam|hotel|store|club|event|race|festival|show|band|film|song|book|game|amendment|turnpike|line|road))\b/;
+  const ORPHAN = /^(He|She|They|These|Those|This|That|His|Her|Their|It was|But|And|However|Also|Instead|Construction|Later|Afterward|Afterwards|The (campus|building|park|school|church|team|company|station|museum|site|house|mine|bridge|lake|dam|hotel|store|club|event|race|festival|show|band|film|song|book|game|amendment|turnpike|line|road|wreckage|crash|accident|aircraft|plane|body|bodies|attack|fire|victim|victims|suspect|trial|case))\b/;
   const YEAR = /\b(1[5-9]\d\d|20[0-3]\d)\b/g;
   const splitSentences = (text) => text.split(/\n+/)
     .flatMap((para) => para.split(/(?<=[a-z0-9)\]"”’][.!?])(?<!\b(?:St|Mt|Ft|Dr|Jr|Sr|Mr|Mrs|Ms|Gen|Gov|Rev|Lt|Col|Capt|Sgt|Co|Inc|Ltd|vs|No)\.)\s+(?=[A-Z“"])/))
