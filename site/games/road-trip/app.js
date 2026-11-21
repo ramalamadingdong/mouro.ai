@@ -510,16 +510,6 @@
       })]);
     }
 
-    const inc = bestClaim(c, "P571");
-    if (inc?.time && inc.precision >= 9 && inc.time[0] === "+") {
-      const year = parseInt(inc.time.slice(1, 5), 10), now = new Date().getFullYear();
-      const wrong = shuffle([-60, -40, -25, -12, 12, 25, 40, 60].map((d) => year + d).filter((y) => y < now - 1)).slice(0, 3);
-      if (year > 1000 && wrong.length === 3) kinds.push(["founded", () => ({
-        question: item.kind === "county" ? `What year was ${label} formed?` : `What year was ${label} founded?`,
-        ...choices(String(year), wrong.map(String)),
-      })]);
-    }
-
     const area = bestClaim(c, "P2046");
     if (area) {
       const km2 = area.unit?.endsWith("Q232291") ? +area.amount * 2.58999 : area.unit?.endsWith("Q712226") ? +area.amount : NaN;
@@ -531,20 +521,21 @@
     }
 
 
-    // The plain facts above are the fallback. First try the exciting kinds:
-    // who was born here, what was filmed here, landmarks, nicknames, namesakes
-    // and sister cities, with wrong answers taken from the towns nearby.
+    // The plain numbers above are the last resort. First come events and
+    // notable buildings (what happened here, what is this building), then
+    // famous people, films, nicknames, namesakes and sister cities, with wrong
+    // answers taken from the towns nearby. No guessing years: not much fun.
     const title = e.sitelinks?.enwiki?.title;
     let article = null;
     if (title) { try { article = await readArticle(title); } catch { article = null; } }
-    const exciting = await excitingKinds(item, e, label);
-    if (article?.history.length) exciting.push(["history", async () => historyQuestion(article)]);
+    const exciting = await excitingKinds(item, e, label, article);
     const recent = trip.triviaTypes.slice(-3);
     const fresh = (list) => [...shuffle(list.filter(([k]) => !recent.includes(k))), ...shuffle(list.filter(([k]) => recent.includes(k)))];
-    const pick = [...fresh(exciting), ...fresh(kinds)];
+    const PRIME = ["building", "event", "story", "landmark"];
+    const pick = [...fresh(exciting.filter(([k]) => PRIME.includes(k))), ...fresh(exciting.filter(([k]) => !PRIME.includes(k))), ...fresh(kinds)];
     if (!pick.length) return null;
     let q = null, kind = null;
-    for (const [k, make] of pick.slice(0, 7)) {
+    for (const [k, make] of pick.slice(0, 8)) {
       try { q = await make(); } catch { q = null; }
       if (q) { kind = k; break; }
     }
@@ -575,12 +566,20 @@
     const ENTITY = "http://www.wikidata.org/entity/";
     return (d.results?.bindings || []).map((b) => Object.fromEntries(Object.entries(b).map(([k, v]) => [k, v.value.startsWith(ENTITY) ? v.value.slice(ENTITY.length) : v.value])));
   }
-  // Populated places within 40 km of a town or county, biggest first.
+  // Populated places within 40 km of a town, biggest first: never places
+  // inside it, the county or metro area around it, or anything centred within
+  // 3 km (Denver County is Denver), or a wrong answer could be right too.
   async function nearbyPlaces(qid) {
     const rows = await sparql(`SELECT ?p ?pop WHERE {
       wd:${qid} wdt:P625 ?c.
-      SERVICE wikibase:around { ?p wdt:P625 ?loc. bd:serviceParam wikibase:center ?c; wikibase:radius "40". }
+      SERVICE wikibase:around { ?p wdt:P625 ?loc. bd:serviceParam wikibase:center ?c; wikibase:radius "40"; wikibase:distance ?dist. }
+      FILTER(?dist > 3)
+      OPTIONAL { ?p schema:description ?d. FILTER(LANG(?d) = "en") }
+      FILTER(!BOUND(?d) || !REGEX(?d, "metropolitan|urban|corridor|diocese|region|statistical", "i"))
       ?p wdt:P1082 ?pop. FILTER(?pop >= 2000 && ?p != wd:${qid})
+      FILTER NOT EXISTS { ?p wdt:P131 wd:${qid} }
+      FILTER NOT EXISTS { wd:${qid} wdt:P131 ?p }
+      FILTER NOT EXISTS { wd:${qid} wdt:P361 ?p }
     } ORDER BY DESC(?pop) LIMIT 24`);
     return [...new Set(rows.map((r) => r.p))].filter((id) => /^Q\d+$/.test(id));
   }
@@ -589,24 +588,25 @@
   const POOLS = {
     born: { pattern: "?x wdt:P19 ?p.", min: 12 },
     filmed: { pattern: "?x wdt:P915 ?p.", min: 8 },
-    landmark: { pattern: "?x wdt:P131 ?p. FILTER NOT EXISTS { ?x wdt:P1082 [] } FILTER NOT EXISTS { ?x wdt:P31 wd:Q5 }", min: 10 },
+    landmark: { pattern: "?x wdt:P131 ?p. FILTER NOT EXISTS { ?x wdt:P1082 [] } FILTER NOT EXISTS { ?x wdt:P31 wd:Q5 } FILTER NOT EXISTS { ?x wdt:P31 ?settlement. VALUES ?settlement { PLACE_TYPES } } OPTIONAL { ?x wdt:P18 ?img }", min: 6 },
     namesake: { pattern: "?p wdt:P138 ?x.", min: 5 },
     twin: { pattern: "?p wdt:P190 ?x.", min: 5 },
     event: { pattern: "?x wdt:P276 ?p. ?x wdt:P585|wdt:P580 [].", min: 3 },
   };
   async function pool(kind, here, near) {
-    const { pattern, min } = POOLS[kind];
+    const { min } = POOLS[kind];
+    const pattern = POOLS[kind].pattern.replace("PLACE_TYPES", PLACE_TYPES);
     const places = [here, ...near].map((id) => `wd:${id}`).join(" ");
-    const rows = await sparql(`SELECT ?p ?x ?links WHERE {
+    const rows = await sparql(`SELECT ?p ?x ?links ${kind === "landmark" ? "?img" : ""} WHERE {
       hint:Query hint:optimizer "None".
       VALUES ?p { ${places} } ${pattern}
       ?x wikibase:sitelinks ?links. FILTER(?links >= ${min})
     } ORDER BY DESC(?links) LIMIT 150`);
     const mine = [...new Set(rows.filter((r) => r.p === here).map((r) => r.x))];
     const theirs = [...new Set(rows.filter((r) => r.p !== here && !mine.includes(r.x)).map((r) => r.x))];
-    const placeOf = {};
-    for (const row of rows) placeOf[row.x] ??= row.p;
-    return { mine, theirs, placeOf };
+    const placeOf = {}, imageOf = {};
+    for (const row of rows) { placeOf[row.x] ??= row.p; if (row.img) imageOf[row.x] ??= row.img; }
+    return { mine, theirs, placeOf, imageOf };
   }
   // Labels and one-line descriptions, dropping any that give the answer away
   // (a landmark called "Boulder Creek" in a question about Boulder).
@@ -625,9 +625,35 @@
   const pickFew = (list, n, top) => shuffle(list.slice(0, top)).slice(0, n);
   const lead = (desc) => (desc ? `, ${desc}` : "");
 
-  async function excitingKinds(item, e, label) {
+  // A Commons picture, sized for a phone, with its credit (CC licences need one).
+  async function commonsPicture(filePathUrl) {
+    const file = decodeURIComponent(filePathUrl.split("/Special:FilePath/")[1] || "");
+    if (!file || /\.(svg|tif|tiff|pdf|gif)$/i.test(file)) return null;
+    const d = await getJSON(`https://commons.wikimedia.org/w/api.php?${qs({ action: "query", titles: `File:${file}`, prop: "imageinfo", iiprop: "url|extmetadata", iiurlwidth: 900, iiextmetadatafilter: "Artist|LicenseShortName|LicenseUrl", format: "json", formatversion: 2, origin: "*" })}`);
+    const info = d.query?.pages?.[0]?.imageinfo?.[0];
+    if (!info?.thumburl) return null;
+    const m = info.extmetadata || {};
+    return { src: info.thumburl, page: info.descriptionurl, author: textOf(m.Artist?.value).slice(0, 80) || "Unknown author", license: m.LicenseShortName?.value || "see file page", licenseUrl: m.LicenseUrl?.value || info.descriptionurl };
+  }
+  // "The town" in place of a town's own name, so a history sentence doesn't give itself away.
+  function withoutName(text, name) {
+    const esc = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const stand = /county$/i.test(name) ? "the county" : "the town";
+    let out = text
+      .replace(new RegExp(`\\b(the )?(town|city|village|community|county) of ${esc}\\b`, "gi"), stand)
+      .replace(new RegExp(`\\b${esc}'s\\b`, "gi"), `${stand}'s`)
+      // Not when it's part of a longer name ("Boulder Creek"): that stays, as a fair hint.
+      .replace(new RegExp(`\\b${esc}\\b(?! [A-Z])`, "g"), stand);
+    out = out.replace(/\b(the|a|new|old) the (town|county)\b/gi, "$1 $2");
+    return out.charAt(0).toUpperCase() + out.slice(1);
+  }
+
+  async function excitingKinds(item, e, label, article) {
     let near = null;
-    const nearby = async () => (near ??= await nearbyPlaces(e.id));
+    // For a county, the neighbours are the counties next door (anything
+    // inside the county would make a wrong answer right).
+    const nextDoor = (e.claims?.P47 || []).map((x) => x.mainsnak?.datavalue?.value?.id).filter(Boolean);
+    const nearby = async () => (near ??= item.kind === "county" && nextDoor.length >= 2 ? nextDoor.slice(0, 16) : await nearbyPlaces(e.id));
     const short = label.split(",")[0];
     // One relation, as a question: the right answer belongs to this place, the wrong ones to neighbours.
     const fromPool = (kind, ask, explain) => async () => {
@@ -665,6 +691,41 @@
       out.push(["twin", fromPool("twin", `Which of these is a sister city of ${short}?`, (a) => `${a.name}${lead(a.desc)}, is ${short}’s sister city.`)]);
     }
     out.push(["event", fromPool("event", `Which of these happened in ${short}?`, (a) => `It was the ${a.full || a.name}${lead(a.desc)}.`)]);
+    // "What is this building?": a photo of a landmark here; wrong answers are landmarks nearby.
+    out.push(["building", async () => {
+      const { mine, theirs, imageOf } = await pool("landmark", e.id, (await nearby()).slice(0, 16));
+      const pictured = mine.filter((id) => imageOf[id]);
+      if (!pictured.length || theirs.length < 3) return null;
+      const right = pickFew(pictured, 1, 4), wrong = pickFew(theirs, 6, 14);
+      const names = await named([...right, ...wrong], short);
+      const answer = names[right[0]];
+      const others = [...new Set(wrong.map((id) => names[id]?.name).filter((n) => n && n !== answer?.name))].slice(0, 3);
+      if (!answer || others.length < 3) return null;
+      const picture = await commonsPicture(imageOf[right[0]]);
+      if (!picture) return null;
+      return { question: `This is in ${short}. What is it?`, ...choices(answer.name, others), detail: `It’s ${answer.name}${lead(answer.desc)}.`, picture };
+    }]);
+    // "Which of these is from X's history?": one sentence from this place's
+    // History section, three from nearby towns' articles, all with their own
+    // town's name swapped for "the town".
+    if (article?.history.length) out.push(["story", async () => {
+      const ids = (await nearby()).slice(0, 14);
+      const ents = await entities(ids, "sitelinks|labels|descriptions");
+      const towns = ids.map((id) => ents[id]).filter((x) => x?.sitelinks?.enwiki && !/\b(metropolitan|statistical|region)\b/i.test(x.descriptions?.en?.value || ""));
+      const others = [];
+      for (const town of shuffle(towns.slice(0, 8)).slice(0, 5)) {
+        if (others.length >= 3) break;
+        const name = town.labels?.en?.value?.split(",")[0];
+        try {
+          const theirs = await readArticle(town.sitelinks.enwiki.title);
+          const h = pickFew(theirs.history.filter((x) => !x.source.toLowerCase().includes(short.toLowerCase())), 1, 4)[0];
+          if (h && name) others.push(withoutName(h.source, name));
+        } catch { /* try another town */ }
+      }
+      const right = pickFew(article.history, 1, 4)[0];
+      if (!right || others.length < 3) return null;
+      return { question: `Which of these is from ${short}’s history?`, ...choices(withoutName(right.source, short), others), detail: `That one’s from ${short}’s history.`, source: right.source };
+    }]);
     out.push(["landmark", fromPool("landmark", `Which of these is in ${short}?`, (a) => `${a.name}${lead(a.desc)}, is here.`)]);
     if (e.claims?.P138) out.push(["namesake", fromPool("namesake", `Who or what is ${short} named after?`, (a) => `${short} is named after ${a.name}${lead(a.desc)}.`)]);
     const nick = (e.claims?.P1449 || []).map((c) => c.mainsnak?.datavalue?.value).find((v) => v?.language === "en" && v.text.length <= 50);
@@ -684,15 +745,15 @@
   // ── Facts and history from the Wikipedia article ───────────────────────
   // "Did you know?" is the liveliest sentence, preferring the History section;
   // "Lately" is one about the last few years (the nearest thing to news that
-  // needs no news service); "Fill in the year" questions come from History.
+  // needs no news service); "Which of these is from X's history?" comes from History.
   // Crimes, disasters and the like are allowed: they're often a town's most
   // memorable history (the owner said so).
   const LIVELY = /\b(first|only|oldest|largest|biggest|highest|longest|tallest|smallest|deepest|world'?s?|famous|famously|known as|nicknamed|home to|birthplace|invented|record|filmed|named (?:after|for)|legend|legendary|haunted|gold rush|gold|silver|discovered|nation'?s|America'?s|unique|claim to fame|best known|inspired|ghost|outlaw|dinosaur|olympic|president|movie|film|song|hollywood|rodeo|festival|museum|railroad|railway|treaty|founded|stagecoach|pioneer|homestead|fort|mine|mining|brewery|opened|built|visited|celebrated|won|champion|championship|hosted)\b/gi;
   const DULL = /\b(census|median|household|per capita|percent|%|square mile|km2|population density|racial|makeup|income|poverty|ZIP|area code|school district|elected|council|mayor|commissioner|Köppen|precipitation|average temperature|vote|votes|voted|election|Democratic|Republican|regulation|ordinance|zoning|budget|tax|homeowners|Biden|Trump|Obama|Harris|Clinton|Romney|McCain|swung|swing|margin|carried|presidential election|Community Survey|labor force|employed|unemployed|funding|grant|granted|USDOT|plan|plans|planned|proposal|proposed)\b/i;
-  const ORPHAN = /^(He|She|They|These|Those|His|Her|Their|It was|But|And|However|Also|Instead|Construction|Later|Afterward|Afterwards|The (campus|building|park|school|church|team|company|station|museum|site|house|mine|bridge|lake|dam|hotel|store|club|event|race|festival|show|band|film|song|book|game|amendment|turnpike|line|road))\b/;
+  const ORPHAN = /^(He|She|They|These|Those|This|That|His|Her|Their|It was|But|And|However|Also|Instead|Construction|Later|Afterward|Afterwards|The (campus|building|park|school|church|team|company|station|museum|site|house|mine|bridge|lake|dam|hotel|store|club|event|race|festival|show|band|film|song|book|game|amendment|turnpike|line|road))\b/;
   const YEAR = /\b(1[5-9]\d\d|20[0-3]\d)\b/g;
   const splitSentences = (text) => text.split(/\n+/)
-    .flatMap((para) => para.split(/(?<=[a-z0-9)\]"”’][.!?])\s+(?=[A-Z“"])/))
+    .flatMap((para) => para.split(/(?<=[a-z0-9)\]"”’][.!?])(?<!\b(?:St|Mt|Ft|Dr|Jr|Sr|Mr|Mrs|Ms|Gen|Gov|Rev|Lt|Col|Capt|Sgt|Co|Inc|Ltd|vs|No)\.)\s+(?=[A-Z“"])/))
     .map((x) => x.trim()).filter((x) => x.length >= 60 && x.length <= 240 && /[.!?]$/.test(x) && !/^=/.test(x) && !/\b(St|Mt|Ft|Dr|Jr|Sr|Co|Inc|Ltd|Gen|Gov|Rev|Lt|Col|Capt)\.$/.test(x));
   const liveliness = (x) => (x.match(LIVELY) || []).length * 3 - (DULL.test(x) ? 10 : 0) - (ORPHAN.test(x) ? 6 : 0) + (/\b1[5-9]\d\d\b/.test(x) ? 1 : 0);
 
@@ -706,11 +767,11 @@
     const now = new Date().getFullYear();
 
     const historySentences = splitSentences(historyText);
+    // Short, self-contained History sentences: answer options for "which of these is from X's history?".
     const history = historySentences
-      .filter((x) => !ORPHAN.test(x) && !/\b(BC|BCE|AD|CE)\b/.test(x) && !/\b1[5-9]\d0s\b/.test(x))
-      .map((x) => ({ x, years: [...x.matchAll(YEAR)].map((m) => +m[1]) }))
-      .filter((h) => h.years.length === 1 && h.years[0] <= now - 2)
-      .map((h) => ({ source: h.x, year: h.years[0], score: liveliness(h.x) }))
+      .filter((x) => !ORPHAN.test(x) && x.length <= 170 && !DULL.test(x))
+      .map((x) => ({ source: x, score: liveliness(x) }))
+      .filter((h) => h.score >= 3)
       .sort((a, b) => b.score - a.score);
 
     const lively = [...historySentences.map((x) => ({ x, score: liveliness(x) + 3 })),
@@ -725,22 +786,10 @@
     return { history, lively, recent };
   }
 
-  // "Fill in the year" from a History sentence. Wrong years are spread around
-  // the right one, never in the future.
-  function historyQuestion(article) {
-    const h = pickFew(article.history, 1, 4)[0];
-    if (!h) return null;
-    const now = new Date().getFullYear();
-    const wrong = shuffle([-41, -27, -16, -9, 8, 15, 26, 38].map((d) => h.year + d).filter((y) => y <= now - 1)).slice(0, 3);
-    if (wrong.length < 3) return null;
-    const blanked = h.source.replace(String(h.year), "____");
-    return { question: `Fill in the year: “${blanked}”`, ...choices(String(h.year), wrong.map(String)), detail: `It was ${h.year}.`, source: h.source };
-  }
-
   // Two or three sentences from the Wikipedia summary, skipping the bare "X is a town in Y" opener when there's more.
   function trimFact(text) {
     // Split after ". " only when a lowercase letter or digit ends the sentence, so "U.S. Senator" and "Stephen A. Douglas" stay whole.
-    const sentences = text.split(/(?<=[a-z0-9)\]"”’][.!?])\s+(?=[A-Z“"])/);
+    const sentences = text.split(/(?<=[a-z0-9)\]"”’][.!?])(?<!\b(?:St|Mt|Ft|Dr|Jr|Sr|Mr|Mrs|Ms|Gen|Gov|Rev|Lt|Col|Capt|Sgt|Co|Inc|Ltd|vs|No)\.)\s+(?=[A-Z“"])/);
     let pick = sentences.map((s) => s.trim()).filter(Boolean);
     if (pick.length > 2 && pick[0].length < 140) pick = pick.slice(1);
     let out = "";
@@ -756,6 +805,14 @@
     const away = q.nearby == null ? "" : trip.imperial ? `${Math.max(1, Math.round(q.nearby / 1.609))} mi away` : `${Math.max(1, Math.round(q.nearby))} km away`;
     $("trivia-title").textContent = q.nearby != null ? `Nearby: ${q.title.split(",")[0]}, ${away}` : q.firstFix ? `Starting in ${q.title}` : `Welcome to ${q.title}`;
     $("triviaQ").textContent = q.question;
+    $("triviaPhoto").hidden = !q.picture;
+    if (q.picture) {
+      $("triviaImg").src = q.picture.src;
+      const credit = $("triviaCredit"); credit.textContent = `Photo: ${q.picture.author} · `;
+      const lic = document.createElement("a");
+      lic.textContent = q.picture.license; lic.href = q.picture.licenseUrl; lic.target = "_blank"; lic.rel = "noreferrer";
+      credit.append(lic, " · Wikimedia Commons");
+    }
     $("triviaWait").textContent = "";
     $("triviaAfter").hidden = true;
     const box = $("triviaOpts"); box.textContent = "";
