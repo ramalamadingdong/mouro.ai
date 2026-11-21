@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Town Trivia icon: a map pin with a question mark over a town's skyline and the road. Full-bleed square, artwork
+       inside the central 80% (maskable safe zone). Rendered to the PNGs beside it by scripts/render-icons.mjs. -->
+  <defs>
+    <radialGradient id="bg" cx="0.3" cy="0.2" r="1">
+      <stop offset="0" stop-color="#2f6f86"/>
+      <stop offset="1" stop-color="#112733"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <!-- Skyline -->
+  <g fill="#1d4a5a">
+    <rect x="86" y="300" width="56" height="90" rx="6"/>
+    <rect x="150" y="270" width="44" height="120" rx="6"/>
+    <rect x="318" y="282" width="50" height="108" rx="6"/>
+    <rect x="376" y="310" width="52" height="80" rx="6"/>
+    <path d="M200 390 V320 L232 296 L264 320 V390 Z"/>
+  </g>
+  <g fill="#f8d36a" opacity="0.8">
+    <rect x="100" y="318" width="10" height="12" rx="2"/><rect x="120" y="318" width="10" height="12" rx="2"/>
+    <rect x="162" y="290" width="10" height="12" rx="2"/><rect x="330" y="300" width="10" height="12" rx="2"/>
+    <rect x="390" y="328" width="10" height="12" rx="2"/><rect x="350" y="330" width="10" height="12" rx="2"/>
+  </g>
+  <!-- Road -->
+  <rect x="64" y="388" width="384" height="44" rx="10" fill="#262e3a"/>
+  <g fill="#f4c542"><rect x="96" y="406" width="44" height="8" rx="4"/><rect x="176" y="406" width="44" height="8" rx="4"/><rect x="256" y="406" width="44" height="8" rx="4"/><rect x="336" y="406" width="44" height="8" rx="4"/></g>
+  <!-- Pin -->
+  <g transform="translate(256 178)">
+    <ellipse cx="0" cy="150" rx="30" ry="9" fill="#000" opacity="0.25"/>
+    <path d="M0 142 C-30 96 -84 58 -84 4 A84 84 0 0 1 84 4 C84 58 30 96 0 142 Z" fill="#f4c542" stroke="#a9851f" stroke-width="8" stroke-linejoin="round"/>
+    <circle cx="0" cy="0" r="52" fill="#fff8e6"/>
+    <path d="M-18 -14 Q-18 -36 2 -36 Q22 -36 22 -18 Q22 -4 6 4 Q0 8 0 18" fill="none" stroke="#173140" stroke-width="13" stroke-linecap="round"/>
+    <circle cx="0" cy="36" r="8" fill="#173140"/>
+  </g>
+</svg>

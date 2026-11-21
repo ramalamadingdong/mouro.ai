@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Photo Guess icon: an instant photo of a road at sunset, with a stopwatch. Full-bleed square, artwork inside the
+       central 80% (maskable safe zone). Rendered to the PNGs beside it by scripts/render-icons.mjs. -->
+  <defs>
+    <radialGradient id="bg" cx="0.3" cy="0.2" r="1">
+      <stop offset="0" stop-color="#9a6634"/>
+      <stop offset="1" stop-color="#2e1d10"/>
+    </radialGradient>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5a86a0"/>
+      <stop offset="1" stop-color="#f2a45c"/>
+    </linearGradient>
+    <clipPath id="pic"><rect x="132" y="128" width="224" height="200" rx="6"/></clipPath>
+  </defs>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <!-- Photo -->
+  <g transform="rotate(-8 256 256)">
+    <rect x="112" y="116" width="264" height="292" rx="14" fill="#000" opacity="0.25" transform="translate(6 10)"/>
+    <rect x="112" y="108" width="264" height="292" rx="14" fill="#fbf4e4"/>
+    <g clip-path="url(#pic)">
+      <rect x="132" y="128" width="224" height="200" fill="url(#sky)"/>
+      <circle cx="300" cy="236" r="34" fill="#f8d36a"/>
+      <path d="M132 250 Q190 214 250 242 Q310 222 356 240 V328 H132 Z" fill="#2c5a4a"/>
+      <path d="M236 258 H260 L330 328 H170 Z" fill="#262e3a"/>
+      <path d="M246 270 h4 l2 14 h-8 z M244 296 h8 l3 22 h-14 z" fill="#f4c542"/>
+    </g>
+  </g>
+  <!-- Stopwatch -->
+  <g transform="translate(370 370)">
+    <circle r="72" fill="#000" opacity="0.25" cx="4" cy="8"/>
+    <rect x="-14" y="-92" width="28" height="22" rx="6" fill="#f6c27a"/>
+    <circle r="72" fill="#f6c27a"/>
+    <circle r="56" fill="#fff8e6"/>
+    <path d="M0 0 V-38 M0 0 L26 16" stroke="#3a2716" stroke-width="10" stroke-linecap="round"/>
+    <circle r="8" fill="#3a2716"/>
+  </g>
+</svg>

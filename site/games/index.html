@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Mouro Games — family game night</title>
-<meta name="description" content="Texas Hold’em, backgammon (Tawleh), gin rummy, Yahtzee, Sudoku and Cat Café to play with family and friends. No accounts, no ads — share a code and play.">
+<meta name="description" content="Texas Hold’em, backgammon (Tawleh), gin rummy, Yahtzee, Sudoku and Cat Café to play with family and friends, plus road trip games for the car. No accounts, no ads — share a code and play.">
 <meta property="og:title" content="Mouro Games — family game night">
-<meta property="og:description" content="Backgammon (Tawleh), gin rummy, Yahtzee, Sudoku and Cat Café to play with family and friends. No accounts, no ads — share a code and play.">
+<meta property="og:description" content="Backgammon (Tawleh), gin rummy, Yahtzee, Sudoku and Cat Café to play with family and friends, plus road trip games for the car. No accounts, no ads — share a code and play.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://mouro.ai/games/">
 <meta property="og:image" content="https://mouro.ai/static/share/games.png">
@@ -127,7 +127,22 @@
   .dots       { --a: #5b3a7a; --b: #2e1c42; --ink: #f2a35e; }
   .sudoku     { --a: #27437a; --b: #14213f; --ink: #7bb8ff; }
   .cafe       { --a: #1f6f78; --b: #123f47; --ink: #f2b560; }
-  .roadtrip   { --a: #2f4a66; --b: #172433; --ink: #f4c542; }
+  .trivia     { --a: #2f6f86; --b: #173140; --ink: #f4c542; }
+  .photo      { --a: #8a5a2e; --b: #3a2716; --ink: #f6c27a; }
+  .categories { --a: #6a3a70; --b: #2f1832; --ink: #ffd166; }
+
+  /* Mobile games / Road trip games. */
+  .tabs { display: inline-flex; align-self: flex-start; gap: 4px; padding: 5px; border-radius: 999px; background: rgba(0, 0, 0, .28); border: 1px solid var(--line); }
+  .tabs button {
+    font: inherit; font-weight: 700; font-size: .95rem; color: var(--muted); cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    background: transparent; border: 0; border-radius: 999px; padding: 9px 18px;
+    transition: background .16s ease, color .16s ease;
+  }
+  .tabs button:hover { color: var(--cream); }
+  .tabs button[aria-selected="true"] { background: var(--gold); color: #1d1503; box-shadow: 0 3px 0 #9c7b24; }
+  .tabs svg { width: 18px; height: 18px; flex: none; }
+  .note { color: var(--muted); font-size: .92rem; max-width: 46em; }
   .pawprints  { --a: #8a4b1f; --b: #45240e; --ink: #f7d9a8; }
 
   /* This week's game: its own heading row with a small "New this week" pill
@@ -161,6 +176,8 @@
 
   @media (max-width: 760px) {
     .shelf, .links { grid-template-columns: 1fr; }
+    .tabs { align-self: stretch; }
+    .tabs button { flex: 1; padding: 10px 8px; }
     .wrap { gap: 32px; }
   }
   @media (max-width: 400px) {
@@ -184,12 +201,25 @@
   </header>
 
   <main class="group" style="gap: 40px">
+    <!-- Mobile games is the default; /games/#road-trip opens the other tab. -->
+    <div class="tabs" role="tablist" aria-label="Which games">
+      <button type="button" role="tab" id="tab-mobile" aria-controls="panel-mobile" aria-selected="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></svg>
+        Mobile games
+      </button>
+      <button type="button" role="tab" id="tab-road" aria-controls="panel-road" aria-selected="false" tabindex="-1">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 17h14l-1.6-5.2A2 2 0 0 0 15.5 10.4h-7a2 2 0 0 0-1.9 1.4Z"/><path d="M5 17v2.5M19 17v2.5M3.5 17h17"/><circle cx="8" cy="14.2" r=".6" fill="currentColor"/><circle cx="16" cy="14.2" r=".6" fill="currentColor"/></svg>
+        Road trip games
+      </button>
+    </div>
+
     <section class="intro">
       <h1>Game night, <em>anywhere.</em></h1>
-      <p>Games for family and friends. No accounts, no ads — share a code and play.</p>
+      <p id="intro-text">Games for family and friends. No accounts, no ads — share a code and play.</p>
       <p class="ios-hint label" id="ios-hint" hidden>Tip: tap Share, then “Add to Home Screen” to install</p>
     </section>
 
+    <div class="group" style="gap: 40px" role="tabpanel" id="panel-mobile" aria-labelledby="tab-mobile">
     <!--
       WEEKLY GAME. Exactly one tile lives here: the newest game from
       games/WEEKLY.md. Each week the new game REPLACES this tile — the
@@ -281,15 +311,6 @@
             <span class="play">Play</span>
           </div>
         </a>
-        <a class="game roadtrip" href="/games/road-trip/">
-          <img src="/games/road-trip/icons/icon-192.png" alt="" width="92" height="92">
-          <h3>Road Trip</h3>
-          <p>Games for the car. Trivia about each town and county you cross into, guess when you’ll pass a photo of the road ahead, and Categories out loud.</p>
-          <div class="meta">
-            <div class="tags"><span>Live GPS</span><span>Word game</span><span>Car screen</span></div>
-            <span class="play">Play</span>
-          </div>
-        </a>
       </div>
     </section>
 
@@ -313,6 +334,43 @@
         </a>
       </div>
     </section>
+    </div>
+
+    <div class="group" style="gap: 40px" role="tabpanel" id="panel-road" aria-labelledby="tab-road" hidden>
+    <section class="group" aria-labelledby="road">
+      <h2 class="label" id="road">Road trip games</h2>
+      <div class="shelf">
+        <a class="game trivia" href="/games/road-trip/trivia/">
+          <img src="/games/road-trip/trivia/icons/icon-192.png" alt="" width="92" height="92">
+          <h3>Town Trivia</h3>
+          <p>Each time you cross into a new town or county, a question about it, then a fun fact.</p>
+          <div class="meta">
+            <div class="tags"><span>Passengers</span><span>Live GPS</span><span>Demo drive</span></div>
+            <span class="play">Play</span>
+          </div>
+        </a>
+        <a class="game photo" href="/games/road-trip/photo/">
+          <img src="/games/road-trip/photo/icons/icon-192.png" alt="" width="92" height="92">
+          <h3>Photo Guess</h3>
+          <p>A photo of a spot on the road ahead. Guess how many minutes until you drive past it.</p>
+          <div class="meta">
+            <div class="tags"><span>Passengers</span><span>Live GPS</span><span>Demo drive</span></div>
+            <span class="play">Play</span>
+          </div>
+        </a>
+        <a class="game categories" href="/games/road-trip/categories/">
+          <img src="/games/road-trip/categories/icons/icon-192.png" alt="" width="92" height="92">
+          <h3>Categories</h3>
+          <p>A letter and a category, then take turns naming one until someone stalls. Put a phone on the console as the car screen.</p>
+          <div class="meta">
+            <div class="tags"><span>1–8 players</span><span>Out loud</span><span>Car screen</span></div>
+            <span class="play">Play</span>
+          </div>
+        </a>
+      </div>
+      <p class="note">Town Trivia and Photo Guess use your phone’s location. It goes only to OpenStreetMap and Wikimedia, never to mouro.ai, and nobody else can see it. Categories doesn’t use location at all. The driver keeps their eyes on the road.</p>
+    </section>
+    </div>
   </main>
 
   <footer class="foot">
@@ -343,6 +401,42 @@
     const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) ||
       (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
     if (ios && !navigator.standalone) document.getElementById("ios-hint").hidden = false;
+  })();
+
+  // Mobile games / Road trip games. Mobile is the default; #road-trip in the
+  // address opens the road trip tab, so it can be linked and survives Back.
+  (() => {
+    const tabs = { mobile: document.getElementById("tab-mobile"), road: document.getElementById("tab-road") };
+    const panels = { mobile: document.getElementById("panel-mobile"), road: document.getElementById("panel-road") };
+    const intro = {
+      mobile: "Games for family and friends. No accounts, no ads — share a code and play.",
+      road: "Games for the car. Passengers play on their phones, and Categories can put one phone on the console as a shared screen.",
+    };
+    function show(which, focus = false) {
+      for (const k of ["mobile", "road"]) {
+        const on = k === which;
+        tabs[k].setAttribute("aria-selected", on);
+        tabs[k].tabIndex = on ? 0 : -1;
+        panels[k].hidden = !on;
+      }
+      document.getElementById("intro-text").textContent = intro[which];
+      if (focus) tabs[which].focus();
+    }
+    const fromHash = () => show(location.hash === "#road-trip" ? "road" : "mobile");
+    for (const k of ["mobile", "road"]) {
+      tabs[k].addEventListener("click", () => {
+        history.replaceState(null, "", k === "road" ? "#road-trip" : location.pathname + location.search);
+        show(k);
+      });
+      tabs[k].addEventListener("keydown", (e) => {
+        if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+        const next = k === "mobile" ? "road" : "mobile";
+        history.replaceState(null, "", next === "road" ? "#road-trip" : location.pathname + location.search);
+        show(next, true);
+      });
+    }
+    window.addEventListener("hashchange", fromHash);
+    fromHash();
   })();
 </script>
 </body>

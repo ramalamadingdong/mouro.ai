@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Town Trivia — mouro.ai</title>
+<meta name="description" content="Road trip trivia: each time you cross into a new town or county, a question about it, then a fun fact.">
+<meta property="og:title" content="Town Trivia — mouro.ai">
+<meta property="og:description" content="Road trip trivia: each time you cross into a new town or county, a question about it, then a fun fact.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://mouro.ai/games/road-trip/trivia/">
+<meta property="og:image" content="https://mouro.ai/static/share/town-trivia.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Town Trivia: a question for every town you cross into">
+<meta name="twitter:card" content="summary_large_image">
+<!-- A road trip game. Markup only: the styles and code are shared with the
+     other road trip games in ../app.css and ../app.js (privacy rules there). -->
+<link rel="manifest" href="/games/road-trip/trivia/manifest.webmanifest">
+<meta name="theme-color" content="#1a2230">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Town Trivia">
+<link rel="apple-touch-icon" href="/games/road-trip/trivia/icons/apple-touch-icon.png">
+<link rel="icon" href="/games/road-trip/trivia/icons/icon-192.png" type="image/png" sizes="192x192">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/games/road-trip/app.css">
+</head>
+<body data-game="trivia">
+<main>
+  <header>
+    <h1><img src="/games/road-trip/trivia/icons/icon-192.png" alt="" width="34" height="34">Town Trivia</h1>
+    <a href="/games/#road-trip">← Road trip games</a>
+  </header>
+
+  <section id="setup" class="card" aria-labelledby="setup-title">
+    <h2 id="setup-title">A question for every town</h2>
+    <div class="road" aria-hidden="true"></div>
+    <p class="muted small">Each time you cross into a new town or county, you get a question about it, then a fact from Wikipedia. Just start it: no destination needed.</p>
+    <label class="check"><input type="checkbox" id="passenger"> <span>I’m a passenger. The driver keeps their eyes on the road and doesn’t play.</span></label>
+    <div class="row">
+      <button class="btn grow" id="start" type="button" disabled>Start</button>
+    </div>
+    <div class="row">
+      <button class="btn alt grow" id="demo" type="button">Demo drive</button>
+      <select id="speed" aria-label="Demo speed" style="width:auto">
+        <option value="10">10× speed</option>
+        <option value="30" selected>30× speed</option>
+        <option value="60">60× speed</option>
+      </select>
+    </div>
+    <p class="msg" id="setupMsg" role="status" aria-live="polite"></p>
+    <p class="muted small">Demo drive goes from Boulder to Colorado Springs at high speed, with no GPS, so you can try it at home.</p>
+  </section>
+  <section id="pastCard" class="card" hidden aria-labelledby="past-title">
+    <h2 id="past-title" class="label">Past games</h2>
+    <div class="history" id="history"></div>
+  </section>
+  <section id="trip" hidden>
+    <div class="card">
+      <div class="row">
+        <p class="grow where" id="where" aria-live="polite">Finding where we are…</p>
+        <button class="btn alt small" id="pause" type="button" hidden>Pause</button>
+        <button class="btn alt small" id="end" type="button">End</button>
+      </div>
+      <div class="progress" id="progress" aria-hidden="true"><i id="bar"></i></div>
+      <div class="dash">
+        <div><strong id="score">0</strong><span>Score</span></div>
+        <div><strong id="clock">0:00</strong><span>Trip time</span></div>
+        <div><strong id="left">–</strong><span id="leftLabel">To go</span></div>
+      </div>
+      <p class="msg" id="tripMsg" role="status" aria-live="polite"></p>
+    </div>
+  </section>
+  <section id="triviaCard" class="card" hidden aria-labelledby="trivia-title" aria-live="polite">
+    <p class="label">Town trivia</p>
+    <h2 id="trivia-title"></h2>
+    <p id="triviaQ"></p>
+    <div class="options" id="triviaOpts"></div>
+    <div id="triviaAfter" hidden>
+      <p class="reveal" id="triviaResult"></p>
+      <p class="fact" id="triviaFact" style="margin-top:10px"></p>
+      <p class="small" style="margin-top:8px"><a id="triviaLink" target="_blank" rel="noreferrer">Read more on Wikipedia</a></p>
+    </div>
+    <p class="muted small" id="triviaWait"></p>
+  </section>
+
+  <footer>
+    <span>Your location goes to OpenStreetMap to find the town you’re in, and to Wikidata and Wikipedia for the questions. It is never sent to mouro.ai, never shared with other players, and not saved on this phone. Past games keep only the date and score.</span>
+    <span>Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap contributors</a> · facts from Wikidata and Wikipedia</span>
+  </footer>
+</main>
+<script src="/games/road-trip/app.js"></script>
+</body>
+</html>
