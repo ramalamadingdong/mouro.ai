@@ -288,6 +288,7 @@
 
   function stopTimers() {
     if (!trip) return;
+    stopNotifications();
     trip.timers.forEach(clearInterval); trip.timers = [];
     if (trip.watch != null) navigator.geolocation.clearWatch(trip.watch);
     trip.watch = null;
@@ -302,6 +303,7 @@
     if (has("triviaCard")) $("triviaCard").hidden = true;
     if (has("photoCard")) $("photoCard").hidden = true;
     $("setup").hidden = false;
+    updateStartButton(); // the passenger box is still ticked: Start works again
     renderHistory();
   }
 
@@ -570,7 +572,7 @@
         } catch { /* the question still works without the fact */ }
       }
     }
-    return { ...q, title: label, kind: item.kind, fact, lately, link, firstFix: item.firstFix, nearby: item.nearby };
+    return { ...q, title: label, kind: item.kind, questionKind: kind, fact, lately, link, firstFix: item.firstFix, nearby: item.nearby };
   }
 
   // ── Exciting trivia from Wikidata's query service ──────────────────────
@@ -891,13 +893,84 @@
     return out;
   }
 
+  // ── Trip notifications ─────────────────────────────────────────────────
+  // Opt-in per trip: "Notify me" during a Town Trivia trip; ending the trip
+  // switches them off and clears any still showing, and the next trip starts
+  // with them off. Each new question arrives as a teaser built from one of
+  // its options ("Did Marvin Heemeyer's bulldozer rampage happen in Granby?"),
+  // right or wrong at random, so the only way to know is to tap and answer.
+  // The phone shows them itself (no server). The service worker beside the
+  // trivia page only opens the game when one is tapped; it caches nothing.
+  // A web page only runs while the phone lets it: a notification can arrive
+  // while the game is in the background, but a locked phone may pause it.
+  const canNotify = "Notification" in window && "serviceWorker" in navigator;
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
+  async function toggleNotifications() {
+    if (!trip) return;
+    if (trip.notify) { stopNotifications(); say("Notifications off for this trip."); return; }
+    if (!canNotify) {
+      say(isIOS ? "On iPhone, add this page to your Home Screen (Share, then Add to Home Screen) and open it from there to get notifications." : "This browser can’t show notifications.", true);
+      return;
+    }
+    const permission = await Notification.requestPermission();
+    if (permission !== "granted") { say("Notifications are blocked for this site. Allow them in the browser’s settings to use this.", true); return; }
+    try {
+      await navigator.serviceWorker.register("/games/road-trip/trivia/sw.js", { scope: "/games/road-trip/trivia/" });
+      trip.notifyReg = await navigator.serviceWorker.ready;
+    } catch { say("Couldn’t turn on notifications in this browser.", true); return; }
+    if (!trip) return;
+    trip.notify = true;
+    $("notify").textContent = "Notifications on";
+    $("notify").setAttribute("aria-pressed", "true");
+    say("Notifications on for this trip, while the game is open in the background. A locked phone may pause it. They stop when the trip ends.");
+  }
+
+  function stopNotifications() {
+    if (!trip) return;
+    trip.notify = false;
+    trip.notifyReg?.getNotifications({ tag: "roadtrip-trivia" }).then((list) => list.forEach((n) => n.close())).catch(() => {});
+    if (has("notify")) { $("notify").textContent = "Notify me"; $("notify").setAttribute("aria-pressed", "false"); }
+  }
+
+  // One of the options, as a yes-or-no question.
+  function teaser(q) {
+    const place = q.title.split(",")[0];
+    const opt = q.options[Math.floor(Math.random() * q.options.length)];
+    switch (q.questionKind) {
+      case "known": { const [title, ...rest] = opt.split(": "); return `Is ${place} known for ${title}${rest.length ? ` (${rest.join(": ")})` : ""}?`; }
+      case "event": return `Did the ${opt} happen in ${place}?`;
+      case "story": return `Did this happen in ${place}? “${opt}”`;
+      case "born": return `Was ${opt} born in ${place}?`;
+      case "filmed": return `Was ${opt} filmed in ${place}?`;
+      case "landmark": return `Is ${opt} in ${place}?`;
+      case "building": return `Is this ${opt}?`;
+      case "twin": return `Is ${opt} ${place}’s sister city?`;
+      case "namesake": return `Is ${place} named after ${opt}?`;
+      case "nickname": return `Is ${opt} the one nicknamed ${q.question.match(/“[^”]+”/)?.[0] || "that"}?`;
+      default: return q.question;
+    }
+  }
+
+  function notifyQuestion(q, heading) {
+    if (!trip?.notify || !trip.notifyReg || document.visibilityState === "visible") return;
+    trip.notifyReg.showNotification(heading, {
+      body: `${teaser(q)} Tap to answer.`,
+      tag: "roadtrip-trivia", renotify: true,
+      icon: "/games/road-trip/trivia/icons/icon-192.png",
+      ...(q.picture ? { image: q.picture.src } : {}),
+    }).catch(() => {});
+  }
+
   function showTrivia(q) {
     const card = $("triviaCard");
     card.classList.remove("pop"); void card.offsetWidth; card.classList.add("pop");
     navigator.vibrate?.(60);
     trip.lastAsked = tripClock();
     const away = q.nearby == null ? "" : trip.imperial ? `${Math.max(1, Math.round(q.nearby / 1.609))} mi away` : `${Math.max(1, Math.round(q.nearby))} km away`;
-    $("trivia-title").textContent = q.nearby != null ? `Nearby: ${q.title.split(",")[0]}, ${away}` : q.firstFix ? `Starting in ${q.title}` : `Welcome to ${q.title}`;
+    const heading = q.nearby != null ? `Nearby: ${q.title.split(",")[0]}, ${away}` : q.firstFix ? `Starting in ${q.title}` : `Welcome to ${q.title}`;
+    $("trivia-title").textContent = heading;
+    notifyQuestion(q, heading);
     $("triviaQ").textContent = q.question;
     $("triviaPhoto").hidden = !q.picture;
     if (q.picture) {
@@ -1483,6 +1556,7 @@
     $("start").addEventListener("click", () => startTrip(false));
     $("demo").addEventListener("click", () => startTrip(true));
     $("end").addEventListener("click", endTrip);
+    if (has("notify")) $("notify").addEventListener("click", toggleNotifications);
     $("pause").addEventListener("click", () => {
       if (!trip) return;
       trip.paused = !trip.paused;

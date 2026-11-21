@@ -73,6 +73,8 @@
   .dash strong { display: block; font-family: var(--display); font-size: 1.3rem; font-weight: 600; }
   .dash span { font-size: .75rem; color: var(--faint); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
   .where { font-family: var(--display); font-size: 1.15rem; font-weight: 500; }
+  /* Where we are on its own line, the trip buttons together below it. */
+  #trip .row > .where { flex-basis: 100%; }
   .where em { font-style: normal; color: var(--line); }
   .progress { height: 8px; border-radius: 4px; background: var(--deep); overflow: hidden; }
   .progress i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--teal), var(--line)); transition: width .6s linear; }
