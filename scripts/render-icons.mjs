@@ -25,6 +25,7 @@ const icons = [
   ['site/games/icons/hub.svg', web('site/games/icons')],
   ['site/games/sudoku/icons/sudoku.svg', web('site/games/sudoku/icons')],
   ['site/games/cat-cafe/icons/cat-cafe.svg', web('site/games/cat-cafe/icons')],
+  ['site/games/road-trip/icons/road-trip.svg', web('site/games/road-trip/icons')],
   ['games/yahtzee/public/icons/icon.svg', web('games/yahtzee/public/icons')],
   ['games/dots/public/icons/icon.svg', web('games/dots/public/icons')],
   ['games/pawprints/public/icons/icon.svg', web('games/pawprints/public/icons')],

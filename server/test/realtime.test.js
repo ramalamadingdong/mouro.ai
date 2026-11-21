@@ -42,6 +42,7 @@ before(async () => {
       { name: 'holdem', rules: rules('games/holdem/database.rules.json'), reap: ['rooms'] },
       { name: 'dots', rules: rules('games/dots/database.rules.json'), reap: ['rooms'] },
       { name: 'pawprints', rules: rules('games/pawprints/database.rules.json'), reap: ['rooms'] },
+      { name: 'road-trip', rules: rules('games/road-trip/database.rules.json'), reap: ['rooms'] },
     ],
   });
   await new Promise((r) => server.http.listen(0, '127.0.0.1', r));
@@ -501,6 +502,67 @@ describe('pawprints rules', () => {
     const outsider = await player('pawprints');
     await denied(set(state(outsider), pawState(uids, { version: 2, toAct: 2, by: outsider.uid, kind: 'away', cells })));
     await set(state(b), pawState(uids, { version: 2, toAct: 2, by: b.uid, kind: 'away', cells }));
+  });
+});
+
+describe('road-trip rules', () => {
+  // Categories state as the page writes it. The rules bound shape and authority, not the game.
+  const catState = (by, version, extra = {}) => ({
+    version, by, phase: 'spun', step: version, round: 1,
+    players: [{ name: 'Sam', score: 0 }, { name: 'Ada', score: 2 }], alive: [true, true],
+    turn: 0, starter: 0, letter: 'C', category: 'Things in a kitchen', limit: 8, answers: 0,
+    voice: true, hard: false, used: '4,17', ...extra,
+  });
+  async function car(code) {
+    const screen = await player('road-trip');
+    const remote = await player('road-trip');
+    const now = Date.now();
+    await set(ref(screen.db, `rooms/${code}`), { meta: { host: screen.uid, createdAt: now, updatedAt: now } });
+    await set(ref(remote.db, `rooms/${code}/members/${remote.uid}`), now);
+    return { screen, remote, state: (p) => ref(p.db, `rooms/${code}/state`) };
+  }
+
+  test('a room is readable only by its screen and the phones that joined it', async () => {
+    const { screen, remote, state } = await car('CAR22');
+    await set(state(remote), catState(remote.uid, 1));
+    assert.equal((await get(ref(screen.db, 'rooms/CAR22/state/letter'))).val(), 'C');
+    const stranger = await player('road-trip');
+    await denied(get(ref(stranger.db, 'rooms/CAR22')));
+    await denied(get(ref(stranger.db, 'rooms/CAR22/state')));
+    await denied(get(ref(stranger.db, 'rooms')));
+    await denied(set(state(stranger), catState(stranger.uid, 2)));
+    // Joining a room that doesn't exist is refused, and nobody can join for someone else.
+    await denied(set(ref(stranger.db, `rooms/NOPE2/members/${stranger.uid}`), Date.now()));
+    await denied(set(ref(stranger.db, `rooms/CAR22/members/${remote.uid}`), Date.now()));
+  });
+
+  test('only the host creates a room, empty; only the host closes it', async () => {
+    const a = await player('road-trip');
+    const b = await player('road-trip');
+    const now = Date.now();
+    await denied(set(ref(a.db, 'rooms/CAR33'), { meta: { host: b.uid, createdAt: now, updatedAt: now } }));
+    await denied(set(ref(a.db, 'rooms/car33'), { meta: { host: a.uid, createdAt: now, updatedAt: now } }));
+    await denied(set(ref(a.db, 'rooms/CAR33'), { meta: { host: a.uid, createdAt: now, updatedAt: now }, state: catState(a.uid, 1) }));
+    await set(ref(a.db, 'rooms/CAR33'), { meta: { host: a.uid, createdAt: now, updatedAt: now } });
+    await denied(set(ref(b.db, 'rooms/CAR33'), { meta: { host: b.uid, createdAt: now, updatedAt: now } }));
+    await set(ref(b.db, `rooms/CAR33/members/${b.uid}`), now);
+    await denied(remove(ref(b.db, 'rooms/CAR33')));
+    await remove(ref(a.db, 'rooms/CAR33'));
+    // Gone: not even the old host can read it, and the old member can't rejoin.
+    await denied(get(ref(a.db, 'rooms/CAR33')));
+    await denied(set(ref(b.db, `rooms/CAR33/members/${b.uid}`), Date.now()));
+  });
+
+  test('state writes name their writer, raise the version, and keep the closed shape', async () => {
+    const { screen, remote, state } = await car('CAR44');
+    await set(state(remote), catState(remote.uid, 1));
+    await denied(set(state(remote), catState(screen.uid, 2)));
+    await denied(set(state(remote), catState(remote.uid, 1)));
+    await denied(set(state(remote), catState(remote.uid, 2, { location: '40.0,-105.2' })));
+    await denied(set(state(remote), catState(remote.uid, 2, { letter: 'cc' })));
+    await denied(set(state(remote), catState(remote.uid, 2, { players: [{ name: 'x'.repeat(25), score: 0 }] })));
+    await set(state(screen), catState(screen.uid, 2, { phase: 'turn', deadline: Date.now() + 8000 }));
+    await set(state(remote), catState(remote.uid, 3, { phase: 'roundover', event: { kind: 'win', who: 1, n: 7, id: 3 } }));
   });
 });
 

@@ -9,7 +9,7 @@ the games hub; earlier ones stay live at their own URL.
 
 | Path | What | URL |
 |---|---|---|
-| [`site/`](site/) | Personal site (static HTML + CSS), plus the games hub, Sudoku and Cat Café (a solo tile puzzle against a computer cat) — each a self-contained, installable page with its own look | `/`, `/projects/`, `/games/`, `/games/sudoku/`, `/games/cat-cafe/` |
+| [`site/`](site/) | Personal site (static HTML + CSS), plus the games hub, Sudoku, Cat Café (a solo tile puzzle against a computer cat) and Road Trip (town trivia and photo guessing from live GPS, plus Categories with an optional car screen) — each a self-contained, installable page with its own look | `/`, `/projects/`, `/games/`, `/games/sudoku/`, `/games/cat-cafe/`, `/games/road-trip/` |
 | [`games/backgammon/`](games/backgammon/) | Two-player backgammon, Tawleh rules (Expo PWA, Expo Go on phones) | `/backgammon/` |
 | [`games/gin-rummy/`](games/gin-rummy/) | Two-player gin rummy (Expo PWA, Expo Go on phones) | `/gin-rummy/` |
 | [`games/yahtzee/`](games/yahtzee/) | 1–4 player Yahtzee (Vite PWA) | `/yahtzee/` |
