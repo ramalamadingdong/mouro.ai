@@ -372,17 +372,21 @@
     finally { t.polling = false; }
   }
 
-  // Towns within 25 km in the current county, nearest first, skipping places
-  // too obscure to have much to ask about (few Wikipedia languages). The position is
+  // Places people live within 25 km in the current county, nearest first:
+  // cities and towns, and unincorporated communities and census-designated
+  // places too. The position is
   // rounded to about a kilometre before it goes to Wikidata.
+  // Human settlement, unincorporated community (US), census-designated place,
+  // US town/city, city, town, village, hamlet, municipality, big city.
+  const PLACE_TYPES = "wd:Q486972 wd:Q17343829 wd:Q498162 wd:Q15127012 wd:Q1093829 wd:Q515 wd:Q3957 wd:Q532 wd:Q5084 wd:Q2154459 wd:Q1549591";
   async function nearbyTowns(pos, countyQid) {
     const lon = pos[0].toFixed(2), lat = pos[1].toFixed(2);
     const inCounty = countyQid && /^Q\d+$/.test(countyQid) ? `?p wdt:P131 wd:${countyQid}.` : "";
     const rows = await sparql(`SELECT ?p ?dist WHERE {
       SERVICE wikibase:around { ?p wdt:P625 ?loc. bd:serviceParam wikibase:center "Point(${lon} ${lat})"^^geo:wktLiteral; wikibase:radius "25"; wikibase:distance ?dist. }
       ${inCounty}
-      ?p wdt:P1082 ?pop. FILTER(?pop >= 300)
-      ?p wikibase:sitelinks ?links. FILTER(?links >= 8)
+      ?p wdt:P31 ?type. VALUES ?type { ${PLACE_TYPES} }
+      ?p wikibase:sitelinks ?links. FILTER(?links >= 2)
     } ORDER BY ?dist LIMIT 20`);
     const seen = new Set(), list = [];
     for (const row of rows) if (/^Q\d+$/.test(row.p) && !seen.has(row.p)) { seen.add(row.p); list.push({ qid: row.p, km: +row.dist }); }
@@ -390,7 +394,7 @@
     const ents = await entities(list.map((x) => x.qid), "labels|descriptions");
     // Towns, not the county itself, metro areas or census areas.
     return list.map((x) => ({ ...x, name: ents[x.qid]?.labels?.en?.value?.split(",")[0], desc: ents[x.qid]?.descriptions?.en?.value || "" }))
-      .filter((x) => x.name && !/\b(county|metropolitan|census|statistical|region)\b/i.test(x.desc));
+      .filter((x) => x.name && !/\b(metropolitan|statistical area|census tract|region)\b/i.test(x.desc) && !/^county\b/i.test(x.desc));
   }
 
   async function queueNearby() {
@@ -433,14 +437,17 @@
     const t = trip;
     while (trip === t && trip.queue.length) {
       const item = trip.queue.shift();
-      trip.showing = item;
-      setTriviaIdle(`Crossing into ${item.name}. Looking it up…`);
+      trip.showing = item; trip.lastTried = item;
+      setTriviaIdle(item.nearby != null ? `Looking up ${item.name}, nearby…` : `Crossing into ${item.name}. Looking it up…`);
       let q = null;
       try { q = await buildTrivia(item); } catch { q = null; }
       if (trip !== t) return;
-      if (q) { showTrivia(q); return; }
+      if (q) { if (item.nearby != null) trip.nearbyMisses = 0; showTrivia(q); return; }
     }
-    if (trip === t) { trip.showing = null; setTriviaIdle("Next question when we cross into a new town or county."); }
+    if (trip === t) {
+      trip.showing = null; setTriviaIdle("Next question when we cross into a new town or county.");
+      if (t.lastTried?.nearby != null && (t.nearbyMisses = (t.nearbyMisses || 0) + 1) <= 3) queueNearby();
+    }
   }
 
   function setTriviaIdle(text) {
