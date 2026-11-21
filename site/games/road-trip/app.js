@@ -360,11 +360,54 @@
         const c = await reverse(here, 8);
         if (trip !== t) return;
         const qid = c.addresstype === "county" || c.name === county ? c.extratags?.wikidata : null;
+        trip.countyQid = qid;
         enqueue({ kind: "county", name: county, qid, firstFix });
       }
       if (newTown) enqueue({ kind: "town", name: town, qid: townQid, county, firstFix });
+      // New county, or a quiet stretch with no new town: ask about a town
+      // nearby in this county.
+      const quiet = tripClock() - (t.lastAsked ?? 0) > 5 * 60;
+      if (newCounty || (quiet && !t.queue.length && !t.showing)) queueNearby();
     } catch { /* offline for a moment: the next fix tries again */ }
     finally { t.polling = false; }
+  }
+
+  // Towns within 25 km in the current county, nearest first, skipping places
+  // too obscure to have much to ask about (few Wikipedia languages). The position is
+  // rounded to about a kilometre before it goes to Wikidata.
+  async function nearbyTowns(pos, countyQid) {
+    const lon = pos[0].toFixed(2), lat = pos[1].toFixed(2);
+    const inCounty = countyQid && /^Q\d+$/.test(countyQid) ? `?p wdt:P131 wd:${countyQid}.` : "";
+    const rows = await sparql(`SELECT ?p ?dist WHERE {
+      SERVICE wikibase:around { ?p wdt:P625 ?loc. bd:serviceParam wikibase:center "Point(${lon} ${lat})"^^geo:wktLiteral; wikibase:radius "25"; wikibase:distance ?dist. }
+      ${inCounty}
+      ?p wdt:P1082 ?pop. FILTER(?pop >= 300)
+      ?p wikibase:sitelinks ?links. FILTER(?links >= 8)
+    } ORDER BY ?dist LIMIT 20`);
+    const seen = new Set(), list = [];
+    for (const row of rows) if (/^Q\d+$/.test(row.p) && !seen.has(row.p)) { seen.add(row.p); list.push({ qid: row.p, km: +row.dist }); }
+    if (!list.length) return [];
+    const ents = await entities(list.map((x) => x.qid), "labels|descriptions");
+    // Towns, not the county itself, metro areas or census areas.
+    return list.map((x) => ({ ...x, name: ents[x.qid]?.labels?.en?.value?.split(",")[0], desc: ents[x.qid]?.descriptions?.en?.value || "" }))
+      .filter((x) => x.name && !/\b(county|metropolitan|census|statistical|region)\b/i.test(x.desc));
+  }
+
+  async function queueNearby() {
+    const t = trip;
+    if (!t || t.nearbyBusy) return;
+    t.nearbyBusy = true;
+    try {
+      if (!t.nearby || t.nearbyCounty !== t.countyQid || dist(t.nearbyAt, t.pos) > 8000) {
+        t.nearby = await nearbyTowns(t.pos, t.countyQid);
+        t.nearbyAt = t.pos; t.nearbyCounty = t.countyQid;
+      }
+      if (trip !== t) return;
+      const next = t.nearby.find((x) => !t.seenPlaces.has(`town:${x.qid}`) && x.name !== t.town);
+      if (next) enqueue({ kind: "town", name: next.name, qid: next.qid, nearby: next.km });
+      else t.lastAsked = tripClock(); // nothing new around here: wait another quiet stretch
+    } catch { /* try again on a later fix */ }
+    finally { t.nearbyBusy = false; }
   }
 
   function renderWhere() {
@@ -513,7 +556,7 @@
         } catch { /* the question still works without the fact */ }
       }
     }
-    return { ...q, title: label, kind: item.kind, fact, lately, link, firstFix: item.firstFix };
+    return { ...q, title: label, kind: item.kind, fact, lately, link, firstFix: item.firstFix, nearby: item.nearby };
   }
 
   // ── Exciting trivia from Wikidata's query service ──────────────────────
@@ -702,7 +745,9 @@
     const card = $("triviaCard");
     card.classList.remove("pop"); void card.offsetWidth; card.classList.add("pop");
     navigator.vibrate?.(60);
-    $("trivia-title").textContent = q.firstFix ? `Starting in ${q.title}` : `Welcome to ${q.title}`;
+    trip.lastAsked = tripClock();
+    const away = q.nearby == null ? "" : trip.imperial ? `${Math.max(1, Math.round(q.nearby / 1.609))} mi away` : `${Math.max(1, Math.round(q.nearby))} km away`;
+    $("trivia-title").textContent = q.nearby != null ? `Nearby: ${q.title.split(",")[0]}, ${away}` : q.firstFix ? `Starting in ${q.title}` : `Welcome to ${q.title}`;
     $("triviaQ").textContent = q.question;
     $("triviaWait").textContent = "";
     $("triviaAfter").hidden = true;
@@ -1142,10 +1187,7 @@
       const name = s.players[s.event.who]?.name || "Someone";
       const text = s.event.kind === "out" ? `${name} is out.` : s.event.kind === "win" ? `${name} wins the round!` : `${s.event.n} answer${s.event.n === 1 ? "" : "s"}. ${s.event.n >= (s.players[0]?.score || 0) && s.event.n > 0 ? "Your best yet." : ""}`;
       if (c.role !== "remote") { beep(220, 380, 0.2); navigator.vibrate?.(200); }
-      // At the end of a round, read out a few ideas too, so the driver hears them.
-      const ideas = s.event.kind === "out" ? [] : answersFor(s.category, s.letter).slice(0, 4);
-      const more = ideas.length ? ` Some answers: ${ideas.join(", ")}.` : "";
-      if (speaks) setTimeout(() => { if (cat === c) speak(s.event.kind === "out" ? `${text} ${s.players[s.turn]?.name || ""}, go.` : text + more); }, 350);
+      if (speaks) setTimeout(() => { if (cat === c) speak(s.event.kind === "out" ? `${text} ${s.players[s.turn]?.name || ""}, go.` : text); }, 350);
     } else if (s?.phase === "turn" && s.step !== c.seenStep && prev?.phase === "turn" && s.players.length > 1) {
       if (speaks) speak(s.players[s.turn].name);
       if (c.role !== "remote") beep(660, 70, 0.1);
