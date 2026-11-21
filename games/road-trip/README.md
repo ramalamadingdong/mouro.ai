@@ -1,8 +1,9 @@
-# Road Trip — realtime rules only
+# Road trip games — realtime rules only
 
-The game itself is a static page, `site/games/road-trip/index.html`
-(`/games/road-trip/`). This folder holds just its `database.rules.json`, for
-the `road-trip` namespace in `server/games.json`.
+The road trip games are static pages in `site/games/road-trip/` (Town Trivia,
+Photo Guess and Categories, on the games hub's "Road trip games" tab). This
+folder holds just the `database.rules.json` for the `road-trip` namespace in
+`server/games.json`.
 
 Only the **Categories** word game uses a room: one phone becomes a shared
 "car screen" and the others join with its five-letter code as remotes. A room

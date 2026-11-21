@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Photo Guess — mouro.ai</title>
+<meta name="description" content="Road trip game: a photo of a spot on the road ahead. Guess how many minutes until you drive past it.">
+<meta property="og:title" content="Photo Guess — mouro.ai">
+<meta property="og:description" content="Road trip game: a photo of a spot on the road ahead. Guess how many minutes until you drive past it.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://mouro.ai/games/road-trip/photo/">
+<meta property="og:image" content="https://mouro.ai/static/share/photo-guess.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Photo Guess: when will you pass this spot?">
+<meta name="twitter:card" content="summary_large_image">
+<!-- A road trip game. Markup only: the styles and code are shared with the
+     other road trip games in ../app.css and ../app.js (privacy rules there). -->
+<link rel="manifest" href="/games/road-trip/photo/manifest.webmanifest">
+<meta name="theme-color" content="#1a2230">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Photo Guess">
+<link rel="apple-touch-icon" href="/games/road-trip/photo/icons/apple-touch-icon.png">
+<link rel="icon" href="/games/road-trip/photo/icons/icon-192.png" type="image/png" sizes="192x192">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/games/road-trip/app.css">
+</head>
+<body data-game="photo">
+<main>
+  <header>
+    <h1><img src="/games/road-trip/photo/icons/icon-192.png" alt="" width="34" height="34">Photo Guess</h1>
+    <a href="/games/#road-trip">← Road trip games</a>
+  </header>
+
+  <section id="setup" class="card" aria-labelledby="setup-title">
+    <h2 id="setup-title">Where are we going?</h2>
+    <div class="road" aria-hidden="true"></div>
+    <p class="muted small">You see a photo of a spot on the road ahead. Guess how many minutes until you drive past it; the closer the guess, the more points.</p>
+    <label class="field">From
+      <input type="text" id="from" placeholder="My current location" autocomplete="off">
+    </label>
+    <label class="field">To
+      <input type="text" id="to" placeholder="A town, address or place" autocomplete="off">
+    </label>
+    <label class="check"><input type="checkbox" id="passenger"> <span>I’m a passenger. The driver keeps their eyes on the road and doesn’t play.</span></label>
+    <div class="row">
+      <button class="btn grow" id="start" type="button" disabled>Start</button>
+    </div>
+    <div class="row">
+      <button class="btn alt grow" id="demo" type="button">Demo drive</button>
+      <select id="speed" aria-label="Demo speed" style="width:auto">
+        <option value="10">10× speed</option>
+        <option value="30" selected>30× speed</option>
+        <option value="60">60× speed</option>
+      </select>
+    </div>
+    <p class="msg" id="setupMsg" role="status" aria-live="polite"></p>
+    <p class="muted small">Demo drive plays a trip from your From and To (or Boulder to Colorado Springs if they’re empty) at high speed, with no GPS, so you can try it at home.</p>
+  </section>
+  <section id="pastCard" class="card" hidden aria-labelledby="past-title">
+    <h2 id="past-title" class="label">Past games</h2>
+    <div class="history" id="history"></div>
+  </section>
+  <section id="trip" hidden>
+    <div class="card">
+      <div class="row">
+        <p class="grow where" id="where" aria-live="polite">Finding where we are…</p>
+        <button class="btn alt small" id="pause" type="button" hidden>Pause</button>
+        <button class="btn alt small" id="end" type="button">End</button>
+      </div>
+      <div class="progress" id="progress" aria-hidden="true"><i id="bar"></i></div>
+      <div class="dash">
+        <div><strong id="score">0</strong><span>Score</span></div>
+        <div><strong id="clock">0:00</strong><span>Trip time</span></div>
+        <div><strong id="left">–</strong><span id="leftLabel">To go</span></div>
+      </div>
+      <p class="msg" id="tripMsg" role="status" aria-live="polite"></p>
+    </div>
+  </section>
+  <section id="photoCard" class="card" hidden aria-labelledby="photo-title">
+    <p class="label">Photo guess</p>
+    <h2 id="photo-title">When will we pass this spot?</h2>
+    <p class="muted small" id="photoStatus"></p>
+    <div class="photo" id="photoBox" hidden>
+      <img id="photoImg" alt="A photo taken somewhere along the road ahead">
+      <div class="credit" id="photoCredit"></div>
+    </div>
+    <div class="guess" id="guessBox" hidden>
+      <output id="guessOut" for="guess">15 min</output>
+      <input type="range" id="guess" min="1" max="60" value="15" aria-label="Minutes until we pass it">
+      <div class="row">
+        <button class="btn grow" id="lock" type="button">Lock in guess</button>
+        <button class="btn alt" id="skip" type="button">New photo</button>
+      </div>
+    </div>
+    <p class="reveal" id="photoReveal" hidden></p>
+    <button class="btn alt" id="nextPhoto" type="button" hidden>Next photo</button>
+  </section>
+
+  <footer>
+    <span>Your location goes to OpenStreetMap, to find the route, and to Wikimedia Commons, to find photos near it. It is never sent to mouro.ai, never shared with other players, and not saved on this phone. Past games keep only the date and score.</span>
+    <span>Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap contributors</a> · routes by <a href="https://project-osrm.org/" target="_blank" rel="noreferrer">OSRM</a> · photos from Wikimedia Commons</span>
+  </footer>
+</main>
+<script src="/games/road-trip/app.js"></script>
+</body>
+</html>

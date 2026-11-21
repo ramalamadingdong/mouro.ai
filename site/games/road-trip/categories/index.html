@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Categories — mouro.ai</title>
+<meta name="description" content="A word game for the car: a letter and a category, take turns until someone stalls. Use one phone as a shared car screen.">
+<meta property="og:title" content="Categories — mouro.ai">
+<meta property="og:description" content="A word game for the car: a letter and a category, take turns until someone stalls. Use one phone as a shared car screen.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://mouro.ai/games/road-trip/categories/">
+<meta property="og:image" content="https://mouro.ai/static/share/categories.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Categories: a letter, a category, go">
+<meta name="twitter:card" content="summary_large_image">
+<!-- A road trip game. Markup only: the styles and code are shared with the
+     other road trip games in ../app.css and ../app.js (privacy rules there). -->
+<link rel="manifest" href="/games/road-trip/categories/manifest.webmanifest">
+<meta name="theme-color" content="#1a2230">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Categories">
+<link rel="apple-touch-icon" href="/games/road-trip/categories/icons/apple-touch-icon.png">
+<link rel="icon" href="/games/road-trip/categories/icons/icon-192.png" type="image/png" sizes="192x192">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/games/road-trip/app.css">
+</head>
+<body data-game="categories">
+<main>
+  <header>
+    <h1><img src="/games/road-trip/categories/icons/icon-192.png" alt="" width="34" height="34">Categories</h1>
+    <a href="/games/#road-trip">← Road trip games</a>
+  </header>
+
+  <section id="catIntro" class="card" aria-labelledby="cat-intro-title">
+    <h2 id="cat-intro-title">How it works</h2>
+    <div class="road" aria-hidden="true"></div>
+    <p class="muted small">A word game for everyone in the car. It reads out a letter and a category (“C, things in a kitchen”), and you take turns naming one before the timer runs out. Stall and you’re out; the last one talking wins the round. No GPS needed: Categories never uses your location.</p>
+    <button class="btn" id="catLocal" type="button">Play on this phone</button>
+    <div class="row">
+      <button class="btn alt grow" id="catScreen" type="button">Make this the car screen</button>
+      <button class="btn alt grow" id="catJoin" type="button">Join a car screen</button>
+    </div>
+    <div class="row" id="joinBox" hidden>
+      <input type="text" id="joinCode" class="grow" maxlength="5" placeholder="Code, like K7RMP" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Car screen code" style="width:auto;flex:1;text-transform:uppercase">
+      <button class="btn small" id="joinGo" type="button">Join</button>
+    </div>
+    <p class="msg" id="catMsg" role="status" aria-live="polite"></p>
+    <p class="muted small"><strong>Car screen:</strong> one phone sits in a mount on the console, shows each turn big and reads it out, with a few big buttons anyone can tap. Passengers’ phones can join with its code as remotes. The room carries the word game only, never anyone’s location, and only phones with the code can see it.</p>
+  </section>
+  <section id="cat" class="card" hidden aria-labelledby="cat-title">
+    <div class="row">
+      <p class="label grow" id="cat-title">Categories</p>
+      <span class="code" id="catCode" hidden></span>
+      <button class="btn alt small" id="catClose" type="button">Close</button>
+    </div>
+    <p class="msg" id="catStatus" role="status" aria-live="polite"></p>
+    <div id="catSetup" hidden>
+      <div class="controls">
+        <p class="label">Players, in turn order</p>
+        <div class="names" id="names"></div>
+        <div class="row"><button class="btn alt small" id="addName" type="button">Add player</button></div>
+        <div class="toggles">
+          <label class="field">Seconds a turn
+            <select id="limit"><option value="5">5</option><option value="8" selected>8</option><option value="12">12</option><option value="20">20</option></select>
+          </label>
+          <label class="toggle"><input type="checkbox" id="hard"> Hard letters (Q, U, V, Y, Z)</label>
+        </div>
+        <label class="check"><input type="checkbox" id="voice" checked> <span>Read the letter, category and turns out loud</span></label>
+        <button class="btn" id="catStart" type="button">Spin</button>
+      </div>
+    </div>
+    <div id="catBoard" hidden>
+      <div class="spin" id="spinBox" aria-live="polite">
+        <div class="letter" id="catLetter">?</div>
+        <div class="category" id="catCategory"></div>
+      </div>
+      <div class="turnline" id="turnline">
+        <div class="ring" id="ring"><span id="catTime">–</span></div>
+        <div><p class="label" id="whoLabel">Turn</p><p class="who" id="catWho"></p><p class="muted small" id="catCount"></p></div>
+      </div>
+      <div class="chips" id="chips"></div>
+      <p class="reveal" id="catEvent" hidden></p>
+      <div class="controls" id="catControls">
+        <button class="btn huge" id="gotOne" type="button" hidden>Got one!</button>
+        <button class="btn alt" id="stuck" type="button" hidden>Stuck</button>
+        <div class="row" id="spunRow" hidden>
+          <button class="btn grow" id="go" type="button">Go</button>
+          <button class="btn alt" id="respin" type="button">Re-spin</button>
+        </div>
+        <div class="row" id="overRow" hidden>
+          <button class="btn grow" id="nextRound" type="button">Next round</button>
+          <button class="btn alt" id="editPlayers" type="button">Players</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span>Categories never uses your location. A car screen’s room holds only the game (letter, category, timer, names and scores), only phones with its code can see it, and it is deleted when the screen closes.</span>
+  </footer>
+</main>
+<script src="/games/road-trip/app.js"></script>
+</body>
+</html>

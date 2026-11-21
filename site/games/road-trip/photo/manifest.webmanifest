@@ -1,0 +1,46 @@
+{
+  "_comment": "Relative URLs resolve against this file, so everything lands under /games/road-trip/photo/. No service worker — see the hub manifest.",
+  "id": "/games/road-trip/photo/",
+  "name": "Photo Guess",
+  "short_name": "Photo Guess",
+  "description": "Road trip game: a photo of a spot on the road ahead. Guess how many minutes until you drive past it.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
+  "theme_color": "#1a2230",
+  "background_color": "#1a2230",
+  "categories": [
+    "games",
+    "travel"
+  ],
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

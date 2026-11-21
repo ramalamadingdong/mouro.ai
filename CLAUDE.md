@@ -8,7 +8,7 @@ are working in — those hold each project's non-negotiables.
 ## Layout
 
 - `site/` — static HTML/CSS. No build step. Edit the HTML directly.
-  `site/games/` (the games hub), `site/games/sudoku/`, `site/games/cat-cafe/` and `site/games/road-trip/` are deliberately
+  `site/games/` (the games hub), `site/games/sudoku/`, `site/games/cat-cafe/` and the road trip games in `site/games/road-trip/` are deliberately
   separate from the portfolio: self-contained pages with their own styles,
   manifest and icons — they must not load `static/css/site.css`. Their icon
   PNGs come from the SVGs beside them via `scripts/render-icons.mjs`.
@@ -41,7 +41,11 @@ are working in — those hold each project's non-negotiables.
   "This week's game" spot); when a new one lands, the previous tile is removed
   from the hub, but its folder, namespace, rules, Caddy route, CI/deploy
   entries and tests all stay so its invite links keep working.
-- **Road Trip never shares a player's location.** `site/games/road-trip/` sends
+- **Road trip games.** The hub has two tabs: Mobile games (default) and Road
+  trip games (`/games/#road-trip`). The road trip games are `site/games/road-trip/{trivia,photo,categories}/`,
+  each a page of markup sharing `site/games/road-trip/app.js` and `app.css`;
+  `site/games/road-trip/index.html` only redirects old links.
+- **Road trip games never share a player's location.** `site/games/road-trip/` sends
   the position only from the browser to OpenStreetMap and Wikimedia, keeps it
   in memory, and stores no places in localStorage. Its `road-trip` realtime
   namespace (rules in `games/road-trip/`) is for the Categories word game only;

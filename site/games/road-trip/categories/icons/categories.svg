@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Categories icon: a big letter tile inside a running timer ring. Full-bleed square, artwork inside the central 80%
+       (maskable safe zone). Rendered to the PNGs beside it by scripts/render-icons.mjs. -->
+  <defs>
+    <radialGradient id="bg" cx="0.3" cy="0.2" r="1">
+      <stop offset="0" stop-color="#7a3f80"/>
+      <stop offset="1" stop-color="#22102a"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <!-- Timer ring: most of the turn left -->
+  <circle cx="256" cy="256" r="168" fill="none" stroke="#ffffff" stroke-opacity="0.12" stroke-width="30"/>
+  <circle cx="256" cy="256" r="168" fill="none" stroke="#5fd0c0" stroke-width="30" stroke-linecap="round"
+          stroke-dasharray="792 1056" transform="rotate(-90 256 256)"/>
+  <!-- Letter tile -->
+  <rect x="160" y="168" width="192" height="192" rx="34" fill="#000" opacity="0.25"/>
+  <rect x="160" y="156" width="192" height="192" rx="34" fill="#ffd166"/>
+  <path d="M296 214 A62 62 0 1 0 296 290" fill="none" stroke="#2f1832" stroke-width="34" stroke-linecap="round"/>
+</svg>
