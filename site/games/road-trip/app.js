@@ -550,10 +550,19 @@
     const fresh = (list) => [...shuffle(list.filter(([k]) => !recent.includes(k))), ...shuffle(list.filter(([k]) => recent.includes(k)))];
     const PRIME = ["building", "event", "story", "landmark"];
     const known = exciting.filter(([k]) => k === "known");
-    const pick = [...known, ...fresh(exciting.filter(([k]) => PRIME.includes(k))), ...fresh(exciting.filter(([k]) => !PRIME.includes(k) && k !== "known")), ...fresh(kinds)];
+    // Number questions are the last resort, and don't repeat: elevation and
+    // area at most once a trip, population at most twice.
+    const asked = (k) => trip.triviaTypes.filter((x) => x === k).length;
+    const numbers = kinds.filter(([k]) => (k === "population" ? asked(k) < 2 : asked(k) < 1));
+    // Variety: the kinds asked least this trip come first (events and
+    // buildings win ties), and never the same kind twice in a row.
+    const last = trip.triviaTypes[trip.triviaTypes.length - 1];
+    const rank = ([k]) => asked(k) * 10 + (PRIME.includes(k) ? 0 : 1) + (k === last ? 100 : 0) + Math.random();
+    const varied = exciting.filter(([k]) => k !== "known").map((x) => [rank(x), x]).sort((a, b) => a[0] - b[0]).map(([, x]) => x);
+    const pick = [...known, ...varied, ...fresh(numbers)];
     if (!pick.length) return null;
     let q = null, kind = null;
-    for (const [k, make] of pick.slice(0, 8)) {
+    for (const [k, make] of pick.slice(0, 10)) {
       try { q = await make(); } catch { q = null; }
       if (q) { kind = k; break; }
     }
@@ -600,6 +609,23 @@
       FILTER NOT EXISTS { wd:${qid} wdt:P361 ?p }
     } ORDER BY DESC(?pop) LIMIT 24`);
     return [...new Set(rows.map((r) => r.p))].filter((id) => /^Q\d+$/.test(id));
+  }
+  // Rivers, creeks, peaks, lakes, reservoirs, passes, forests, parks… between
+  // `from` and `to` km of a place, best documented first. The planner hint
+  // makes it start from the places nearby, not from every river on Earth.
+  const FEATURE_TYPES = "wd:Q4022, wd:Q47521, wd:Q8502, wd:Q207326, wd:Q23397, wd:Q131681, wd:Q133056, wd:Q612741, wd:Q35509, wd:Q34038, wd:Q1437459, wd:Q46169";
+  async function naturalFeatures(qid, from, to) {
+    const rows = await sparql(`SELECT ?x ?dist ?links WHERE {
+      hint:Query hint:optimizer "None".
+      wd:${qid} wdt:P625 ?c.
+      SERVICE wikibase:around { ?x wdt:P625 ?loc. bd:serviceParam wikibase:center ?c; wikibase:radius "${to}"; wikibase:distance ?dist. }
+      FILTER(?dist >= ${from})
+      ?x wikibase:sitelinks ?links. FILTER(?links >= 2)
+      ?x wdt:P31 ?t. FILTER(?t IN (${FEATURE_TYPES}))
+    } ORDER BY DESC(?links) LIMIT 15`);
+    const seen = new Set(), out = [];
+    for (const row of rows) if (/^Q\d+$/.test(row.x) && !seen.has(row.x)) { seen.add(row.x); out.push({ id: row.x, km: +row.dist }); }
+    return out;
   }
   // For one relation, everything linked to this place and to its neighbours,
   // most famous first (by number of Wikipedia languages).
@@ -660,9 +686,10 @@
     let out = text
       .replace(new RegExp(`\\b(the )?(town|city|village|community|county) of ${esc}\\b`, "gi"), stand)
       .replace(new RegExp(`\\b${esc}'s\\b`, "gi"), `${stand}'s`)
-      // Not when it's part of a longer name ("Boulder Creek"): that stays, as a fair hint.
-      .replace(new RegExp(`\\b${esc}\\b(?! [A-Z])`, "g"), stand);
-    out = out.replace(/\b(the|a|new|old) the (town|county)\b/gi, "$1 $2");
+      // Not when it's part of a longer name ("Boulder Creek", "STEM School Highlands Ranch").
+      .replace(new RegExp(`(?<!\\b[A-Z][\\w.]* )\\b${esc}\\b(?! [A-Z])`, "g"), stand);
+    out = out.replace(/\b(the|a|new|old) the (town|county)\b/gi, "$1 $2")
+      .replace(/\b(many|most|some|several|all|few|other) the (town|county)\b/gi, "$1 local");
     return out.charAt(0).toUpperCase() + out.slice(1);
   }
 
@@ -804,23 +831,64 @@
     // "Which of these is from X's history?": one sentence from this place's
     // History section, three from nearby towns' articles, all with their own
     // town's name swapped for "the town".
-    if (article?.history.length) out.push(["story", async () => {
+    // One line from each of a few nearby towns' articles, its town's name
+    // swapped for "the town", never one that mentions this place.
+    const neighbourLines = async (choose) => {
       const ids = (await nearby()).slice(0, 14);
       const ents = await entities(ids, "sitelinks|labels|descriptions");
-      const towns = ids.map((id) => ents[id]).filter((x) => x?.sitelinks?.enwiki && !/\b(metropolitan|statistical|region)\b/i.test(x.descriptions?.en?.value || ""));
-      const others = [];
+      const towns = ids.map((id) => ents[id]).filter((x) => x?.sitelinks?.enwiki && !/\b(metropolitan|statistical|region)\b/i.test(x.descriptions?.en?.value || "") && (item.kind === "county" || !/\bcounty\b/i.test(x.labels?.en?.value || "")));
+      const lines = [];
       for (const town of shuffle(towns.slice(0, 8)).slice(0, 5)) {
-        if (others.length >= 3) break;
+        if (lines.length >= 3) break;
         const name = town.labels?.en?.value?.split(",")[0];
         try {
-          const theirs = await readArticle(town.sitelinks.enwiki.title);
-          const h = pickFew(theirs.history.filter((x) => !x.source.toLowerCase().includes(short.toLowerCase())), 1, 4)[0];
-          if (h && name) others.push(withoutName(h.source, name));
+          const line = choose(await readArticle(town.sitelinks.enwiki.title), name);
+          // Still naming its own town after the swap ("Highlands Ranch Mansion")? It would give itself away.
+          if (line && name && !line.toLowerCase().includes(short.toLowerCase()) && !withoutName(line, name).includes(name)) lines.push(withoutName(line, name));
         } catch { /* try another town */ }
       }
-      const right = pickFew(article.history, 1, 4)[0];
+      return lines;
+    };
+    if (article?.history.length) out.push(["story", async () => {
+      const others = await neighbourLines((a, name) => pickFew(a.history.filter((h) => !withoutName(h.source, name).includes(name)), 1, 4)[0]?.source);
+      const right = pickFew(article.history.filter((h) => !withoutName(h.source, short).includes(short)), 1, 4)[0];
       if (!right || others.length < 3) return null;
       return { question: `Which of these is from ${short}’s history?`, ...choices(withoutName(right.source, short), others), detail: `That one’s from ${short}’s history.`, source: right.source };
+    }]);
+    // "Which of these is true about X?": any good sentence from the article, so
+    // small places with no History section get something too.
+    if (article?.plain.length) out.push(["truth", async () => {
+      const right = pickFew(article.plain.filter((x) => !withoutName(x, short).includes(short)), 1, 5)[0];
+      const others = await neighbourLines((a, name) => pickFew(a.plain.filter((x) => !withoutName(x, name).includes(name)), 1, 5)[0]);
+      if (!right || others.length < 3) return null;
+      return { question: `Which of these is true about ${short}?`, ...choices(withoutName(right, short), others), detail: `That one’s about ${short}.`, source: right };
+    }]);
+    // "Which of these is near X?": a river, peak, lake, pass or forest close by
+    // (8, then 15, then 25 km), against ones 60 to 150 km away.
+    if (item.kind === "town") out.push(["near", async () => {
+      let mine = [];
+      for (const km of [8, 15, 25]) { mine = await naturalFeatures(e.id, 0, km); if (mine.length) break; }
+      if (!mine.length) return null;
+      const farAway = (await naturalFeatures(e.id, 60, 150)).filter((x) => !mine.some((m) => m.id === x.id));
+      const right = pickFew(mine, 1, 3)[0], wrong = pickFew(farAway, 6, 10);
+      const names = await named([right.id, ...wrong.map((w) => w.id)], short);
+      const answer = names[right.id];
+      const others = [...new Set(wrong.map((w) => names[w.id]?.name).filter((n) => n && n !== answer?.name))].slice(0, 3);
+      if (!answer || others.length < 3) return null;
+      return { question: `Which of these is near ${short}?`, ...choices(answer.name, others), detail: `${answer.name}${lead(answer.desc)}, is about ${far(right.km)} away.` };
+    }]);
+    // "Which county is X in?": wrong answers are the counties next door.
+    if (item.kind === "town" && e.claims?.P131) out.push(["county", async () => {
+      const inside = e.claims.P131.map((c) => c.mainsnak?.datavalue?.value?.id).filter(Boolean).slice(0, 5);
+      const ents = await entities(inside, "labels|claims");
+      const county = inside.map((id) => ents[id]).find((x) => /\bcounty\b/i.test(x?.labels?.en?.value || ""));
+      const nextDoor = (county?.claims?.P47 || []).map((c) => c.mainsnak?.datavalue?.value?.id).filter(Boolean).slice(0, 12);
+      if (!county || nextDoor.length < 3) return null;
+      const names = await entities(nextDoor, "labels");
+      const wrong = pickFew(nextDoor.map((id) => names[id]?.labels?.en?.value?.split(",")[0]).filter((n) => n && /\bcounty\b/i.test(n)), 3, 12);
+      const name = county.labels.en.value.split(",")[0];
+      if (wrong.length < 3) return null;
+      return { question: `Which county is ${short} in?`, ...choices(name, wrong), detail: `${short} is in ${name}.` };
     }]);
     out.push(["landmark", fromPool("landmark", `Which of these is in ${short}?`, (a) => `${a.name}${lead(a.desc)}, is here.`)]);
     if (e.claims?.P138) out.push(["namesake", fromPool("namesake", `Who or what is ${short} named after?`, (a) => `${short} is named after ${a.name}${lead(a.desc)}.`)]);
@@ -846,7 +914,7 @@
   // memorable history (the owner said so).
   const LIVELY = /\b(first|only|oldest|largest|biggest|highest|longest|tallest|smallest|deepest|world'?s?|famous|famously|known as|nicknamed|home to|birthplace|invented|record|filmed|named (?:after|for)|legend|legendary|haunted|gold rush|gold|silver|discovered|nation'?s|America'?s|unique|claim to fame|best known|inspired|ghost|outlaw|dinosaur|olympic|president|movie|film|song|hollywood|rodeo|festival|museum|railroad|railway|treaty|founded|stagecoach|pioneer|homestead|fort|mine|mining|brewery|opened|built|visited|celebrated|won|champion|championship|hosted)\b/gi;
   const DULL = /\b(census|median|household|per capita|percent|%|square mile|km2|population density|racial|makeup|income|poverty|ZIP|area code|school district|elected|council|mayor|commissioner|Köppen|precipitation|average temperature|vote|votes|voted|election|Democratic|Republican|regulation|ordinance|zoning|budget|tax|homeowners|Biden|Trump|Obama|Harris|Clinton|Romney|McCain|swung|swing|margin|carried|presidential election|Community Survey|labor force|employed|unemployed|funding|grant|granted|USDOT|plan|plans|planned|proposal|proposed)\b/i;
-  const ORPHAN = /^(He|She|They|These|Those|This|That|His|Her|Their|It was|But|And|However|Also|Instead|Construction|Later|Afterward|Afterwards|The (campus|building|park|school|church|team|company|station|museum|site|house|mine|bridge|lake|dam|hotel|store|club|event|race|festival|show|band|film|song|book|game|amendment|turnpike|line|road|wreckage|crash|accident|aircraft|plane|body|bodies|attack|fire|victim|victims|suspect|trial|case))\b/;
+  const ORPHAN = /^(He|She|They|These|Those|This|That|His|Her|Their|It was|But|And|However|Also|Instead|Construction|Later|Afterward|Afterwards|Subsequent|Subsequently|Following|Meanwhile|At the time|During this|In response|As a result|The (campus|building|park|school|church|team|company|station|museum|site|house|mine|bridge|lake|dam|hotel|store|club|event|race|festival|show|band|film|song|book|game|amendment|turnpike|line|road|wreckage|crash|accident|aircraft|plane|body|bodies|attack|fire|victim|victims|suspect|trial|case))\b/;
   const YEAR = /\b(1[5-9]\d\d|20[0-3]\d)\b/g;
   const splitSentences = (text) => text.split(/\n+/)
     .flatMap((para) => para.split(/(?<=[a-z0-9)\]"”’][.!?])(?<!\b(?:St|Mt|Ft|Dr|Jr|Sr|Mr|Mrs|Ms|Gen|Gov|Rev|Lt|Col|Capt|Sgt|Co|Inc|Ltd|vs|No)\.)\s+(?=[A-Z“"])/))
@@ -879,7 +947,16 @@
       .filter((x) => [...x.matchAll(YEAR)].some((m) => +m[1] >= now - 3) && !DULL.test(x) && !ORPHAN.test(x) && liveliness(x) >= 3)
       .sort((a, b) => liveliness(b) - liveliness(a));
 
-    return { history, lively, recent };
+    // Short sentences for "which of these is true about X?": ones that name
+    // the place stand on their own, so they come first; the article's
+    // "X is a town in Y" opener is too dull (and gives itself away).
+    const name = title.split(",")[0].toLowerCase();
+    const DEFINITION = /\b(is|was) (a|an|the) [\w\s-]*\b(county|city|town|village|community|place|municipality|borough|suburb|neighborhood)\b|located in the U\.?S\.? state/i;
+    const plain = splitSentences(allText)
+      .filter((x) => !ORPHAN.test(x) && !DULL.test(x) && !DEFINITION.test(x) && x.length <= 170)
+      .sort((a, b) => (b.toLowerCase().includes(name) ? 5 : 0) + liveliness(b) - (a.toLowerCase().includes(name) ? 5 : 0) - liveliness(a));
+
+    return { history, lively, recent, plain };
   }
 
   // Two or three sentences from the Wikipedia summary, skipping the bare "X is a town in Y" opener when there's more.
@@ -945,6 +1022,9 @@
       case "filmed": return `Was ${opt} filmed in ${place}?`;
       case "landmark": return `Is ${opt} in ${place}?`;
       case "building": return `Is this ${opt}?`;
+      case "truth": return `Is this true about ${place}? “${opt}”`;
+      case "near": return `Is ${opt} near ${place}?`;
+      case "county": return `Is ${place} in ${opt}?`;
       case "twin": return `Is ${opt} ${place}’s sister city?`;
       case "namesake": return `Is ${place} named after ${opt}?`;
       case "nickname": return `Is ${opt} the one nicknamed ${q.question.match(/“[^”]+”/)?.[0] || "that"}?`;
