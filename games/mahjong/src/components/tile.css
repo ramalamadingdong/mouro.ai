@@ -81,3 +81,8 @@
 .tile--back + .tile--back {
   margin-left: 1px;
 }
+
+.tile-notation {
+  display: inline-flex;
+  vertical-align: middle;
+}

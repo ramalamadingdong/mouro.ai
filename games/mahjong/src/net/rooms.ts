@@ -23,7 +23,7 @@
  */
 import { get, onDisconnect, onValue, ref, remove, runTransaction, serverTimestamp, set, update } from '@mouro/realtime';
 import { CATS, type Difficulty } from '@/ai';
-import { RULES, applyMove, createGame, normalize, type GameState, type Move } from '@/engine';
+import { RULES, applyMove, createGame, normalize, type GameState, type Move, type Ruleset } from '@/engine';
 import { db } from '@/net/realtime';
 import { ensureAnonymousAuth, getCurrentUid } from '@/net/auth';
 import { randomRoomCode, randomSeed } from '@/util/seed';
@@ -52,6 +52,9 @@ export interface RoomSnapshot {
 
 /** What the host chooses in the lobby. */
 export interface RoomOptions {
+  ruleset: Ruleset;
+  /** 2 = heads-up (exactly two people, no cats); 4 = cats fill the empty seats. */
+  seats: number;
   minFaan: number;
   rounds: number;
   /** How the cats filling empty seats play. Not part of the state: the host's device plays them. */
@@ -257,9 +260,12 @@ export async function startGame(code: string, room: RoomSnapshot, options: RoomO
 
   // Empty seats go to the cats. They carry the HOST's uid, so the host's
   // device is the one allowed to move for them (see AGENTS.md).
-  const cats = CATS.slice(0, RULES.PLAYERS - order.length).map((cat) => ({ uid: meta.host, name: cat.name, isHuman: false }));
+  const seats = options.seats === 2 ? 2 : 4;
+  if (order.length > seats) throw new Error(`There are ${order.length} people here — too many for a ${seats}-player table.`);
+  const cats = CATS.slice(0, seats - order.length).map((cat) => ({ uid: meta.host, name: cat.name, isHuman: false }));
   const fresh = createGame({
     players: [...order.map((seatUid) => ({ uid: seatUid, name: room.seats[seatUid]?.name ?? 'Player', isHuman: true })), ...cats],
+    ruleset: options.ruleset,
     minFaan: options.minFaan,
     rounds: options.rounds,
     seed: randomSeed(),

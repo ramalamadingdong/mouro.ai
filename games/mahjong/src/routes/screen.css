@@ -296,3 +296,25 @@
   margin-right: -0.18em;
   text-transform: uppercase;
 }
+
+/* ── A labelled checkbox ────────────────────────────────────────────────── */
+
+.toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  font-size: var(--size-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.toggle input {
+  width: 1.15rem;
+  height: 1.15rem;
+  margin-top: 1px;
+  accent-color: var(--accent);
+}
+
+.toggle strong {
+  color: var(--text);
+}

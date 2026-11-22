@@ -157,8 +157,8 @@ const games = [
   {
     name: 'mahjong',
     title: 'Mahjong',
-    text: 'Hong Kong rules for four. Fill the table with friends online, or play three computer cats.',
-    tags: ['1–4 players', 'Online', 'vs computer cats'],
+    text: 'Japanese or Hong Kong rules, four-handed or heads-up. Learn with lessons and a coach.',
+    tags: ['1–4 players', 'Online', 'Learn to play'],
     path: 'mouro.ai/mahjong',
     a: '#22604a', b: '#11352a', ink: '#f3d27a',
     icon: 'games/mahjong/public/icons/icon-512.png',

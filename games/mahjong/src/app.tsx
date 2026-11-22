@@ -22,6 +22,7 @@ import { sanitizeRoomCode } from '@/util/seed';
 import { GameRoute } from '@/routes/game';
 import { HomeRoute } from '@/routes/home';
 import { JoinRoute } from '@/routes/join';
+import { LearnRoute } from '@/routes/learn';
 import { LobbyRoute } from '@/routes/lobby';
 import { SoloRoute } from '@/routes/solo';
 
@@ -56,6 +57,8 @@ const router = createBrowserRouter(
     { path: '/', element: <HomeRoute /> },
     // Offline, against the cats. Needs no connection and no room.
     { path: '/solo', element: <SoloRoute /> },
+    // Guided lessons; needs nothing but the engine.
+    { path: '/learn', element: <LearnRoute /> },
     // '/join' is "type a code"; '/join/:code' is the invite link, which
     // prefills and joins by itself.
     { path: '/join', element: <JoinRoute /> },

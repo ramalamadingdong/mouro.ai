@@ -14,7 +14,7 @@ the games hub; earlier ones stay live at their own URL.
 | [`games/gin-rummy/`](games/gin-rummy/) | Two-player gin rummy (Expo PWA, Expo Go on phones) | `/gin-rummy/` |
 | [`games/yahtzee/`](games/yahtzee/) | 1–4 player Yahtzee (Vite PWA) | `/yahtzee/` |
 | [`games/holdem/`](games/holdem/) | 2–6 player Texas Hold'em online, or solo against computer cats (Vite PWA) | `/holdem/` |
-| [`games/mahjong/`](games/mahjong/) | Four-player Hong Kong mahjong online (cats fill empty seats), or solo against three computer cats (Vite PWA) | `/mahjong/` |
+| [`games/mahjong/`](games/mahjong/) | Japanese (Riichi) and Hong Kong mahjong, four-handed or heads-up, online (cats fill empty seats) or vs computer cats, with lessons and a coach (Vite PWA) | `/mahjong/` |
 | [`games/dots/`](games/dots/) | 2–4 player Dots and Boxes online, or solo against computer cats (Vite PWA) | `/dots/` |
 | [`games/pawprints/`](games/pawprints/) | Pawprints — weekly cat game, added Nov 15, 2026: 2–4 player five-in-a-row on a quilt online, or solo against computer cats (Vite PWA) | `/pawprints/` |
 | [`server/`](server/) | Realtime server: WebSocket + SQLite, enforces each game's rules | `/rt` |

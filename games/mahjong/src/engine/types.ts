@@ -9,7 +9,7 @@
  */
 
 export const RULES = {
-  /** Mahjong is always played four-handed; empty seats are filled by cats. */
+  /** Most seats at a table. Four-handed tables fill empty seats with cats; heads-up tables have two. */
   PLAYERS: 4,
   /** Fewest humans an online room starts with. */
   MIN_HUMANS: 2,
@@ -17,10 +17,21 @@ export const RULES = {
   MAX_PLAYERS: 4,
 } as const;
 
-/** Minimum faan to go Mahjong, offered in the setup screens. */
+/** The two rulesets. */
+export type Ruleset = 'riichi' | 'hk';
+export const RULESET_CHOICES = ['riichi', 'hk'] as const;
+/** Players at the table: four, or two heads-up. */
+export const SEAT_CHOICES = [4, 2] as const;
+/** Minimum faan to go Mahjong (Hong Kong), offered in the setup screens. */
 export const MIN_FAAN_CHOICES = [0, 1, 3] as const;
-/** 1 = the East round (at least four hands), 4 = a full game of four rounds. */
-export const ROUND_CHOICES = [1, 4] as const;
+/**
+ * Prevailing-wind rounds: Hong Kong 1 (East round) or 4 (full game); Riichi
+ * 1 (tonpuusen, East only) or 2 (hanchan, East and South).
+ */
+export const ROUND_CHOICES = [1, 2, 4] as const;
+/** Points each player starts with. Hong Kong keeps a running total from zero. */
+export const START_SCORE: Record<Ruleset, number> = { riichi: 25000, hk: 0 };
+export const RIICHI_STICK = 1000;
 
 /** Shown in `turnUid` when nobody in particular is on turn. */
 export const ANY_PLAYER = '*';
@@ -44,12 +55,21 @@ export interface Player {
   flowers: string;
   /** This player's discards still on the table, oldest first. */
   discards: string;
+  /** Riichi only: declared riichi this hand. */
+  riichi: boolean;
+  /** Index in `discards` of the tile turned sideways for riichi, or -1. */
+  riichiAt: number;
+  /** Riichi only: a win now would score ippatsu (cleared by their next discard or any call). */
+  ippatsu: boolean;
+  /** Riichi only: let a winning tile go by since their last discard (or since riichi): no ron. */
+  furiten: boolean;
 }
 
 export interface Config {
-  /** Faan needed to go Mahjong. */
+  ruleset: Ruleset;
+  /** Faan needed to go Mahjong (Hong Kong only; 0 for Riichi). */
   minFaan: number;
-  /** Prevailing-wind rounds to play: 1 or 4. */
+  /** Prevailing-wind rounds to play (see ROUND_CHOICES). */
   rounds: number;
 }
 
@@ -86,7 +106,14 @@ export interface Result {
   winner: number;
   /** Seat that discarded the winning tile, or -1 for self-drawn / a draw. */
   from: number;
+  /** Faan (Hong Kong) or han (Riichi). */
   faan: number;
+  /** Riichi fu (0 for Hong Kong, a yakuman or a draw). */
+  fu: number;
+  /** Riichi limit name ('Mangan', 'Yakuman', …) or ''. */
+  limit: string;
+  /** Seats that were ready when the wall ran out (Riichi draws), as digits. */
+  tenpai: string;
   /** The scoring, one `name:faan` per line, `|` separated. */
   lines: string;
   /** What each seat won (+) or paid (−) this hand, comma separated. */
@@ -96,7 +123,7 @@ export interface Result {
 export type MoveKind = 'start' | 'discard' | 'kong' | 'win' | 'claim' | 'away' | 'next' | 'rematch';
 
 /** What the table did as a result of a move, for the status line. */
-export type Event = '' | 'discard' | 'pung' | 'chow' | 'kong' | 'win' | 'draw' | 'pass';
+export type Event = '' | 'discard' | 'riichi' | 'pung' | 'chow' | 'kong' | 'win' | 'draw' | 'pass';
 
 export interface LastMove {
   /** uid of whoever sent the move (for `away`, not the player it moved for). */
@@ -118,6 +145,18 @@ export interface GameState {
   players: Player[];
   /** Tiles still to be drawn. Ordinary draws come off the front, kong and flower replacements off the back. */
   wall: string;
+  /**
+   * Riichi's dead wall ('' for Hong Kong): four replacement tiles for kans
+   * (topped up from the back of the live wall), five dora indicators and the
+   * five ura-dora under them. `doraShown` of each are turned over.
+   */
+  rinshan: string;
+  dora: string;
+  ura: string;
+  doraShown: number;
+  /** Riichi: repeat counters (+300 a win) and riichi sticks waiting on the table. */
+  honba: number;
+  sticks: number;
   phase: Phase;
   /** Seat on turn in `turn`; null otherwise. */
   toAct: number | null;
@@ -148,7 +187,8 @@ export type Call = 'pass' | 'win' | 'pung' | 'kong' | 'chow';
 export type ChowPos = 'l' | 'm' | 'h';
 
 export type Move =
-  | { kind: 'discard'; seat: number; tile: string }
+  /** `riichi` declares riichi with this discard (Riichi rules). */
+  | { kind: 'discard'; seat: number; tile: string; riichi?: boolean }
   /** A concealed kong (four in hand) or adding the fourth tile to a pung. */
   | { kind: 'kong'; seat: number; tile: string }
   /** Mahjong on a self-drawn tile. */

@@ -408,19 +408,29 @@ describe('mahjong rules', () => {
   // arbitrary. `seatUids` has four entries: cats carry the host's uid.
   const mjState = (seatUids, { version, toAct = null, by, kind, phase, hand = 'abcdefghijklm' }) => ({
     version,
-    config: { minFaan: 1, rounds: 1 },
+    config: { ruleset: 'riichi', minFaan: 0, rounds: 1 },
     players: seatUids.map((uid, i) => ({
       uid,
       name: `P${i}`,
       isHuman: i < 2,
       sitOut: false,
-      score: 0,
+      score: 25000,
       hand,
       melds: i === 1 ? 'pFFF,cjkl' : '',
       flowers: '',
       discards: 'BC',
+      riichi: false,
+      riichiAt: -1,
+      ippatsu: false,
+      furiten: false,
     })),
     wall: 'nopqrs',
+    rinshan: 'abcd',
+    dora: 'efghi',
+    ura: 'jklmn',
+    doraShown: 1,
+    honba: 0,
+    sticks: 0,
     phase: phase ?? (toAct === null ? 'claim' : 'turn'),
     drawn: '',
     via: 'draw',
@@ -429,7 +439,9 @@ describe('mahjong rules', () => {
     handNo: 1,
     gameNo: 1,
     ...(toAct === null ? { turnUid: '*' } : { toAct, turnUid: seatUids[toAct] }),
-    ...((phase ?? (toAct === null ? 'claim' : 'turn')) === 'claim' ? { claim: { tile: 'C', from: 0, rob: false, asks: '.??.' } } : {}),
+    ...((phase ?? (toAct === null ? 'claim' : 'turn')) === 'claim'
+      ? { claim: { tile: 'C', from: 0, rob: false, asks: seatUids.length === 2 ? '.?' : '.??.' } }
+      : {}),
     lastMove: { by, kind, seat: 0, event: '', eventSeat: 0, tile: '' },
   });
 
@@ -478,6 +490,20 @@ describe('mahjong rules', () => {
     await denied(set(state(guest), { ...mjState(seatUids, { version: 2, by: guest.uid, kind: 'claim' }), claim: { tile: 'C', from: 0, rob: false, asks: 'bad!' } }));
     await set(state(guest), mjState(seatUids, { version: 2, by: guest.uid, kind: 'claim' }));
     await set(state(host), mjState(seatUids, { version: 3, toAct: 1, by: host.uid, kind: 'claim' }));
+  });
+
+  test('a heads-up table has exactly two seats', async () => {
+    const { host, guest, seatUids, state } = await room('MJE66');
+    const two = seatUids.slice(0, 2);
+    await denied(set(state(host), mjState(seatUids.slice(0, 3), { version: 1, toAct: 0, by: host.uid, kind: 'start' })));
+    await set(state(host), mjState(two, { version: 1, toAct: 0, by: host.uid, kind: 'start' }));
+    await set(state(host), mjState(two, { version: 2, by: host.uid, kind: 'discard' }));
+    await set(state(guest), mjState(two, { version: 3, toAct: 1, by: guest.uid, kind: 'claim' }));
+    // Heads-up, one player can throw 50–60 tiles in a hand.
+    const long = mjState(two, { version: 4, toAct: 0, by: guest.uid, kind: 'discard' });
+    long.players[1].discards = 'a'.repeat(60);
+    await set(state(guest), long);
+    await denied(set(state(host), { ...mjState(two, { version: 5, by: host.uid, kind: 'discard' }), claim: { tile: 'C', from: 0, rob: false, asks: '.??' } }));
   });
 
   test('away: another player moves for the one on turn only while their presence is gone', async () => {

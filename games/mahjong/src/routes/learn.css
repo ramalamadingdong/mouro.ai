@@ -1,0 +1,139 @@
+/* The guided lessons. */
+
+.learn__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.learn__item {
+  justify-content: flex-start;
+  gap: var(--space-md);
+}
+
+.learn__num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--text-on-accent);
+  font-size: var(--size-sm);
+  font-weight: var(--weight-bold);
+}
+
+.learn__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+.learn__progress {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.learn__progress span {
+  width: 1.4rem;
+  height: 0.35rem;
+  border-radius: var(--radius-pill);
+  background: var(--surface-raised);
+}
+
+.learn__progress span[data-done='true'] {
+  background: var(--accent);
+}
+
+.learn__step {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.learn__body,
+.learn__prompt {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  font-size: var(--size-body);
+  line-height: 1.55;
+}
+
+.learn__body p,
+.learn__body ul {
+  margin: 0;
+}
+
+.learn__body ul {
+  padding-left: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.learn__prompt {
+  font-weight: var(--weight-medium);
+  font-size: var(--size-md);
+}
+
+.learn__tiles {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+  padding: var(--space-md);
+  border-radius: var(--radius-lg);
+  background: var(--felt);
+}
+
+.learn__tile {
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease);
+}
+
+.learn__tile .tile {
+  --w: 2.4rem;
+}
+
+.learn__tile:hover:not(:disabled) {
+  transform: translateY(-3px);
+}
+
+.learn__tile[data-state='right'] .tile {
+  outline: 3px solid var(--good);
+  outline-offset: 2px;
+}
+
+.learn__tile[data-state='wrong'] .tile {
+  outline: 3px solid var(--bad);
+  outline-offset: 2px;
+}
+
+.learn__options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.learn__options [data-state='right'] {
+  border-color: var(--good);
+  color: var(--good);
+}
+
+.learn__options [data-state='wrong'] {
+  border-color: var(--bad);
+  color: var(--bad);
+}
+
+.learn__feedback {
+  margin: 0;
+}

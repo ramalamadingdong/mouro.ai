@@ -22,3 +22,76 @@
   padding-left: 1.1rem;
   list-style: disc;
 }
+
+.help__switch,
+.help__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.help__switch button,
+.help__tabs button {
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+  font: inherit;
+  font-size: var(--size-sm);
+  cursor: pointer;
+}
+
+.help__switch button[aria-selected='true'],
+.help__tabs button[aria-selected='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--text-on-accent);
+  font-weight: var(--weight-bold);
+}
+
+.help__hand {
+  display: inline-flex;
+  vertical-align: middle;
+}
+
+.help__tiles {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  margin: 0;
+}
+
+.help__tiles dt {
+  font-size: var(--size-sm);
+  color: var(--text);
+}
+
+.help__tiles dd {
+  margin: 0 0 var(--space-sm);
+}
+
+.help__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--size-sm);
+}
+
+.help__table th,
+.help__table td {
+  text-align: left;
+  vertical-align: top;
+  padding: 6px 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+.help__table td:last-child,
+.help__table th:last-child {
+  white-space: nowrap;
+  text-align: right;
+}
+
+.help__learn {
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--border);
+}

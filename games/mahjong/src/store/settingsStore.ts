@@ -6,7 +6,7 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import type { Difficulty } from '@/ai';
-import { MIN_FAAN_CHOICES, ROUND_CHOICES } from '@/engine';
+import { MIN_FAAN_CHOICES, ROUNDS_FOR, RULESET_CHOICES, SEAT_CHOICES, type Ruleset } from '@/engine';
 
 export interface LastRoom {
   code: string;
@@ -14,10 +14,15 @@ export interface LastRoom {
 }
 
 export interface TableOptions {
-  /** Faan needed to go Mahjong. */
+  ruleset: Ruleset;
+  /** 4, or 2 for heads-up. Online, 4 fills empty seats with cats. */
+  seats: number;
+  /** Faan needed to go Mahjong (Hong Kong). */
   minFaan: number;
-  /** 1 = the East round, 4 = a full game. */
+  /** Riichi 1 (East) or 2 (East + South); Hong Kong 1 (East) or 4 (full game). */
   rounds: number;
+  /** Show the coach's hints during play. */
+  coach: boolean;
   /** How well the cats play (offline, and the cats filling seats online). */
   difficulty: Difficulty;
 }
@@ -34,16 +39,20 @@ interface SettingsState extends SettingsData {
   setTable: (patch: Partial<TableOptions>) => void;
 }
 
-const DEFAULT_TABLE: TableOptions = { minFaan: 1, rounds: 1, difficulty: 'medium' };
+const DEFAULT_TABLE: TableOptions = { ruleset: 'riichi', seats: 4, minFaan: 1, rounds: 1, coach: true, difficulty: 'medium' };
 
 /** Clamp whatever was in storage back into the allowed choices. */
 function cleanTable(raw: unknown): TableOptions {
   const t = (typeof raw === 'object' && raw !== null ? raw : {}) as Partial<TableOptions>;
   const pick = <T,>(value: unknown, choices: readonly T[], fallback: T): T =>
     choices.includes(value as T) ? (value as T) : fallback;
+  const ruleset = pick(t.ruleset, RULESET_CHOICES, DEFAULT_TABLE.ruleset);
   return {
+    ruleset,
+    seats: pick(t.seats, SEAT_CHOICES, DEFAULT_TABLE.seats),
     minFaan: pick(t.minFaan, MIN_FAAN_CHOICES, DEFAULT_TABLE.minFaan),
-    rounds: pick(t.rounds, ROUND_CHOICES, DEFAULT_TABLE.rounds),
+    rounds: pick(t.rounds, ROUNDS_FOR[ruleset], 1),
+    coach: typeof t.coach === 'boolean' ? t.coach : DEFAULT_TABLE.coach,
     difficulty: pick(t.difficulty, ['easy', 'medium', 'hard'] as const, DEFAULT_TABLE.difficulty),
   };
 }
