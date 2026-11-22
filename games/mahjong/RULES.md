@@ -20,15 +20,19 @@ rooms/<CODE>/                 CODE = ^[A-HJKMNP-Z2-9]{5}$
   presence/<uid>  <last-seen ms>          exists = connected
   state/
     version, phase ('turn'|'claim'|'scored'|'gameover'), dealer, wind, handNo, gameNo
-    config/   { minFaan 0..10, rounds 1..4 }
-    players/<0..3>/ { uid, name, isHuman, sitOut, score,
-                      hand ≤14, melds ≤24, flowers ≤8, discards ≤40 }   tile strings
+    config/   { ruleset 'riichi'|'hk', minFaan 0..10, rounds 1..4 }
+    players/  seats 0,1 (heads-up) or 0..3 — never three
+      <seat>/ { uid, name, isHuman, sitOut, score,
+                hand ≤14, melds ≤24, flowers ≤8, discards ≤72,         tile strings
+                riichi, riichiAt -1..72, ippatsu, furiten }            Riichi; false/-1 for Hong Kong
     wall      tile string ≤ 144            drawn  '' or one tile
+    rinshan ≤4, dora ≤5, ura ≤5            Riichi's dead wall ('' for Hong Kong)
+    doraShown 0..5, honba 0..1000, sticks 0..1000
     via       'draw'|'kong'|'claim'
     toAct     seat on turn — ABSENT unless phase is 'turn'
     turnUid   players[toAct].uid, or '*'
-    claim/    { tile, from, rob, asks: 4 chars of . ? x w k p l m h }   only in 'claim'
-    result/   { winner -1..3, from -1..3, faan, lines, pay "a,b,c,d" }  only between hands
+    claim/    { tile, from, rob, asks: one char per seat of . ? x w k p l m h }   only in 'claim'
+    result/   { winner -1..3, from -1..3, faan, fu, limit, tenpai, lines, pay "a,b[,c,d]" }  only between hands
     lastMove/ { by, kind: start|discard|kong|win|claim|away|next|rematch, seat, event?, eventSeat?, tile? }
 ```
 

@@ -29,6 +29,7 @@ import {
   kindOf,
   kongOptions,
   parseMelds,
+  riichiOptions,
   rankOf,
   removeTiles,
   seatWind,
@@ -205,12 +206,26 @@ function leaningSuit(hand: string, meldTiles: string): string | null {
 
 // ─── turn ────────────────────────────────────────────────────────────────────
 
-function chooseDiscard(state: GameState, seat: number, difficulty: Difficulty, random: () => number): string {
+/** Riichi: an open hand needs a yaku it can still make. True if this one has an obvious route. */
+function openYakuRoute(state: GameState, seat: number, hand: string, meldTiles: string, meldKinds: number[]): boolean {
+  // A pung of a scoring honour already on the table, or a pair of one in hand to pung.
+  if (meldKinds.some((k) => isValueHonor(state, seat, k))) return true;
+  const all = Array.from(hand + meldTiles, kindOf);
+  // All simples (tanyao).
+  if (all.every((k) => !isTerminalOrHonor(k))) return true;
+  // One suit, with or without honours (honitsu / chinitsu).
+  if (new Set(all.filter(isSuited).map(suitOf)).size === 1) return true;
+  return false;
+}
+
+function chooseDiscard(state: GameState, seat: number, difficulty: Difficulty, random: () => number, only?: string[]): string {
   const p = state.players[seat];
   const melds = parseMelds(p.melds);
   const m = melds.length;
   const left = unseen(state, seat);
-  const options = Array.from(new Set(p.hand)).map((tile) => {
+  const riichiRules = state.config.ruleset === 'riichi';
+  const open = melds.some((x) => x.type !== 'hidden-kong');
+  const options = Array.from(new Set(only ?? p.hand)).map((tile) => {
     const rest = removeTiles(p.hand, tile) ?? p.hand;
     return { tile, rest, sh: shanten(rest, m) };
   });
@@ -225,8 +240,8 @@ function chooseDiscard(state: GameState, seat: number, difficulty: Difficulty, r
   // Hard cats fold when another player looks close (three sets on show) and
   // their own hand is still far off: throw the safest tile that does not set
   // the hand back more than one step.
-  if (difficulty === 'hard' && best >= 2) {
-    const threats = state.players.filter((q, i) => i !== seat && parseMelds(q.melds).length >= 3);
+  if (difficulty === 'hard' && best >= 1) {
+    const threats = state.players.filter((q, i) => i !== seat && (q.riichi || parseMelds(q.melds).length >= 3));
     if (threats.length > 0) {
       const danger = (tile: string): number => {
         const k = kindOf(tile);
@@ -257,6 +272,8 @@ function chooseDiscard(state: GameState, seat: number, difficulty: Difficulty, r
       if (suit && isSuited(k) && suitOf(k) !== suit) value += 1.5;
       value += Math.min(thrown[k], 3) * 0.25;
     }
+    // Riichi, open hand: shed terminals and honours to keep tanyao alive.
+    if (riichiRules && open && isTerminalOrHonor(k) && !isValueHonor(state, seat, k)) value += 3;
     if (value > top + 1e-9) {
       top = value;
       picks = [o.tile];
@@ -268,6 +285,12 @@ function chooseDiscard(state: GameState, seat: number, difficulty: Difficulty, r
 function decideTurn(state: GameState, seat: number, difficulty: Difficulty, random: () => number): Move {
   if (selfWin(state)) return { kind: 'win', seat };
   const p = state.players[seat];
+  // In riichi the drawn tile goes straight out.
+  if (p.riichi && state.drawn) return { kind: 'discard', seat, tile: state.drawn };
+  const ready = riichiOptions(state);
+  if (ready.length > 0 && (difficulty !== 'easy' || random() < 0.6)) {
+    return { kind: 'discard', seat, tile: chooseDiscard(state, seat, 'medium', random, ready), riichi: true };
+  }
   const m = parseMelds(p.melds).length;
   const now = bestAfterDiscard(p.hand, m);
   for (const tile of kongOptions(state)) {
@@ -311,6 +334,20 @@ function decideClaim(state: GameState, seat: number, difficulty: Difficulty, ran
   }
   if (candidates.length === 0) return { kind: 'claim', seat, call: 'pass' };
 
+  // Riichi: never call into a hand that can no longer make a yaku.
+  if (state.config.ruleset === 'riichi') {
+    const melds = parseMelds(p.melds);
+    const meldTiles = melds.map((x) => x.tiles).join('');
+    const meldKinds = melds.map((x) => x.kind);
+    const keep = candidates.filter((c) => {
+      if (c.move.kind !== 'claim') return false;
+      if ((c.move.call === 'pung' || c.move.call === 'kong') && isValueHonor(state, seat, kind)) return true;
+      return openYakuRoute(state, seat, p.hand, meldTiles + claim.tile, meldKinds);
+    });
+    if (keep.length === 0) return { kind: 'claim', seat, call: 'pass' };
+    candidates.splice(0, candidates.length, ...keep);
+  }
+
   // Scoring honours are worth a pung whatever it does to the shape.
   if (isValueHonor(state, seat, kind) && difficulty !== 'easy') {
     const pung = candidates.find((c) => c.move.kind === 'claim' && (c.move.call === 'pung' || c.move.call === 'kong'));
@@ -341,7 +378,43 @@ export function pendingSeats(state: GameState): number[] {
   if (state.phase === 'turn' && state.toAct !== null) return [state.toAct];
   if (state.phase === 'claim' && state.claim) {
     const from = state.claim.from;
-    return [1, 2, 3].map((d) => (from + d) % 4).filter((s) => state.claim?.asks[s] === '?');
+    const n = state.players.length;
+    return Array.from({ length: n - 1 }, (_, d) => (from + d + 1) % n).filter((s) => state.claim?.asks[s] === '?');
   }
   return [];
+}
+
+/**
+ * The coach: what a careful player would do here, and one line on why.
+ * Deterministic (no randomness), medium-level judgement.
+ */
+export function advise(state: GameState, seat: number): { move: Move; why: string } | null {
+  const move = decide(state, seat, 'medium', () => 0);
+  if (!move) return null;
+  const p = state.players[seat];
+  const m = parseMelds(p.melds).length;
+  if (move.kind === 'win') return { move, why: 'That is a winning hand — declare it!' };
+  if (move.kind === 'kong') return { move, why: 'Four of a kind: declaring the kong costs nothing and draws you a replacement.' };
+  if (move.kind === 'claim') {
+    if (move.call === 'win') return { move, why: 'This tile completes your hand — call it!' };
+    if (move.call === 'pass') {
+      const riichiRules = state.config.ruleset === 'riichi';
+      return {
+        move,
+        why: riichiRules
+          ? 'Calling would not bring your hand closer, or would leave it with no yaku. Keeping it closed keeps riichi open to you.'
+          : 'Calling would not bring your hand any closer to complete.',
+      };
+    }
+    return { move, why: `Calling ${move.call} brings your hand a step closer to complete.` };
+  }
+  if (move.kind !== 'discard') return { move, why: '' };
+  const rest = removeTiles(p.hand, move.tile) ?? p.hand;
+  const sh = shanten(rest, m);
+  const left = unseen(state, seat);
+  const good = ukeire(rest, m, left);
+  if (move.riichi) return { move, why: 'Your hand is ready and closed: declare riichi for an extra han (and ura dora).' };
+  if (sh === 0) return { move, why: `Throwing it leaves you ready — ${good} tiles still out there would win.` };
+  const steps = sh === 1 ? 'one tile' : `${sh} tiles`;
+  return { move, why: `Keeps your hand ${steps} from ready, with the most tiles (${good}) that would improve it.` };
 }

@@ -11,7 +11,7 @@ export interface Cat {
 }
 
 export const CATS: readonly Cat[] = [
-  { id: 'marmalade', name: 'Marmalade', blurb: 'Orange tabby. Pounces on every pung in sight.' },
+  { id: 'marmalade', name: 'Marmalade', blurb: 'Orange tabby. Calls every tile she can.' },
   { id: 'shadow', name: 'Shadow', blurb: 'Black cat. Quiet, patient, keeps her hand hidden.' },
   { id: 'tiger', name: 'Tiger', blurb: 'Grey tabby. Steady paws, rarely throws you a winner.' },
 ];

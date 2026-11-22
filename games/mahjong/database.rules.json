@@ -49,8 +49,8 @@
           }
         },
         "state": {
-          ".write": "auth != null && $code.matches(/^[A-HJKMNP-Z2-9]{5}$/) && newData.hasChildren(['version', 'config', 'players', 'wall', 'phase', 'turnUid', 'drawn', 'via', 'dealer', 'wind', 'handNo', 'gameNo', 'lastMove']) && newData.child('version').isNumber() && newData.child('version').val() >= 1 && newData.child('version').val() <= 1000000 && ((newData.child('turnUid').val() === '*' && !newData.hasChild('toAct')) || (newData.child('toAct').val() === 0 && newData.child('turnUid').val() === newData.child('players/0/uid').val()) || (newData.child('toAct').val() === 1 && newData.child('turnUid').val() === newData.child('players/1/uid').val()) || (newData.child('toAct').val() === 2 && newData.child('turnUid').val() === newData.child('players/2/uid').val()) || (newData.child('toAct').val() === 3 && newData.child('turnUid').val() === newData.child('players/3/uid').val())) && (root.child('rooms').child($code).child('seats').hasChild(auth.uid) || root.child('rooms').child($code).child('meta/host').val() === auth.uid) && (!data.exists() ? (root.child('rooms').child($code).child('meta/host').val() === auth.uid && newData.child('lastMove/kind').val() === 'start') : ((data.child('players/0/uid').val() === auth.uid || data.child('players/1/uid').val() === auth.uid || data.child('players/2/uid').val() === auth.uid || data.child('players/3/uid').val() === auth.uid) && ((data.child('turnUid').val() === auth.uid && (newData.child('lastMove/kind').val() === 'discard' || newData.child('lastMove/kind').val() === 'kong' || newData.child('lastMove/kind').val() === 'win')) || (data.child('turnUid').val() === '*' && (newData.child('lastMove/kind').val() === 'claim' || newData.child('lastMove/kind').val() === 'away' || newData.child('lastMove/kind').val() === 'next' || newData.child('lastMove/kind').val() === 'rematch')) || (newData.child('lastMove/kind').val() === 'away' && data.hasChild('toAct') && data.child('turnUid').val() !== auth.uid && !root.child('rooms').child($code).child('presence').hasChild(data.child('turnUid').val()))))) && newData.child('lastMove/by').val() === auth.uid && (!data.exists() || newData.child('version').val() > data.child('version').val())",
-          ".validate": "newData.hasChildren(['version', 'config', 'players', 'wall', 'phase', 'turnUid', 'drawn', 'via', 'dealer', 'wind', 'handNo', 'gameNo', 'lastMove'])",
+          ".write": "auth != null && $code.matches(/^[A-HJKMNP-Z2-9]{5}$/) && newData.hasChildren(['version', 'config', 'players', 'wall', 'phase', 'turnUid', 'drawn', 'via', 'dealer', 'wind', 'handNo', 'gameNo', 'lastMove', 'doraShown', 'honba', 'sticks']) && newData.child('version').isNumber() && newData.child('version').val() >= 1 && newData.child('version').val() <= 1000000 && ((newData.child('turnUid').val() === '*' && !newData.hasChild('toAct')) || (newData.child('toAct').val() === 0 && newData.child('turnUid').val() === newData.child('players/0/uid').val()) || (newData.child('toAct').val() === 1 && newData.child('turnUid').val() === newData.child('players/1/uid').val()) || (newData.child('toAct').val() === 2 && newData.child('turnUid').val() === newData.child('players/2/uid').val()) || (newData.child('toAct').val() === 3 && newData.child('turnUid').val() === newData.child('players/3/uid').val())) && (root.child('rooms').child($code).child('seats').hasChild(auth.uid) || root.child('rooms').child($code).child('meta/host').val() === auth.uid) && (!data.exists() ? (root.child('rooms').child($code).child('meta/host').val() === auth.uid && newData.child('lastMove/kind').val() === 'start') : ((data.child('players/0/uid').val() === auth.uid || data.child('players/1/uid').val() === auth.uid || data.child('players/2/uid').val() === auth.uid || data.child('players/3/uid').val() === auth.uid) && ((data.child('turnUid').val() === auth.uid && (newData.child('lastMove/kind').val() === 'discard' || newData.child('lastMove/kind').val() === 'kong' || newData.child('lastMove/kind').val() === 'win')) || (data.child('turnUid').val() === '*' && (newData.child('lastMove/kind').val() === 'claim' || newData.child('lastMove/kind').val() === 'away' || newData.child('lastMove/kind').val() === 'next' || newData.child('lastMove/kind').val() === 'rematch')) || (newData.child('lastMove/kind').val() === 'away' && data.hasChild('toAct') && data.child('turnUid').val() !== auth.uid && !root.child('rooms').child($code).child('presence').hasChild(data.child('turnUid').val()))))) && newData.child('lastMove/by').val() === auth.uid && (!data.exists() || newData.child('version').val() > data.child('version').val())",
+          ".validate": "newData.hasChildren(['version', 'config', 'players', 'wall', 'phase', 'turnUid', 'drawn', 'via', 'dealer', 'wind', 'handNo', 'gameNo', 'lastMove', 'doraShown', 'honba', 'sticks'])",
           "version": {
             ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 1000000",
             "$deep": {
@@ -118,7 +118,7 @@
             }
           },
           "config": {
-            ".validate": "newData.hasChildren(['minFaan', 'rounds'])",
+            ".validate": "newData.hasChildren(['ruleset', 'minFaan', 'rounds'])",
             "minFaan": {
               ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10",
               "$deep": {
@@ -131,12 +131,18 @@
                 ".validate": false
               }
             },
+            "ruleset": {
+              ".validate": "newData.isString() && (newData.val() === 'riichi' || newData.val() === 'hk')",
+              "$deep": {
+                ".validate": false
+              }
+            },
             "$other": {
               ".validate": false
             }
           },
           "players": {
-            ".validate": "newData.hasChildren(['0', '1', '2', '3'])",
+            ".validate": "newData.hasChildren(['0', '1']) && (newData.hasChild('2') === newData.hasChild('3'))",
             "$seat": {
               ".validate": "$seat.matches(/^[0-3]$/) && newData.hasChildren(['uid', 'name', 'isHuman', 'sitOut', 'score'])",
               "uid": {
@@ -188,7 +194,31 @@
                 }
               },
               "discards": {
-                ".validate": "newData.isString() && newData.val().length <= 40 && newData.val().matches(/^[a-zA-P]*$/)",
+                ".validate": "newData.isString() && newData.val().length <= 72 && newData.val().matches(/^[a-zA-P]*$/)",
+                "$deep": {
+                  ".validate": false
+                }
+              },
+              "riichi": {
+                ".validate": "newData.isBoolean()",
+                "$deep": {
+                  ".validate": false
+                }
+              },
+              "ippatsu": {
+                ".validate": "newData.isBoolean()",
+                "$deep": {
+                  ".validate": false
+                }
+              },
+              "furiten": {
+                ".validate": "newData.isBoolean()",
+                "$deep": {
+                  ".validate": false
+                }
+              },
+              "riichiAt": {
+                ".validate": "newData.isNumber() && newData.val() >= -1 && newData.val() <= 72",
                 "$deep": {
                   ".validate": false
                 }
@@ -219,7 +249,7 @@
               }
             },
             "asks": {
-              ".validate": "newData.isString() && newData.val().length <= 4 && newData.val().matches(/^[.?xwkplmh]{4}$/)",
+              ".validate": "newData.isString() && newData.val().length <= 4 && newData.val().matches(/^([.?xwkplmh]{2}|[.?xwkplmh]{4})$/)",
               "$deep": {
                 ".validate": false
               }
@@ -249,13 +279,31 @@
               }
             },
             "lines": {
-              ".validate": "newData.isString() && newData.val().length <= 400 && newData.val().matches(/^[A-Za-z0-9 :|'-]*$/)",
+              ".validate": "newData.isString() && newData.val().length <= 600 && newData.val().matches(/^[A-Za-z0-9 :|'-]*$/)",
               "$deep": {
                 ".validate": false
               }
             },
             "pay": {
-              ".validate": "newData.isString() && newData.val().length <= 60 && newData.val().matches(/^-?[0-9]+(,-?[0-9]+){3}$/)",
+              ".validate": "newData.isString() && newData.val().length <= 80 && newData.val().matches(/^-?[0-9]+(,-?[0-9]+){1,3}$/)",
+              "$deep": {
+                ".validate": false
+              }
+            },
+            "fu": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 200",
+              "$deep": {
+                ".validate": false
+              }
+            },
+            "limit": {
+              ".validate": "newData.isString() && newData.val().length <= 40 && newData.val().matches(/^[A-Za-z0-9 ×]*$/)",
+              "$deep": {
+                ".validate": false
+              }
+            },
+            "tenpai": {
+              ".validate": "newData.isString() && newData.val().length <= 4 && newData.val().matches(/^[0-3]*$/)",
               "$deep": {
                 ".validate": false
               }
@@ -285,7 +333,7 @@
               }
             },
             "event": {
-              ".validate": "newData.isString() && (newData.val() === '' || newData.val() === 'discard' || newData.val() === 'pung' || newData.val() === 'chow' || newData.val() === 'kong' || newData.val() === 'win' || newData.val() === 'draw' || newData.val() === 'pass')",
+              ".validate": "newData.isString() && (newData.val() === '' || newData.val() === 'discard' || newData.val() === 'riichi' || newData.val() === 'pung' || newData.val() === 'chow' || newData.val() === 'kong' || newData.val() === 'win' || newData.val() === 'draw' || newData.val() === 'pass')",
               "$deep": {
                 ".validate": false
               }
@@ -303,6 +351,42 @@
               }
             },
             "$other": {
+              ".validate": false
+            }
+          },
+          "rinshan": {
+            ".validate": "newData.isString() && newData.val().length <= 4 && newData.val().matches(/^[a-zA-P]*$/)",
+            "$deep": {
+              ".validate": false
+            }
+          },
+          "dora": {
+            ".validate": "newData.isString() && newData.val().length <= 5 && newData.val().matches(/^[a-zA-P]*$/)",
+            "$deep": {
+              ".validate": false
+            }
+          },
+          "ura": {
+            ".validate": "newData.isString() && newData.val().length <= 5 && newData.val().matches(/^[a-zA-P]*$/)",
+            "$deep": {
+              ".validate": false
+            }
+          },
+          "doraShown": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 5",
+            "$deep": {
+              ".validate": false
+            }
+          },
+          "honba": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000",
+            "$deep": {
+              ".validate": false
+            }
+          },
+          "sticks": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000",
+            "$deep": {
               ".validate": false
             }
           },

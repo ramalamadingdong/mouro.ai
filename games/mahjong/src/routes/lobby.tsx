@@ -117,6 +117,8 @@ export function LobbyRoute() {
   const isHost = meta !== null && uid !== null && meta.host === uid;
   const order = meta ? seatOrder(seats, meta.host) : [];
   const canStart = isHost && order.length >= 2 && !starting;
+  // Heads-up is only possible with exactly two people; more means a four-player table.
+  const tableSeats = order.length > 2 ? 4 : table.seats;
 
   /*
    * The invite link. `import.meta.env.BASE_URL` is read by STATIC DOT NOTATION
@@ -319,7 +321,17 @@ export function LobbyRoute() {
         {isHost && (
           <section className="panel">
             <h2 className="panel__heading">Table</h2>
-            <RuleChoices />
+            <RuleChoices
+              seatsLocked={order.length > 2}
+              seatsNote={
+                order.length > 2
+                  ? 'More than two people are here, so this is a four-player table.'
+                  : tableSeats === 2
+                    ? 'Heads-up: just the two of you, no cats.'
+                    : undefined
+              }
+            />
+            {tableSeats === 4 && (
             <Segmented
               label="How well the cats play"
               value={table.difficulty}
@@ -330,9 +342,10 @@ export function LobbyRoute() {
               ]}
               onChange={(difficulty) => setTable({ difficulty })}
             />
+            )}
             <p className="field__hint">
-              {order.length >= RULES.PLAYERS
-                ? 'Four players: no cats needed. The host deals first.'
+              {tableSeats === 2 || order.length >= RULES.PLAYERS
+                ? 'No cats needed. The host deals first.'
                 : `Computer cats take the ${RULES.PLAYERS - order.length === 1 ? 'empty seat' : `${RULES.PLAYERS - order.length} empty seats`}; the host’s phone plays for them. The host deals first.`}
             </p>
           </section>
@@ -349,7 +362,7 @@ export function LobbyRoute() {
                 // startGame writes its own failure into the store's `error`,
                 // which is rendered below; the flag only guards a double-tap
                 // starting over a game that is mid-start.
-                void startGame({ minFaan: table.minFaan, rounds: table.rounds, difficulty: table.difficulty }).finally(() =>
+                void startGame({ ruleset: table.ruleset, seats: tableSeats, minFaan: table.minFaan, rounds: table.rounds, difficulty: table.difficulty }).finally(() =>
                   setStarting(false),
                 );
               }}

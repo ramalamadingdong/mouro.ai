@@ -47,8 +47,13 @@ export const useSoloStore = create<SoloStore>()(
           game: createGame({
             players: [
               { uid: SOLO_UID, name: name.trim() || 'You', isHuman: true },
-              ...CATS.map((cat) => ({ uid: `${CAT_UID_PREFIX}${cat.id}`, name: cat.name, isHuman: false })),
+              ...CATS.slice(0, options.seats - 1).map((cat) => ({
+                uid: `${CAT_UID_PREFIX}${cat.id}`,
+                name: cat.name,
+                isHuman: false,
+              })),
             ],
+            ruleset: options.ruleset,
             minFaan: options.minFaan,
             rounds: options.rounds,
             seed: randomSeed(),

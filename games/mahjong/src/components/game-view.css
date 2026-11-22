@@ -171,6 +171,9 @@
 .discards {
   display: flex;
   flex-wrap: wrap;
+  /* Never stretch a tile to the row: its width follows its height. */
+  align-items: flex-end;
+  align-content: flex-start;
   gap: 2px 1px;
   min-height: 1.5rem;
 }
@@ -347,4 +350,127 @@
   font-weight: var(--weight-bold);
   font-size: var(--size-md);
   text-align: center;
+}
+
+/* ── Riichi, the coach ──────────────────────────────────────────────────── */
+
+.play__bar {
+  grid-template-columns: auto 1fr auto;
+}
+
+.play__tools {
+  display: inline-flex;
+  gap: var(--space-xs);
+}
+
+.play__tools [data-on='true'] {
+  color: var(--accent);
+  font-weight: var(--weight-bold);
+}
+
+.dora {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  padding: 2px 8px;
+  font-size: var(--size-xs);
+}
+
+.dora__label {
+  opacity: 0.85;
+}
+
+.dora__sticks {
+  margin-left: auto;
+  display: inline-flex;
+  gap: var(--space-sm);
+  font-weight: var(--weight-bold);
+}
+
+.seat__riichi {
+  margin-left: var(--space-xs);
+  padding: 0 6px;
+  border-radius: var(--radius-pill);
+  background: #fff;
+  color: var(--tile-red);
+  font-weight: var(--weight-heavy);
+  font-size: var(--size-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* The riichi tile lies sideways. */
+.discards__tile {
+  display: inline-flex;
+}
+
+.discards__tile[data-riichi='true'] {
+  transform: rotate(90deg);
+  /* A turned tile is as wide as an upright one is tall: make room either side. */
+  margin: 0 0.28rem;
+}
+
+/* Heads-up: the one opponent gets room for a bigger discard pile. */
+.play[data-seats='2'] .discards {
+  min-height: 3rem;
+}
+
+.coach {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-sm);
+  margin: 0;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  background: var(--page-raised);
+  border: 1px dashed var(--accent-dim);
+  font-size: var(--size-sm);
+  color: var(--text-muted);
+}
+
+.coach__badge {
+  flex: none;
+  padding: 0 6px;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: var(--text-on-accent);
+  font-size: var(--size-xs);
+  font-weight: var(--weight-bold);
+}
+
+.claim-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.btn--suggested {
+  box-shadow: 0 0 0 3px var(--accent-bright);
+}
+
+.me__tile[data-hint='true'] .tile {
+  outline: 2px dashed var(--accent-bright);
+  outline-offset: 2px;
+}
+
+.me__note {
+  margin: 0;
+  text-align: center;
+  font-size: var(--size-sm);
+  color: var(--text-muted);
+}
+
+.me__note--warn {
+  color: var(--warn);
+  font-weight: var(--weight-medium);
+}
+
+.result__dora {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--size-sm);
+  color: var(--text-muted);
 }

@@ -29,7 +29,7 @@ are not weekly picks and never rotate off it.
 
 | Added | Game | Where | What |
 |---|---|---|---|
-| 2026-11-22 | Mahjong | `games/mahjong`, `/mahjong/` | Four-player Hong Kong mahjong, online (cats fill empty seats) or vs three computer cats (Vite) |
+| 2026-11-22 | Mahjong | `games/mahjong`, `/mahjong/` | Japanese (Riichi) and Hong Kong mahjong, four-handed or heads-up, online or vs computer cats, with lessons and a coach (Vite) |
 
 ## Weekly games
 

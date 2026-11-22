@@ -3,6 +3,10 @@ import {
   applyMove,
   createGame,
   decompositions,
+  doraOf,
+  riichiPayments,
+  scoreRiichi,
+  type RiichiContext,
   fullSet,
   isComplete,
   normalize,
@@ -41,6 +45,7 @@ const ctx = (concealed: string, extra: Partial<WinContextLike> = {}): WinContext
 function newGame(seed = 1): GameState {
   return createGame({
     players: [0, 1, 2, 3].map((i) => ({ uid: `u${i}`, name: `P${i}`, isHuman: true })),
+    ruleset: 'hk',
     minFaan: 0,
     rounds: 1,
     seed,
@@ -164,5 +169,82 @@ describe('the reducer', () => {
     const s = newGame();
     const wire = JSON.parse(JSON.stringify(s, (_k, v) => (v === '' || v === null ? undefined : v)));
     expect(normalize(wire)).toEqual(s);
+  });
+});
+
+describe('riichi scoring', () => {
+  const rc = (concealed: string, extra: Partial<RiichiContext> = {}): RiichiContext => ({
+    concealed,
+    winTile: concealed[concealed.length - 1],
+    melds: [],
+    tsumo: false,
+    riichi: false,
+    doubleRiichi: false,
+    ippatsu: false,
+    seatWind: 1,
+    roundWind: 0,
+    doraIndicators: E, // points at South: none in these hands
+    uraIndicators: '',
+    lastTile: false,
+    rinshan: false,
+    chankan: false,
+    firstDraw: false,
+    dealer: false,
+    ...extra,
+  });
+
+  it('pinfu + tanyao ron is 2 han 30 fu, 2000 from a non-dealer', () => {
+    const s = scoreRiichi(rc(man(2, 3, 4, 5, 6, 7) + pin(3, 4, 5, 5) + sou(6, 7, 8) + pin(2)));
+    expect(s?.lines.map((l) => l[0]).sort()).toEqual(['Pinfu', 'Tanyao']);
+    expect(s?.fu).toBe(30);
+    expect(riichiPayments(s!.base, 1, 2, 0, 4)[2]).toBe(2000);
+  });
+
+  it('a hand with no yaku cannot win', () => {
+    expect(scoreRiichi(rc(man(1, 2, 3, 4, 5, 6) + pin(7, 8, 9) + sou(1, 1, 1, 9) + sou(9)))).toBeNull();
+  });
+
+  it('riichi gives the same hand a yaku, and dora add han', () => {
+    const s = scoreRiichi(
+      rc(man(1, 2, 3, 4, 5, 6) + pin(7, 8, 9) + sou(1, 1, 1, 9) + sou(9), { riichi: true, doraIndicators: sou(8) }),
+    );
+    expect(s?.lines).toContainEqual(['Riichi', 1]);
+    expect(s?.lines).toContainEqual(['Dora', 2]);
+  });
+
+  it('seven pairs is 25 fu', () => {
+    const s = scoreRiichi(rc(man(1, 1, 3, 3) + pin(5, 5, 7, 7) + sou(2, 2, 8, 8) + E + E));
+    expect(s?.lines).toContainEqual(['Chiitoitsu', 2]);
+    expect(s?.fu).toBe(25);
+  });
+
+  it('great three dragons is a yakuman', () => {
+    const s = scoreRiichi(rc(RED + RED + RED + GREEN + GREEN + GREEN + WHITE + WHITE + WHITE + man(1, 2, 3) + S + S));
+    expect(s?.yakuman).toBe(1);
+    expect(s?.base).toBe(8000);
+  });
+
+  it('dora indicators wrap: 9 → 1, North → East, red dragon → white', () => {
+    expect(doraOf(8)).toBe(0);
+    expect(doraOf(30)).toBe(27);
+    expect(doraOf(31)).toBe(33);
+  });
+});
+
+describe('two players', () => {
+  it('deals a heads-up Riichi game with a dead wall', () => {
+    const s = createGame({
+      players: [0, 1].map((i) => ({ uid: `u${i}`, name: `P${i}`, isHuman: true })),
+      ruleset: 'riichi',
+      minFaan: 0,
+      rounds: 1,
+      seed: 4,
+      by: 'u0',
+    });
+    expect(s.players).toHaveLength(2);
+    expect(s.dora).toHaveLength(5);
+    expect(s.rinshan).toHaveLength(4);
+    expect(s.wall.length).toBe(136 - 14 - 27);
+    expect(normalize(JSON.parse(JSON.stringify(s)))).not.toBeNull();
   });
 });

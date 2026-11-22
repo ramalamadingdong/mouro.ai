@@ -3,7 +3,7 @@
   "_comment_no_sw": "Deliberately no service worker, like the other games: a site redeployed this often is more likely to strand a player on a stale cached bundle than to be opened offline.",
   "name": "Mahjong",
   "short_name": "Mahjong",
-  "description": "Hong Kong mahjong with no sign-up: play the computer cats, or share a room code and play friends online.",
+  "description": "Japanese (Riichi) and Hong Kong mahjong with no sign-up: learn with guided lessons and a coach, play computer cats, or share a room code and play friends online, four-handed or heads-up.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

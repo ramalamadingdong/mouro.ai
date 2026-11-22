@@ -32,6 +32,8 @@ export function GameRoute() {
   const setLastRoom = useSettingsStore((s) => s.setLastRoom);
 
   const difficulty = useSettingsStore((s) => s.table.difficulty);
+  const coach = useSettingsStore((s) => s.table.coach);
+  const setTable = useSettingsStore((s) => s.setTable);
   const [thinkingSeat, setThinkingSeat] = useState<number | null>(null);
 
   useOnlineAway();
@@ -95,6 +97,8 @@ export function GameRoute() {
       error={error}
       onDismissError={clearError}
       tag={code}
+      coach={coach}
+      onToggleCoach={() => setTable({ coach: !coach })}
       onMove={(move) => void send(move)}
       // Any seated player may deal the next hand; if two tap at once the
       // reducer refuses the second.

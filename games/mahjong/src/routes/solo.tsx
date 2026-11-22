@@ -35,7 +35,7 @@ function Setup() {
         }}
       >
         <h1 className="screen__title">Play the cats</h1>
-        <p className="screen__subtitle">You and three computer cats, Hong Kong rules.</p>
+        <p className="screen__subtitle">You against computer cats: three at a full table, one heads-up.</p>
 
         <div className="field">
           <label className="field__label" htmlFor="solo-name">
@@ -54,8 +54,8 @@ function Setup() {
         </div>
 
         <ul className="setup__cats" aria-label="Who is playing">
-          {CATS.map((cat) => (
-            <li key={cat.id} className="setup__cat" data-in="true">
+          {CATS.map((cat, i) => (
+            <li key={cat.id} className="setup__cat" data-in={i < table.seats - 1 ? 'true' : 'false'}>
               <Avatar uid={`${CAT_UID_PREFIX}${cat.id}`} name={cat.name} />
               <span className="setup__cat-text">
                 <span className="setup__cat-name">{cat.name}</span>
@@ -99,6 +99,8 @@ function SoloGame() {
   const setThinking = useSoloStore((s) => s.setThinking);
   const clearError = useSoloStore((s) => s.clearError);
   const quit = useSoloStore((s) => s.quit);
+  const coach = useSettingsStore((s) => s.table.coach);
+  const setTable = useSettingsStore((s) => s.setTable);
   // Mounted only while a game exists, so the cats' timers start and stop
   // with the table itself.
   useCatDriver({
@@ -120,6 +122,8 @@ function SoloGame() {
       thinkingSeat={thinkingSeat}
       error={error}
       onDismissError={clearError}
+      coach={coach}
+      onToggleCoach={() => setTable({ coach: !coach })}
       onMove={(move) => send(move, SOLO_UID)}
       onNext={() => send(game.phase === 'gameover' ? { kind: 'rematch', seed: randomSeed() } : { kind: 'next', seed: randomSeed() }, SOLO_UID)}
       onLeave={quit}

@@ -8,7 +8,7 @@
  * tappable.
  */
 import { memo } from 'react';
-import { kindOf, rankOf, suitOf, tileName } from '@/engine';
+import { kindOf, rankOf, suitOf, t, tileName } from '@/engine';
 import { HAS_CJK } from '@/util/cjk';
 import './tile.css';
 
@@ -235,6 +235,15 @@ export function TileRow({ tiles, size = 'sm', label }: { tiles: string; size?: T
       {Array.from(tiles).map((t, i) => (
         <Tile key={i} tile={t} size={size} />
       ))}
+    </span>
+  );
+}
+
+/** Tiles written in shorthand (`123m 55z`, see engine/notation.ts), inline in text. */
+export function Notation({ n, size = 'sm' }: { n: string; size?: TileSize }) {
+  return (
+    <span className="tile-notation">
+      <TileRow tiles={t(n)} size={size} />
     </span>
   );
 }

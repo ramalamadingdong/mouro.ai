@@ -53,7 +53,7 @@ export function HomeRoute() {
           <img className="home__art" src={`${import.meta.env.BASE_URL}icons/icon-192.png`} alt="" width="96" height="96" />
           <h1 className="home__wordmark">Mahjong</h1>
           <p className="screen__subtitle">
-            Hong Kong mahjong for four. Play three computer cats on this phone, or friends online — cats fill any empty seats.
+            Japanese (Riichi) or Hong Kong mahjong, for four or two. Learn with the lessons and the coach, play computer cats, or play friends online.
           </p>
         </header>
 
@@ -96,6 +96,9 @@ export function HomeRoute() {
         )}
 
         <div className="stack home__actions">
+          <button type="button" className="btn btn--secondary btn--block" onClick={() => navigate('/learn')}>
+            Learn to play
+          </button>
           <button type="button" className="btn btn--primary btn--block" onClick={() => navigate('/solo')}>
             {soloInProgress ? 'Back to your game with the cats' : 'Play the cats'}
           </button>
