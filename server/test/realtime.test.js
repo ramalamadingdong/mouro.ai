@@ -42,6 +42,7 @@ before(async () => {
       { name: 'holdem', rules: rules('games/holdem/database.rules.json'), reap: ['rooms'] },
       { name: 'dots', rules: rules('games/dots/database.rules.json'), reap: ['rooms'] },
       { name: 'pawprints', rules: rules('games/pawprints/database.rules.json'), reap: ['rooms'] },
+      { name: 'mahjong', rules: rules('games/mahjong/database.rules.json'), reap: ['rooms'] },
       { name: 'road-trip', rules: rules('games/road-trip/database.rules.json'), reap: ['rooms'] },
     ],
   });
@@ -398,6 +399,95 @@ describe('dots rules', () => {
     const outsider = await player('dots');
     await denied(set(state(outsider), dotsState(uids, { version: 2, toAct: 2, by: outsider.uid, kind: 'away' })));
     await set(state(b), dotsState(uids, { version: 2, toAct: 2, by: b.uid, kind: 'away' }));
+  });
+});
+
+describe('mahjong rules', () => {
+  // A structurally valid GameState for four seats, as the engine would write
+  // it. The rules bound shape and authority, not mahjong, so the tiles are
+  // arbitrary. `seatUids` has four entries: cats carry the host's uid.
+  const mjState = (seatUids, { version, toAct = null, by, kind, phase, hand = 'abcdefghijklm' }) => ({
+    version,
+    config: { minFaan: 1, rounds: 1 },
+    players: seatUids.map((uid, i) => ({
+      uid,
+      name: `P${i}`,
+      isHuman: i < 2,
+      sitOut: false,
+      score: 0,
+      hand,
+      melds: i === 1 ? 'pFFF,cjkl' : '',
+      flowers: '',
+      discards: 'BC',
+    })),
+    wall: 'nopqrs',
+    phase: phase ?? (toAct === null ? 'claim' : 'turn'),
+    drawn: '',
+    via: 'draw',
+    dealer: 0,
+    wind: 0,
+    handNo: 1,
+    gameNo: 1,
+    ...(toAct === null ? { turnUid: '*' } : { toAct, turnUid: seatUids[toAct] }),
+    ...((phase ?? (toAct === null ? 'claim' : 'turn')) === 'claim' ? { claim: { tile: 'C', from: 0, rob: false, asks: '.??.' } } : {}),
+    lastMove: { by, kind, seat: 0, event: '', eventSeat: 0, tile: '' },
+  });
+
+  async function room(code) {
+    const host = await player('mahjong');
+    const guest = await player('mahjong');
+    const now = Date.now();
+    await set(ref(host.db, `rooms/${code}`), {
+      meta: { host: host.uid, status: 'waiting', createdAt: now, updatedAt: now },
+      seats: { [host.uid]: `${now}|Host` },
+    });
+    await update(ref(guest.db, `rooms/${code}`), { [`seats/${guest.uid}`]: `${now}|Guest`, 'meta/updatedAt': serverTimestamp() });
+    // Two humans, two cats played by the host.
+    const seatUids = [host.uid, guest.uid, host.uid, host.uid];
+    const state = (p) => ref(p.db, `rooms/${code}/state`);
+    return { host, guest, seatUids, state };
+  }
+
+  test('only the host deals the first hand', async () => {
+    const { host, guest, seatUids, state } = await room('MJA22');
+    await denied(set(state(guest), mjState(seatUids, { version: 1, toAct: 0, by: guest.uid, kind: 'start' })));
+    await denied(set(state(host), mjState(seatUids, { version: 1, toAct: 0, by: host.uid, kind: 'discard' })));
+    await set(state(host), mjState(seatUids, { version: 1, toAct: 0, by: host.uid, kind: 'start' }));
+  });
+
+  test('turn moves come from the seat on turn — the host for a cat — and the shape is closed', async () => {
+    const { host, guest, seatUids, state } = await room('MJB33');
+    await set(state(host), mjState(seatUids, { version: 1, toAct: 2, by: host.uid, kind: 'start' }));
+    // Seat 2 is a cat: its uid is the host's, so only the host may move.
+    await denied(set(state(guest), mjState(seatUids, { version: 2, toAct: 1, by: guest.uid, kind: 'discard' })));
+    await denied(set(state(host), mjState(seatUids, { version: 2, toAct: 1, by: host.uid, kind: 'claim' })));
+    await denied(set(state(host), { ...mjState(seatUids, { version: 2, toAct: 1, by: host.uid, kind: 'discard' }), junk: 1 }));
+    await denied(set(state(host), mjState(seatUids, { version: 2, toAct: 1, by: host.uid, kind: 'discard', hand: 'abc!' })));
+    await denied(set(state(host), mjState(seatUids, { version: 1, toAct: 1, by: host.uid, kind: 'discard' })));
+    await set(state(host), mjState(seatUids, { version: 2, toAct: 1, by: host.uid, kind: 'discard' }));
+    await denied(set(state(host), mjState(seatUids, { version: 3, toAct: 2, by: host.uid, kind: 'discard' })));
+    await set(state(guest), mjState(seatUids, { version: 3, by: guest.uid, kind: 'discard' }));
+    const outsider = await player('mahjong');
+    await denied(set(state(outsider), mjState(seatUids, { version: 4, by: outsider.uid, kind: 'claim' })));
+  });
+
+  test('while a tile is on offer any seated player answers, but nobody takes a turn move', async () => {
+    const { host, guest, seatUids, state } = await room('MJC44');
+    await set(state(host), mjState(seatUids, { version: 1, by: host.uid, kind: 'start' }));
+    await denied(set(state(guest), mjState(seatUids, { version: 2, toAct: 1, by: guest.uid, kind: 'discard' })));
+    await denied(set(state(guest), { ...mjState(seatUids, { version: 2, by: guest.uid, kind: 'claim' }), claim: { tile: 'C', from: 0, rob: false, asks: 'bad!' } }));
+    await set(state(guest), mjState(seatUids, { version: 2, by: guest.uid, kind: 'claim' }));
+    await set(state(host), mjState(seatUids, { version: 3, toAct: 1, by: host.uid, kind: 'claim' }));
+  });
+
+  test('away: another player moves for the one on turn only while their presence is gone', async () => {
+    const { host, guest, seatUids, state } = await room('MJD55');
+    await set(state(host), mjState(seatUids, { version: 1, toAct: 1, by: host.uid, kind: 'start' }));
+    const presence = ref(guest.db, `rooms/MJD55/presence/${guest.uid}`);
+    await set(presence, serverTimestamp());
+    await denied(set(state(host), mjState(seatUids, { version: 2, toAct: 2, by: host.uid, kind: 'away' })));
+    await remove(presence);
+    await set(state(host), mjState(seatUids, { version: 2, toAct: 2, by: host.uid, kind: 'away' }));
   });
 });
 

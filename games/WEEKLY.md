@@ -22,6 +22,15 @@ already sent keep working.
 | Sudoku | `site/games/sudoku`, `/games/sudoku/` | Solo number puzzle with a daily puzzle (static page) |
 | Cat Café | `site/games/cat-cafe`, `/games/cat-cafe/` | Solo tile-drafting puzzle against a computer cat (static page) |
 
+## Games added outside the series
+
+These are permanent games with their own tile in "Our games" on the hub; they
+are not weekly picks and never rotate off it.
+
+| Added | Game | Where | What |
+|---|---|---|---|
+| 2026-11-22 | Mahjong | `games/mahjong`, `/mahjong/` | Four-player Hong Kong mahjong, online (cats fill empty seats) or vs three computer cats (Vite) |
+
 ## Weekly games
 
 | Added | Game | Slug (URL, folder, namespace) | Kind | Players |

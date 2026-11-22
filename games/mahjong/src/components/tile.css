@@ -1,0 +1,83 @@
+/* A tile: ivory face on a jade-green body, the body showing as a thick lower edge. */
+
+.tile {
+  --w: 2.5rem;
+  position: relative;
+  display: inline-block;
+  flex: none;
+  width: var(--w);
+  aspect-ratio: 3 / 4;
+  border-radius: calc(var(--w) * 0.12);
+  background: var(--tile-face);
+  border: 1px solid var(--tile-edge);
+  box-shadow:
+    0 calc(var(--w) * 0.09) 0 var(--tile-body),
+    0 calc(var(--w) * 0.09 + 1px) 2px var(--shadow);
+  margin-bottom: calc(var(--w) * 0.09);
+  vertical-align: bottom;
+}
+
+.tile--xs {
+  --w: 1.05rem;
+}
+
+.tile--sm {
+  --w: 1.4rem;
+}
+
+.tile--md {
+  --w: 1.9rem;
+}
+
+.tile--lg {
+  /* Fourteen tiles and the gap before the drawn one fit the table's width. */
+  --w: min(2.45rem, calc((min(100vw, var(--table-max-width)) - 2.5rem) / 14.6));
+}
+
+.tile__art {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.tile__glyph {
+  /* Same stack as GLYPH_FONT in util/cjk.ts. */
+  font-family: 'Songti SC', 'STSong', 'Noto Serif CJK TC', 'Noto Serif CJK SC', 'Noto Sans CJK TC', 'PMingLiU', 'MingLiU', serif;
+  font-weight: 700;
+}
+
+.tile__fallback {
+  font-family: system-ui, sans-serif;
+  font-weight: 800;
+}
+
+.tile__index {
+  font-family: system-ui, sans-serif;
+  font-size: 6.4px;
+  font-weight: 700;
+}
+
+/* The small tiles in discard piles are too small for the corner index. */
+.tile--xs .tile__index {
+  display: none;
+}
+
+.tile--back {
+  background: linear-gradient(150deg, var(--tile-back-light), var(--tile-body));
+  border-color: var(--tile-body);
+}
+
+.tile[data-highlight='true'] {
+  outline: 2px solid var(--accent-bright);
+  outline-offset: 1px;
+}
+
+.tile-row {
+  display: inline-flex;
+  gap: 1px;
+}
+
+/* Face-down tiles in a row read as separate tiles, not a bar. */
+.tile--back + .tile--back {
+  margin-left: 1px;
+}

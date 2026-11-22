@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Mahjong app icon: three tiles fanned on jade felt — 1 dots, red dragon, and a cat.
+       Full-bleed so it also serves as a maskable icon: everything that matters sits
+       inside the middle 80%. Shapes only (no text), so it renders the same anywhere. -->
+  <defs>
+    <radialGradient id="felt" cx="50%" cy="30%" r="80%">
+      <stop offset="0" stop-color="#2a7357"/>
+      <stop offset="1" stop-color="#18463a"/>
+    </radialGradient>
+    <g id="tile">
+      <rect x="-72" y="-92" width="144" height="196" rx="18" fill="#2f8a63"/>
+      <rect x="-72" y="-104" width="144" height="190" rx="18" fill="#fbf6e8" stroke="#ddd2b8" stroke-width="3"/>
+    </g>
+  </defs>
+  <rect width="512" height="512" fill="url(#felt)"/>
+  <!-- left: 1 dots -->
+  <g transform="translate(168 270) rotate(-14)">
+    <use href="#tile"/>
+    <circle cx="0" cy="-9" r="50" fill="none" stroke="#1d7845" stroke-width="9"/>
+    <circle cx="0" cy="-9" r="34" fill="#1f4c9e"/>
+    <circle cx="0" cy="-9" r="15" fill="#c0322a"/>
+  </g>
+  <!-- right: a cat -->
+  <g transform="translate(344 270) rotate(14)">
+    <use href="#tile"/>
+    <g fill="#1f4c9e" transform="translate(0 -4)">
+      <path d="M-44 -10 -38 -58 -12 -34Z M44 -10 38 -58 12 -34Z"/>
+      <ellipse cx="0" cy="0" rx="48" ry="40"/>
+      <ellipse cx="-17" cy="-4" rx="7" ry="9" fill="#fbf6e8"/>
+      <ellipse cx="17" cy="-4" rx="7" ry="9" fill="#fbf6e8"/>
+      <path d="M-7 14h14l-7 8z" fill="#fbf6e8"/>
+    </g>
+  </g>
+  <!-- centre: red dragon, the character drawn as strokes -->
+  <g transform="translate(256 252)">
+    <use href="#tile"/>
+    <g fill="none" stroke="#c0322a" stroke-width="15" stroke-linecap="square">
+      <rect x="-44" y="-50" width="88" height="56" rx="4"/>
+      <path d="M0 -86V54"/>
+    </g>
+  </g>
+</svg>
