@@ -5,5 +5,6 @@
   { "name": "holdem", "rules": "games/holdem/database.rules.json", "reap": ["rooms"] },
   { "name": "dots", "rules": "games/dots/database.rules.json", "reap": ["rooms"] },
   { "name": "pawprints", "rules": "games/pawprints/database.rules.json", "reap": ["rooms"] },
+  { "name": "mahjong", "rules": "games/mahjong/database.rules.json", "reap": ["rooms"] },
   { "name": "road-trip", "rules": "games/road-trip/database.rules.json", "reap": ["rooms"] }
 ]

@@ -1,0 +1,350 @@
+/* The playing screen: paper around a jade felt table. */
+
+.play {
+  width: 100%;
+  max-width: var(--table-max-width);
+  margin: 0 auto;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-sm) var(--space-xl);
+}
+
+.play__bar {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.play__tag {
+  text-align: center;
+  font-size: var(--size-sm);
+  color: var(--text-muted);
+}
+
+.play__help {
+  width: 2.25rem;
+  padding: 0;
+  font-weight: var(--weight-bold);
+}
+
+/* ── The felt ───────────────────────────────────────────────────────────── */
+
+.table {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px;
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(120% 80% at 50% 0%, var(--felt) 0%, var(--felt-deep) 100%);
+  box-shadow: inset 0 0 0 3px var(--felt-deep), 0 2px 6px var(--shadow);
+  color: var(--tile-face);
+}
+
+.seat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 8px;
+  border-radius: var(--radius-md);
+  background: var(--felt-line);
+  border: 2px solid transparent;
+  transition: border-color var(--dur-base) var(--ease);
+}
+
+.seat[data-turn='true'] {
+  border-color: rgb(255 236 170 / 0.85);
+}
+
+.seat--me {
+  background: rgb(255 255 255 / 0.16);
+}
+
+.seat__head {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: var(--space-sm);
+  min-height: 1.75rem;
+}
+
+.seat__avatar {
+  display: inline-flex;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+}
+
+.seat__avatar[data-thinking='true'] {
+  animation: think 1.1s ease-in-out infinite;
+  box-shadow: 0 0 0 2px rgb(255 236 170 / 0.9);
+}
+
+@keyframes think {
+  50% {
+    box-shadow: 0 0 0 4px rgb(255 236 170 / 0.35);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .seat__avatar[data-thinking='true'] {
+    animation: none;
+  }
+}
+
+.seat__avatar .avatar {
+  width: 100%;
+  height: 100%;
+}
+
+.seat__name {
+  font-weight: var(--weight-bold);
+  font-size: var(--size-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.seat__away {
+  margin-left: var(--space-xs);
+  padding: 0 6px;
+  border-radius: var(--radius-pill);
+  background: rgb(0 0 0 / 0.25);
+  font-weight: var(--weight-medium);
+  font-size: var(--size-xs);
+}
+
+.seat__wind {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: var(--weight-heavy);
+  font-size: var(--size-sm);
+}
+
+.seat__dealer {
+  padding: 0 6px;
+  border-radius: var(--radius-pill);
+  background: var(--tile-red);
+  color: #fff;
+  font-size: var(--size-xs);
+  font-weight: var(--weight-bold);
+}
+
+.seat__score {
+  min-width: 3ch;
+  text-align: right;
+  font-weight: var(--weight-heavy);
+  font-variant-numeric: tabular-nums;
+}
+
+.seat__tiles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 4px 10px;
+}
+
+.seat__hand .tile-row {
+  gap: 0;
+}
+
+.melds {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.melds__meld {
+  display: inline-flex;
+  gap: 1px;
+}
+
+.melds__flowers {
+  display: inline-flex;
+}
+
+.discards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 1px;
+  min-height: 1.5rem;
+}
+
+/* ── Status, claims and the hand ────────────────────────────────────────── */
+
+.play__status {
+  min-height: 2.6em;
+  margin: 0;
+  text-align: center;
+  font-weight: var(--weight-medium);
+  color: var(--text);
+}
+
+.claim {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  border: 2px solid var(--accent);
+}
+
+.claim__tile .tile {
+  --w: 2.6rem;
+}
+
+.claim__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+.claim__chow,
+.me__kong {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.me__hand-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.me__hand {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  padding-top: 0.6rem;
+}
+
+.me__tile {
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.me__tile:disabled {
+  cursor: default;
+}
+
+/* Hand tiles are not dimmed when it is not your turn: they are still your hand. */
+.me__tile[data-drawn='true'] {
+  margin-left: 0.5rem;
+}
+
+.me__tile[data-selected='true'] {
+  transform: translateY(-0.55rem);
+}
+
+.me__tile[data-selected='true'] .tile {
+  outline: 2px solid var(--accent-bright);
+  outline-offset: 1px;
+}
+
+.me__tile:focus-visible {
+  outline: none;
+}
+
+.me__tile:focus-visible .tile {
+  outline: 2px dashed var(--accent);
+  outline-offset: 2px;
+}
+
+.me__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-sm);
+}
+
+.me__waits {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 0;
+  font-size: var(--size-sm);
+  color: var(--text-muted);
+}
+
+.play__error {
+  margin: 0;
+}
+
+/* ── Between hands ──────────────────────────────────────────────────────── */
+
+.result {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.result__hand {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 6px 10px;
+}
+
+.result__lines,
+.result__pay {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.result__lines li,
+.result__pay li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--space-md);
+  padding: 2px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.result__pay li {
+  grid-template-columns: 1fr auto 4ch;
+  font-variant-numeric: tabular-nums;
+}
+
+.result__pay strong {
+  text-align: right;
+}
+
+.result__total {
+  font-weight: var(--weight-bold);
+  border-bottom: 0 !important;
+}
+
+.result__delta[data-sign='1'] {
+  color: var(--good);
+  font-weight: var(--weight-bold);
+}
+
+.result__delta[data-sign='-1'] {
+  color: var(--bad);
+}
+
+.result__over {
+  margin: 0;
+  font-weight: var(--weight-bold);
+  font-size: var(--size-md);
+  text-align: center;
+}

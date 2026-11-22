@@ -155,6 +155,15 @@ const games = [
     icon: 'games/holdem/public/icons/icon-512.png',
   },
   {
+    name: 'mahjong',
+    title: 'Mahjong',
+    text: 'Hong Kong rules for four. Fill the table with friends online, or play three computer cats.',
+    tags: ['1–4 players', 'Online', 'vs computer cats'],
+    path: 'mouro.ai/mahjong',
+    a: '#22604a', b: '#11352a', ink: '#f3d27a',
+    icon: 'games/mahjong/public/icons/icon-512.png',
+  },
+  {
     name: 'backgammon',
     title: 'Backgammon',
     text: 'Tawleh rules: mars counts double, no cube. Play a friend online, or the Professor, a computer cat.',

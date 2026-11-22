@@ -30,6 +30,7 @@ const icons = [
   ['site/games/road-trip/categories/icons/categories.svg', web('site/games/road-trip/categories/icons')],
   ['games/yahtzee/public/icons/icon.svg', web('games/yahtzee/public/icons')],
   ['games/dots/public/icons/icon.svg', web('games/dots/public/icons')],
+  ['games/mahjong/public/icons/icon.svg', web('games/mahjong/public/icons')],
   ['games/pawprints/public/icons/icon.svg', web('games/pawprints/public/icons')],
   [
     'games/backgammon/public/icons/icon.svg',
