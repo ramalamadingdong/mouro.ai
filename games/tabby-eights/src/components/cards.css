@@ -1,0 +1,107 @@
+/* Cards. Suit inks come from --suit-* in tokens.css; faces are cream in both themes. */
+
+.card {
+  --w: 3.4rem;
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-sizing: border-box;
+  width: var(--w);
+  aspect-ratio: 5 / 7;
+  padding: calc(var(--w) * 0.06);
+  border-radius: calc(var(--w) * 0.12);
+  background: var(--card);
+  border: 1px solid var(--card-edge);
+  box-shadow: 0 1px 2px var(--shadow);
+  color: var(--card-ink);
+  font-family: var(--font-display);
+  user-select: none;
+  flex: none;
+}
+
+.card--small {
+  --w: 2.2rem;
+}
+
+.card--large {
+  --w: 4.6rem;
+}
+
+.card[data-suit='f'] { --suit: var(--suit-f); }
+.card[data-suit='y'] { --suit: var(--suit-y); }
+.card[data-suit='m'] { --suit: var(--suit-m); }
+.card[data-suit='b'] { --suit: var(--suit-b); }
+
+.card__corner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: max-content;
+  line-height: 1;
+  color: var(--suit);
+}
+
+.card__corner--far {
+  align-self: flex-end;
+  transform: rotate(180deg);
+}
+
+.card__rank {
+  font-size: calc(var(--w) * 0.3);
+  font-weight: var(--weight-heavy);
+  letter-spacing: -0.04em;
+}
+
+.card__pip {
+  width: calc(var(--w) * 0.24);
+  height: calc(var(--w) * 0.24);
+  color: var(--suit);
+}
+
+.card__middle {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.card__big {
+  width: calc(var(--w) * 0.5);
+  height: calc(var(--w) * 0.5);
+  color: var(--suit);
+}
+
+.card__tabby {
+  width: calc(var(--w) * 0.56);
+  height: auto;
+}
+
+.card--small .card__corner--far,
+.card--small .card__middle {
+  display: none;
+}
+
+/* Eights get a warm wash so the wild card stands out in a hand. */
+.card[data-wild='true'] {
+  background: linear-gradient(160deg, var(--card) 55%, #f8e3c4);
+}
+
+.card--back {
+  background:
+    repeating-linear-gradient(135deg, var(--back) 0 7px, var(--back-stripe) 7px 11px),
+    var(--back);
+  border: 3px solid var(--back-edge);
+}
+
+.suit {
+  width: 1.2em;
+  height: 1.2em;
+  vertical-align: -0.22em;
+}
+.suit[data-suit='f'] { color: var(--suit-f); }
+.suit[data-suit='y'] { color: var(--suit-y); }
+.suit[data-suit='m'] { color: var(--suit-m); }
+.suit[data-suit='b'] { color: var(--suit-b); }

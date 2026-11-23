@@ -17,6 +17,7 @@ the games hub; earlier ones stay live at their own URL.
 | [`games/mahjong/`](games/mahjong/) | Japanese (Riichi) and Hong Kong mahjong, four-handed or heads-up, online (cats fill empty seats) or vs computer cats, with lessons and a coach (Vite PWA) | `/mahjong/` |
 | [`games/dots/`](games/dots/) | 2–4 player Dots and Boxes online, or solo against computer cats (Vite PWA) | `/dots/` |
 | [`games/pawprints/`](games/pawprints/) | Pawprints — weekly cat game, added Nov 15, 2026: 2–4 player five-in-a-row on a quilt online, or solo against computer cats (Vite PWA) | `/pawprints/` |
+| [`games/tabby-eights/`](games/tabby-eights/) | Tabby Eights — weekly cat game, added Nov 23, 2026: 2–4 player crazy eights with cat suits online, or solo against computer cats (Vite PWA) | `/tabby-eights/` |
 | [`server/`](server/) | Realtime server: WebSocket + SQLite, enforces each game's rules | `/rt` |
 | [`packages/realtime/`](packages/realtime/) | `@mouro/realtime`, the client the games use | — |
 | [`infra/`](infra/) | Caddyfile, systemd unit, VPS provisioning, deploy activation | — |
