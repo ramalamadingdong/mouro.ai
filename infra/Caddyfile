@@ -6,6 +6,7 @@
 #   /gin-rummey/*      301 → /gin-rummy/* (old invite links keep working)
 #   /yahtzee/          yahtzee SPA (Vite)           /srv/mouro.ai/yahtzee
 #   /holdem/           Texas Hold'em SPA (Vite)     /srv/mouro.ai/holdem
+#   /blackjack/        Blackjack SPA (Vite)         /srv/mouro.ai/blackjack
 #   /dots/             Dots and Boxes SPA (Vite)    /srv/mouro.ai/dots
 #   /pawprints/        Pawprints SPA (Vite)         /srv/mouro.ai/pawprints
 #   /tabby-eights/     Tabby Eights SPA (Vite)      /srv/mouro.ai/tabby-eights
@@ -39,7 +40,7 @@ www.mouro.ai {
 	}
 
 	# Content-hashed build output can be cached forever.
-	@hashed path_regexp hashed ^/(backgammon|gin-rummy)/_expo/static/|^/(yahtzee|holdem|dots|pawprints|tabby-eights|mahjong)/assets/
+	@hashed path_regexp hashed ^/(backgammon|gin-rummy)/_expo/static/|^/(yahtzee|holdem|blackjack|dots|pawprints|tabby-eights|mahjong)/assets/
 	header @hashed Cache-Control "public, max-age=31536000, immutable"
 
 	# ── realtime server ─────────────────────────────────────────────────────
@@ -87,6 +88,12 @@ www.mouro.ai {
 	redir /holdem /holdem/ permanent
 	handle /holdem/* {
 		try_files {path} /holdem/index.html
+		file_server
+	}
+
+	redir /blackjack /blackjack/ permanent
+	handle /blackjack/* {
+		try_files {path} /blackjack/index.html
 		file_server
 	}
 

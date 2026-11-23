@@ -1,0 +1,331 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "rooms": {
+      "$code": {
+        ".read": "auth != null && (!data.exists() || data.child('meta/host').val() === auth.uid || data.child('seats').hasChild(auth.uid) || data.child('meta/status').val() === 'waiting')",
+        ".write": "auth != null && (($code.matches(/^[A-HJKMNP-Z2-9]{5}$/) && !data.exists() && newData.child('meta/host').val() === auth.uid && newData.child('meta').hasChildren(['host', 'status', 'createdAt', 'updatedAt']) && !newData.hasChild('state') && !newData.hasChild('presence')) || (!newData.exists() && (data.child('meta/host').val() === auth.uid || (data.child('meta/createdAt').isNumber() && data.child('meta/updatedAt').isNumber() && now - data.child('meta/createdAt').val() > 86400000 && now - data.child('meta/updatedAt').val() > 86400000))))",
+        ".validate": "$code.matches(/^[A-HJKMNP-Z2-9]{5}$/)",
+        "meta": {
+          ".validate": "newData.hasChildren(['host', 'status', 'createdAt', 'updatedAt'])",
+          "host": {
+            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 128 && (!data.exists() || newData.val() === data.val())",
+            "$deep": {
+              ".validate": false
+            }
+          },
+          "status": {
+            ".write": "auth != null && $code.matches(/^[A-HJKMNP-Z2-9]{5}$/) && root.child('rooms').child($code).child('meta/host').val() === auth.uid && newData.isString() && data.exists() && data.val() === 'waiting' && newData.val() === 'playing'",
+            ".validate": "newData.isString() && (data.exists() ? (data.val() === 'waiting' && newData.val() === 'playing') : newData.val() === 'waiting')",
+            "$deep": {
+              ".validate": false
+            }
+          },
+          "createdAt": {
+            ".validate": "newData.isNumber() && (data.exists() ? newData.val() === data.val() : (newData.val() <= now + 86400000 && newData.val() > now - 86400000))",
+            "$deep": {
+              ".validate": false
+            }
+          },
+          "updatedAt": {
+            ".write": "auth != null && $code.matches(/^[A-HJKMNP-Z2-9]{5}$/) && newData.isNumber() && newData.val() <= now + 3600000 && newData.val() > now - 3600000 && root.child('rooms').child($code).child('meta').exists() && (root.child('rooms').child($code).child('meta/status').val() === 'waiting' || root.child('rooms').child($code).child('seats').hasChild(auth.uid) || root.child('rooms').child($code).child('meta/host').val() === auth.uid)",
+            ".validate": "newData.isNumber() && newData.val() <= now + 86400000 && (data.exists() ? newData.val() > now - 3600000 : newData.val() > now - 86400000)",
+            "$deep": {
+              ".validate": false
+            }
+          },
+          "$other": {
+            ".validate": false
+          }
+        },
+        "seats": {
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid && $code.matches(/^[A-HJKMNP-Z2-9]{5}$/) && (!newData.exists() || (root.child('rooms').child($code).child('meta').exists() && root.child('rooms').child($code).child('meta/status').val() === 'waiting' && newData.isString() && newData.val().length >= 3 && newData.val().length <= 120 && newData.val().matches(/^[0-9]{1,15}[|]/)))",
+            ".validate": "$uid === auth.uid && $uid.length <= 128 && newData.isString() && newData.val().length >= 3 && newData.val().length <= 120 && newData.val().matches(/^[0-9]{1,15}[|]/)",
+            "$deep": {
+              ".validate": false
+            }
+          }
+        },
+        "state": {
+          ".write": "auth != null && $code.matches(/^[A-HJKMNP-Z2-9]{5}$/) && newData.hasChildren(['version', 'config', 'players', 'phase', 'turnUid', 'handNo', 'house', 'lastMove']) && newData.child('version').isNumber() && newData.child('version').val() >= 0 && newData.child('version').val() <= 1000000 && ((newData.child('turnUid').val() === '*' && !newData.hasChild('toAct')) || (newData.child('toAct').val() === 0 && newData.child('turnUid').val() === newData.child('players/0/uid').val()) || (newData.child('toAct').val() === 1 && newData.child('turnUid').val() === newData.child('players/1/uid').val()) || (newData.child('toAct').val() === 2 && newData.child('turnUid').val() === newData.child('players/2/uid').val()) || (newData.child('toAct').val() === 3 && newData.child('turnUid').val() === newData.child('players/3/uid').val()) || (newData.child('toAct').val() === 4 && newData.child('turnUid').val() === newData.child('players/4/uid').val()) || (newData.child('toAct').val() === 5 && newData.child('turnUid').val() === newData.child('players/5/uid').val()) || (newData.child('toAct').val() === 6 && newData.child('turnUid').val() === newData.child('players/6/uid').val()) || (newData.child('toAct').val() === 7 && newData.child('turnUid').val() === newData.child('players/7/uid').val())) && (root.child('rooms').child($code).child('seats').hasChild(auth.uid) || root.child('rooms').child($code).child('meta/host').val() === auth.uid) && (!data.exists() ? (root.child('rooms').child($code).child('meta/host').val() === auth.uid && newData.child('lastMove/kind').val() === 'deal') : (data.child('turnUid').val() === auth.uid || ((data.child('players/0/uid').val() === auth.uid || data.child('players/1/uid').val() === auth.uid || data.child('players/2/uid').val() === auth.uid || data.child('players/3/uid').val() === auth.uid || data.child('players/4/uid').val() === auth.uid || data.child('players/5/uid').val() === auth.uid || data.child('players/6/uid').val() === auth.uid || data.child('players/7/uid').val() === auth.uid) && ((data.child('turnUid').val() === '*' && (newData.child('lastMove/kind').val() === 'deal' || newData.child('lastMove/kind').val() === 'next' || newData.child('lastMove/kind').val() === 'rematch')) || (newData.child('lastMove/kind').val() === 'away' && data.hasChild('toAct') && !root.child('rooms').child($code).child('presence').hasChild(data.child('turnUid').val())))))) && newData.child('lastMove/by').val() === auth.uid && (!data.exists() || newData.child('version').val() > data.child('version').val())",
+          ".validate": "newData.hasChildren(['version', 'config', 'players', 'phase', 'turnUid', 'handNo', 'house', 'lastMove'])",
+          "version": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000000",
+            "$deep": {
+              ".validate": false
+            }
+          },
+          "turnUid": {
+            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 128",
+            "$deep": {
+              ".validate": false
+            }
+          },
+          "phase": {
+            ".validate": "newData.isString() && (newData.val() === 'idle' || newData.val() === 'betting' || newData.val() === 'playing' || newData.val() === 'dealer' || newData.val() === 'settled' || newData.val() === 'gameover')",
+            "$deep": {
+              ".validate": false
+            }
+          },
+          "toAct": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 7",
+            "$deep": {
+              ".validate": false
+            }
+          },
+          "winner": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 7",
+            "$deep": {
+              ".validate": false
+            }
+          },
+          "handNo": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000",
+            "$deep": {
+              ".validate": false
+            }
+          },
+          "house": {
+            ".validate": "newData.isNumber() && newData.val() >= -10000000 && newData.val() <= 10000000",
+            "$deep": {
+              ".validate": false
+            }
+          },
+          "config": {
+            ".validate": "newData.hasChildren(['startingStack', 'minBet', 'maxBet', 'rounds'])",
+            "startingStack": {
+              ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 10000000",
+              "$deep": {
+                ".validate": false
+              }
+            },
+            "minBet": {
+              ".validate": "newData.isNumber() && newData.val() >= 10 && newData.val() <= 10000000",
+              "$deep": {
+                ".validate": false
+              }
+            },
+            "maxBet": {
+              ".validate": "newData.isNumber() && newData.val() >= 10 && newData.val() <= 10000000",
+              "$deep": {
+                ".validate": false
+              }
+            },
+            "rounds": {
+              ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 1000",
+              "$deep": {
+                ".validate": false
+              }
+            },
+            "$other": {
+              ".validate": false
+            }
+          },
+          "shoe": {
+            ".validate": "newData.hasChildren()",
+            "$i": {
+              ".validate": "$i.matches(/^[0-9]{1,3}$/) && newData.isNumber() && newData.val() >= 0 && newData.val() <= 311",
+              "$deep": {
+                ".validate": false
+              }
+            }
+          },
+          "dealer": {
+            ".validate": "newData.hasChildren()",
+            "$i": {
+              ".validate": "$i.matches(/^([0-9]|10)$/) && newData.isNumber() && newData.val() >= 0 && newData.val() <= 311",
+              "$deep": {
+                ".validate": false
+              }
+            }
+          },
+          "players": {
+            ".validate": "newData.hasChildren()",
+            "$seat": {
+              ".validate": "$seat.matches(/^[0-7]$/) && newData.hasChildren(['uid', 'name', 'isHuman', 'stack', 'active', 'sitOut'])",
+              "uid": {
+                ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 128",
+                "$deep": {
+                  ".validate": false
+                }
+              },
+              "name": {
+                ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 24",
+                "$deep": {
+                  ".validate": false
+                }
+              },
+              "isHuman": {
+                ".validate": "newData.isBoolean()",
+                "$deep": {
+                  ".validate": false
+                }
+              },
+              "stack": {
+                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10000000",
+                "$deep": {
+                  ".validate": false
+                }
+              },
+              "active": {
+                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 3",
+                "$deep": {
+                  ".validate": false
+                }
+              },
+              "sitOut": {
+                ".validate": "newData.isBoolean()",
+                "$deep": {
+                  ".validate": false
+                }
+              },
+              "hands": {
+                ".validate": "newData.hasChildren()",
+                "$h": {
+                  ".validate": "$h.matches(/^[0-3]$/) && newData.hasChildren(['bet', 'done', 'doubled', 'split', 'paid'])",
+                  "cards": {
+                    ".validate": "newData.hasChildren()",
+                    "$i": {
+                      ".validate": "$i.matches(/^([0-9]|10)$/) && newData.isNumber() && newData.val() >= 0 && newData.val() <= 311",
+                      "$deep": {
+                        ".validate": false
+                      }
+                    }
+                  },
+                  "bet": {
+                    ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10000000",
+                    "$deep": {
+                      ".validate": false
+                    }
+                  },
+                  "done": {
+                    ".validate": "newData.isBoolean()",
+                    "$deep": {
+                      ".validate": false
+                    }
+                  },
+                  "doubled": {
+                    ".validate": "newData.isBoolean()",
+                    "$deep": {
+                      ".validate": false
+                    }
+                  },
+                  "split": {
+                    ".validate": "newData.isBoolean()",
+                    "$deep": {
+                      ".validate": false
+                    }
+                  },
+                  "paid": {
+                    ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10000000",
+                    "$deep": {
+                      ".validate": false
+                    }
+                  },
+                  "outcome": {
+                    ".validate": "newData.isString() && (newData.val() === 'blackjack' || newData.val() === 'win' || newData.val() === 'push' || newData.val() === 'lose' || newData.val() === 'bust')",
+                    "$deep": {
+                      ".validate": false
+                    }
+                  },
+                  "$other": {
+                    ".validate": false
+                  }
+                }
+              },
+              "lastAction": {
+                ".validate": "newData.hasChildren(['kind', 'amount'])",
+                "kind": {
+                  ".validate": "newData.isString() && (newData.val() === 'bet' || newData.val() === 'sitout' || newData.val() === 'hit' || newData.val() === 'stand' || newData.val() === 'double' || newData.val() === 'split' || newData.val() === 'blackjack' || newData.val() === 'bust')",
+                  "$deep": {
+                    ".validate": false
+                  }
+                },
+                "amount": {
+                  ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10000000",
+                  "$deep": {
+                    ".validate": false
+                  }
+                },
+                "$other": {
+                  ".validate": false
+                }
+              },
+              "$other": {
+                ".validate": false
+              }
+            }
+          },
+          "result": {
+            ".validate": "newData.hasChildren(['dealerTotal', 'dealerBlackjack', 'net'])",
+            "dealerTotal": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 31",
+              "$deep": {
+                ".validate": false
+              }
+            },
+            "dealerBlackjack": {
+              ".validate": "newData.isBoolean()",
+              "$deep": {
+                ".validate": false
+              }
+            },
+            "net": {
+              ".validate": "newData.hasChildren()",
+              "$i": {
+                ".validate": "$i.matches(/^[0-7]$/) && newData.isNumber() && newData.val() >= -10000000 && newData.val() <= 10000000",
+                "$deep": {
+                  ".validate": false
+                }
+              }
+            },
+            "$other": {
+              ".validate": false
+            }
+          },
+          "lastMove": {
+            ".validate": "newData.hasChildren(['by', 'kind', 'seat'])",
+            "by": {
+              ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 128",
+              "$deep": {
+                ".validate": false
+              }
+            },
+            "kind": {
+              ".validate": "newData.isString() && (newData.val() === 'deal' || newData.val() === 'next' || newData.val() === 'rematch' || newData.val() === 'bet' || newData.val() === 'hit' || newData.val() === 'stand' || newData.val() === 'double' || newData.val() === 'split' || newData.val() === 'away')",
+              "$deep": {
+                ".validate": false
+              }
+            },
+            "seat": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 7",
+              "$deep": {
+                ".validate": false
+              }
+            },
+            "$other": {
+              ".validate": false
+            }
+          },
+          "$other": {
+            ".validate": false
+          }
+        },
+        "presence": {
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid && $code.matches(/^[A-HJKMNP-Z2-9]{5}$/) && (!newData.exists() || (root.child('rooms').child($code).child('meta').exists() && (root.child('rooms').child($code).child('seats').hasChild($uid) || root.child('rooms').child($code).child('meta/host').val() === $uid) && newData.isNumber() && newData.val() > 0))",
+            ".validate": "$uid === auth.uid && $uid.length <= 128 && newData.isNumber() && newData.val() > 0",
+            "$deep": {
+              ".validate": false
+            }
+          }
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
+    }
+  }
+}

@@ -33,8 +33,8 @@ are working in — those hold each project's non-negotiables.
   by `server/src/rules.js`. Changing a rule changes production behaviour on the
   next deploy — add or adjust a case in `server/test/realtime.test.js`.
 - **Game namespaces are fixed** in `server/games.json` (`gin-rummy`,
-  `backgammon`, `yahtzee`, `holdem`, `dots`, `pawprints`, `tabby-eights`, `mahjong`, `road-trip`). Renaming one orphans its data.
-- **URLs are fixed** — `/backgammon/`, `/gin-rummy/`, `/yahtzee/`, `/holdem/`, `/dots/`, `/pawprints/`, `/tabby-eights/`, `/mahjong/`. Each is set
+  `backgammon`, `yahtzee`, `holdem`, `blackjack`, `dots`, `pawprints`, `tabby-eights`, `mahjong`, `road-trip`). Renaming one orphans its data.
+- **URLs are fixed** — `/backgammon/`, `/gin-rummy/`, `/yahtzee/`, `/holdem/`, `/blackjack/`, `/dots/`, `/pawprints/`, `/tabby-eights/`, `/mahjong/`. Each is set
   in the app (Expo `experiments.baseUrl` + `WEB_BASE_PATH`, or Vite `base` +
   router `basename`) and in `infra/Caddyfile`; change them together.
 - **Weekly games.** Only the newest one has a tile on the games hub (its

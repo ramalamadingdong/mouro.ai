@@ -1,0 +1,621 @@
+/*
+ * The table screen: a header strip, the felt with the dealer and every seat
+ * on it, the human's hands on the near rail, and the dock (action bar or the
+ * round's result).
+ *
+ * Mobile-first and portrait: the felt is a tall oval that takes whatever
+ * height is left, and every seat is placed in percentages of it, so the same
+ * rules serve a 390px phone and a desktop window (where the whole table is
+ * simply capped at --table-max-width and centred).
+ */
+
+.table {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: var(--table-max-width);
+  margin: 0 auto;
+  /* Fill the screen exactly: the page must not scroll mid-hand. `dvh` tracks
+     the browser chrome as it shows and hides; body already carries the
+     safe-area padding, which is subtracted here. The `vh` line is the
+     fallback for browsers without dynamic viewport units. */
+  min-height: calc(100vh - env(safe-area-inset-top) - max(var(--space-sm), env(safe-area-inset-bottom)));
+  min-height: calc(100dvh - env(safe-area-inset-top) - max(var(--space-sm), env(safe-area-inset-bottom)));
+}
+
+/* ── Header ─────────────────────────────────────────────────────────────── */
+
+.table__bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-height: 2.75rem;
+  padding: 0 var(--space-xs);
+}
+
+.table__menu {
+  min-height: 2.75rem;
+  padding: 0 var(--space-sm);
+  color: var(--text-muted);
+  font-size: var(--size-sm);
+  font-weight: var(--weight-medium);
+}
+
+.table__info {
+  flex: 1;
+  text-align: center;
+  font-size: var(--size-sm);
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.table__level {
+  color: var(--text-hint);
+}
+
+.table__tag {
+  padding: 0 var(--space-sm);
+  font-size: var(--size-sm);
+  color: var(--accent);
+}
+
+/* ── Felt ───────────────────────────────────────────────────────────────── */
+
+.felt-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding-top: var(--space-xs);
+  min-height: 29rem;
+}
+
+.felt {
+  position: relative;
+  flex: 1;
+  margin: 0 var(--space-xs);
+  /* A blackjack table: flat on the dealer's side, round toward the players. */
+  border-radius: 1.5rem 1.5rem 50% 50% / 1.5rem 1.5rem 28% 28%;
+  background: radial-gradient(ellipse at 50% 30%, var(--felt-light), var(--felt) 55%, var(--felt-dark));
+  /* The rail: a thick wooden border with a brass line inside it. */
+  border: 0.55rem solid var(--rail);
+  box-shadow:
+    inset 0 0 0 2px var(--accent-dim),
+    inset 0 0 2.5rem rgb(0 0 0 / 0.35),
+    0 0 0 1px var(--rail-light),
+    0 0.5rem 1.5rem rgb(0 0 0 / 0.5);
+}
+
+.felt__inplay {
+  position: absolute;
+  left: 50%;
+  bottom: 4.9rem;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.05rem 0.55rem 0.05rem 0.3rem;
+  border-radius: var(--radius-pill);
+  background: var(--plate);
+  color: var(--text-muted);
+  font-size: var(--size-xs);
+  white-space: nowrap;
+}
+
+/* ── Dealer ─────────────────────────────────────────────────────────────── */
+
+.dealer {
+  position: absolute;
+  top: 0.4rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.dealer__who {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.dealer__avatar {
+  width: 1.9rem;
+  border-radius: var(--radius-pill);
+  box-shadow: 0 0 0 2px var(--rail), 0 2px 6px rgb(0 0 0 / 0.5);
+  transition: box-shadow var(--dur-base) var(--ease);
+}
+.dealer[data-turn='true'] .dealer__avatar {
+  box-shadow: 0 0 0 3px var(--accent-bright), 0 0 0.9rem var(--accent);
+}
+
+.dealer__name {
+  font-size: var(--size-xs);
+  color: var(--text-muted);
+}
+
+.dealer__cards {
+  display: flex;
+  min-height: calc(2.875rem * 1.4);
+}
+.dealer__cards .card + .card {
+  margin-left: -1.1rem;
+}
+
+/* ── Hands (anyone's) ───────────────────────────────────────────────────── */
+
+.hand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.15rem;
+  border-radius: var(--radius-md);
+  transition: box-shadow var(--dur-base) var(--ease);
+}
+
+.hand[data-active='true'] {
+  box-shadow: 0 0 0 2px var(--accent-bright);
+  background: rgb(0 0 0 / 0.2);
+}
+
+.hand__cards {
+  display: flex;
+}
+/* Fanned: each card shows its rank in the top-left corner it keeps visible. */
+.hand--sm .card + .card {
+  margin-left: -1.1rem;
+}
+.hand--md .card + .card {
+  margin-left: -1.75rem;
+}
+.hand--lg .card + .card {
+  margin-left: -2.65rem;
+}
+
+.hand__tags {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.hand__total {
+  padding: 0 0.4rem;
+  border-radius: var(--radius-pill);
+  background: var(--plate);
+  color: var(--accent-bright);
+  font-size: var(--size-xs);
+  font-weight: var(--weight-bold);
+  line-height: 1.5;
+  white-space: nowrap;
+}
+.hand__total[data-bust='true'] {
+  color: var(--bad);
+}
+.hand[data-outcome='win'] .hand__total,
+.hand[data-outcome='blackjack'] .hand__total {
+  background: var(--good);
+  color: var(--text-on-accent);
+}
+
+.hand__bet {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0 0.35rem 0 0.15rem;
+  border-radius: var(--radius-pill);
+  background: var(--plate);
+  color: var(--text);
+  font-size: var(--size-xs);
+  font-weight: var(--weight-bold);
+  line-height: 1.5;
+  white-space: nowrap;
+}
+.hand--sm .hand__bet {
+  display: none;
+}
+
+/* An empty place for cards: keeps the layout still between rounds. */
+.hand__gap {
+  display: block;
+  width: 1.875rem;
+  aspect-ratio: 5 / 7;
+  border-radius: 0.35rem;
+  border: 1px dashed rgb(255 255 255 / 0.16);
+}
+.hand__gap--md {
+  width: 2.875rem;
+}
+.hand__gap--md + .hand__gap--md {
+  margin-left: -1.1rem;
+}
+.hand__gap--lg {
+  width: 4.25rem;
+  opacity: 0;
+}
+
+/* ── Other seats ────────────────────────────────────────────────────────── */
+
+.seat {
+  position: absolute;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.15rem;
+  transform: translateY(-50%);
+  transition: opacity var(--dur-base) var(--ease);
+}
+.seat--left {
+  left: -0.3rem;
+}
+.seat--right {
+  right: -0.3rem;
+  flex-direction: row-reverse;
+}
+
+.seat__who {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  width: 4.1rem;
+}
+
+.seat__avatar {
+  position: relative;
+  width: 2.5rem;
+  border-radius: var(--radius-pill);
+  /* The ring is a box-shadow so it can animate without moving the layout. */
+  box-shadow: 0 0 0 2px var(--rail), 0 2px 6px rgb(0 0 0 / 0.5);
+  transition: box-shadow var(--dur-base) var(--ease);
+}
+
+.seat[data-turn='true'] .seat__avatar {
+  box-shadow: 0 0 0 3px var(--accent-bright), 0 0 0.9rem var(--accent);
+}
+
+/* A cat whose timer is running: the ring breathes, and three dots bob. */
+.seat[data-thinking='true'] .seat__avatar {
+  animation: thinking-ring 1.1s ease-in-out infinite alternate;
+}
+
+@keyframes thinking-ring {
+  from {
+    box-shadow: 0 0 0 3px var(--accent), 0 0 0.3rem var(--accent);
+  }
+  to {
+    box-shadow: 0 0 0 3px var(--accent-bright), 0 0 1.1rem var(--accent-bright);
+  }
+}
+
+.seat__dots {
+  position: absolute;
+  top: -0.45rem;
+  right: -0.85rem;
+  display: flex;
+  gap: 3px;
+  padding: 0.3rem 0.4rem;
+  border-radius: var(--radius-pill);
+  background: var(--card-face);
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.5);
+  z-index: 4;
+}
+
+.seat__dots i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--card-black);
+  animation: thinking-dot 0.9s ease-in-out infinite;
+}
+.seat__dots i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.seat__dots i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes thinking-dot {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.35;
+  }
+  30% {
+    transform: translateY(-3px);
+    opacity: 1;
+  }
+}
+
+.seat[data-out='true'] .seat__avatar,
+.seat[data-idle='true'] .seat__avatar {
+  filter: grayscale(0.85);
+}
+.seat[data-idle='true'] {
+  opacity: 0.65;
+}
+.seat[data-out='true'] {
+  opacity: 0.4;
+}
+
+.seat__plate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  padding: 0.05rem var(--space-xs) 0.1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  background: var(--plate);
+  line-height: 1.15;
+}
+
+.seat[data-winner='true'] .seat__plate {
+  border-color: var(--accent-bright);
+}
+
+.seat__name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--size-xs);
+  color: var(--text-muted);
+}
+
+.seat__stack {
+  font-size: var(--size-sm);
+  font-weight: var(--weight-bold);
+  color: var(--text);
+}
+
+/* A seat's hands sit beside it, toward the middle of the table. */
+.seat__hands {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.1rem;
+  max-width: 6.2rem;
+}
+.seat--right .seat__hands {
+  justify-content: flex-end;
+}
+/* Split hands: smaller cards so up to four fit beside the seat. */
+.seat__hands[data-many='true'] .card {
+  --card-w: 1.45rem;
+}
+.seat__hands[data-many='true'] .hand--sm .card + .card {
+  margin-left: -0.8rem;
+}
+.seat__hands[data-many='true'] .hand {
+  padding: 0.1rem;
+}
+
+/* Last action / result: a pill riding the top of the avatar. */
+.seat__badge {
+  position: absolute;
+  top: -0.6rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+  padding: 0.05rem 0.4rem;
+  border-radius: var(--radius-pill);
+  background: var(--wood-deep);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: var(--size-xs);
+  font-weight: var(--weight-bold);
+  white-space: nowrap;
+  animation: badge-pop var(--dur-base) var(--ease) both;
+}
+
+.seat__badge[data-kind='sitout'],
+.seat__badge[data-kind='stand'],
+.seat__badge[data-kind='push'] {
+  color: var(--text-hint);
+}
+.seat__badge[data-kind='double'],
+.seat__badge[data-kind='split'],
+.seat__badge[data-kind='bet'] {
+  color: var(--accent-bright);
+  border-color: var(--accent-dim);
+}
+.seat__badge[data-kind='bust'],
+.seat__badge[data-kind='lost'] {
+  background: var(--card-red);
+  border-color: var(--card-red);
+  color: #fff;
+}
+.seat__badge[data-kind='blackjack'],
+.seat__badge[data-kind='won'] {
+  background: var(--good);
+  border-color: var(--good);
+  color: var(--text-on-accent);
+}
+
+@keyframes badge-pop {
+  from {
+    opacity: 0;
+    scale: 0.8;
+  }
+}
+
+/* A casino chip: a brass disc with a dashed inlay. */
+.chip {
+  display: inline-block;
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px dashed var(--text-on-accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+/* ── The human's seat ───────────────────────────────────────────────────── */
+
+.hero {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: var(--space-sm);
+  /* Pulled up over the felt's near edge: you are sitting AT the table. */
+  margin-top: -4.4rem;
+  padding: 0 var(--space-sm);
+}
+
+.hero__hands {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.2rem;
+  /* Reserve one big card's height (plus its tags) so the dock never jumps. */
+  min-height: 7.5rem;
+  border-radius: var(--radius-lg);
+  transition: box-shadow var(--dur-base) var(--ease);
+}
+
+.hero[data-turn='true'] .hero__hands:not([data-many='true']) .hand {
+  box-shadow: 0 0 0 2px var(--accent-bright), 0 0 1rem var(--accent);
+  background: rgb(0 0 0 / 0.25);
+}
+
+/* Three or four split hands: smaller cards still. */
+.hero__hands[data-many='true']:has(.hand:nth-child(3)) .card {
+  --card-w: 2.3rem;
+}
+.hero__hands[data-many='true']:has(.hand:nth-child(3)) .hand--md .card + .card {
+  margin-left: -1.35rem;
+}
+
+.hero__info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  flex-shrink: 0;
+  min-width: 6.5rem;
+  max-width: 9rem;
+  margin-bottom: 0.2rem;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  background: var(--plate);
+  line-height: 1.25;
+}
+
+.hero[data-winner='true'] .hero__info {
+  border-color: var(--accent-bright);
+}
+
+.hero__name {
+  font-size: var(--size-xs);
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hero__stack {
+  font-size: var(--size-md);
+  font-weight: var(--weight-bold);
+}
+
+/* "Soft 17" — the one line a beginner reads most. */
+.hero__readout {
+  min-height: 1.25em;
+  font-size: var(--size-sm);
+  font-weight: var(--weight-bold);
+  color: var(--accent-bright);
+}
+
+/* ── Dock: action bar or hand result ────────────────────────────────────── */
+
+.table__dock {
+  padding-bottom: var(--space-xs);
+}
+
+.table__error {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin: var(--space-sm) var(--space-sm) 0;
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--size-sm);
+}
+
+.result {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-sm) 0;
+}
+
+.result__line {
+  min-height: 4.25rem;
+  padding: var(--space-xs) var(--space-md);
+  border-radius: var(--radius-md);
+  border-left: 3px solid var(--accent);
+  background: var(--wood-raised);
+  line-height: 1.35;
+  font-size: var(--size-body);
+  color: var(--text-muted);
+}
+
+.result__line strong {
+  color: var(--text);
+}
+
+.result__next {
+  min-height: 3.25rem;
+}
+
+.standings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  margin-top: var(--space-md);
+}
+
+.standings li {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--space-xs) var(--space-md);
+  border-radius: var(--radius-md);
+  background: var(--wood-raised);
+}
+
+.standings li.standings__house {
+  background: none;
+  color: var(--text-hint);
+  font-weight: 400;
+}
+
+.standings li:first-child {
+  color: var(--accent-bright);
+  font-weight: var(--weight-bold);
+}
+
+/* ── Short screens ──────────────────────────────────────────────────────── */
+
+/* A phone in a browser with both toolbars showing has ~650px of height. The
+   felt gives up its minimum and the page is allowed to scroll rather than
+   crush the seats into the board. */
+@media (max-height: 640px) {
+  .felt-wrap {
+    min-height: 26rem;
+  }
+}
+
+/* A cat's split hands: just the total under each (the colour says win or
+   lose), so two hands fit side by side and four take two rows at most. */
+.seat__hands[data-many='true'] .hand__total {
+  padding: 0 0.25rem;
+}
+.seat__hands[data-many='true'] .hand__label-outcome {
+  display: none;
+}

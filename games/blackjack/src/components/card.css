@@ -1,0 +1,109 @@
+/*
+ * Cards. Three sizes, all the same design: a big rank over a big pip in the
+ * centre. Inside a fanned hand, the override at the end of this file moves the
+ * rank to the top-left corner so every card in the fan still shows its rank.
+ * Legibility beats realism — no corner indices or centre artwork, because at
+ * 30px wide there is room for exactly one rank and one pip.
+ */
+
+.card {
+  --card-w: 2.875rem; /* md: 46px — five fit across a 390px table with gaps */
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.05em;
+  flex-shrink: 0;
+  width: var(--card-w);
+  /* Casino cards are 2.5 × 3.5 inches. */
+  aspect-ratio: 5 / 7;
+  border-radius: calc(var(--card-w) * 0.12);
+  background: var(--card-face);
+  color: var(--card-black);
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 0.6) inset,
+    0 2px 5px rgb(0 0 0 / 0.45);
+  /* The rank scales with the card, so one rule serves all three sizes. */
+  font-size: calc(var(--card-w) * 0.52);
+  font-weight: var(--weight-heavy);
+  line-height: 1;
+  letter-spacing: -0.04em;
+  transition:
+    opacity var(--dur-base) var(--ease),
+    transform var(--dur-base) var(--ease),
+    box-shadow var(--dur-base) var(--ease);
+  animation: card-arrive var(--dur-base) var(--ease) both;
+}
+
+.card--lg {
+  --card-w: 4.25rem; /* 68px */
+}
+
+.card--sm {
+  --card-w: 1.875rem; /* 30px */
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.5);
+}
+
+.card--red {
+  color: var(--card-red);
+}
+
+.card__pip {
+  width: 46%;
+  height: auto;
+}
+
+/* Burgundy back with a brass frame and a cross-hatch, as in the painting. */
+.card--back {
+  background:
+    repeating-linear-gradient(45deg, transparent 0 3px, rgb(0 0 0 / 0.18) 3px 4px),
+    repeating-linear-gradient(-45deg, transparent 0 3px, rgb(0 0 0 / 0.18) 3px 4px), var(--card-back);
+  border: calc(var(--card-w) * 0.07) solid var(--card-face);
+  outline: 1px solid var(--card-back-dark);
+  outline-offset: calc(var(--card-w) * -0.11);
+}
+
+/* A card in the winning five: lifted, ringed in brass. */
+.card--winning {
+  transform: translateY(-12%);
+  box-shadow:
+    0 0 0 2px var(--accent-bright),
+    0 6px 12px rgb(0 0 0 / 0.5);
+  z-index: 1;
+}
+
+/* Darkened, not made transparent: a see-through card on green felt turns
+   into an unreadable grey-green smudge. */
+.card--dim {
+  filter: brightness(0.6) saturate(0.6);
+  box-shadow: none;
+}
+
+/* Cards slide in from the dealer's side and settle. Flattened to nothing by
+   the reduced-motion block in base.css. */
+@keyframes card-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(-0.6rem) scale(0.92);
+  }
+}
+
+/* In a blackjack hand the cards are fanned, and only the RANK matters, so a
+   hand's card reads like a real card's corner: rank top-left (always in the
+   strip a fan leaves showing), suit pip large in the opposite corner. */
+.hand .card,
+.dealer__cards .card {
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: calc(var(--card-w) * 0.07) 0 0 calc(var(--card-w) * 0.08);
+  font-size: calc(var(--card-w) * 0.42);
+}
+
+.hand .card .card__pip,
+.dealer__cards .card .card__pip {
+  position: absolute;
+  right: 9%;
+  bottom: 7%;
+  width: 50%;
+}

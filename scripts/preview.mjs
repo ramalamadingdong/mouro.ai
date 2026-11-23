@@ -25,6 +25,7 @@ const dirs = {
   'gin-rummy': join(repo, 'games/gin-rummy/dist'),
   yahtzee: join(repo, 'games/yahtzee/dist'),
   holdem: join(repo, 'games/holdem/dist'),
+  blackjack: join(repo, 'games/blackjack/dist'),
   dots: join(repo, 'games/dots/dist'),
   pawprints: join(repo, 'games/pawprints/dist'),
   'tabby-eights': join(repo, 'games/tabby-eights/dist'),
@@ -69,12 +70,12 @@ function firstFile(root, candidates) {
 }
 
 function resolveFile(pathname) {
-  const m = pathname.match(/^\/(backgammon|gin-rummy|yahtzee|holdem|dots|pawprints|tabby-eights|mahjong)(\/.*)?$/);
+  const m = pathname.match(/^\/(backgammon|gin-rummy|yahtzee|holdem|blackjack|dots|pawprints|tabby-eights|mahjong)(\/.*)?$/);
   if (m) {
     const [, app, rest = '/'] = m;
     const root = dirs[app];
     const dyn = rest.match(/^\/(join|lobby|game)\/[A-HJKMNP-Z2-9]{5}\/?$/);
-    const vite = app === 'yahtzee' || app === 'holdem' || app === 'dots' || app === 'pawprints' || app === 'tabby-eights' || app === 'mahjong';
+    const vite = app === 'yahtzee' || app === 'holdem' || app === 'blackjack' || app === 'dots' || app === 'pawprints' || app === 'tabby-eights' || app === 'mahjong';
     if (dyn && !vite) return firstFile(root, [`/${dyn[1]}/[code].html`, '/index.html']);
     if (vite) return firstFile(root, [rest, '/index.html']);
     return firstFile(root, [rest, `${rest}.html`, `${rest}/index.html`, '/index.html']);
@@ -95,7 +96,7 @@ const server = createServer((req, res) => {
   }
   const old = p.match(/^\/gin-rummey(\/.*)?$/);
   if (old) return res.writeHead(301, { location: `/gin-rummy${old[1] ?? '/'}${url.search}` }).end();
-  if (/^\/(backgammon|gin-rummy|yahtzee|holdem|dots|pawprints|tabby-eights|mahjong)$/.test(p)) return res.writeHead(301, { location: `${p}/` }).end();
+  if (/^\/(backgammon|gin-rummy|yahtzee|holdem|blackjack|dots|pawprints|tabby-eights|mahjong)$/.test(p)) return res.writeHead(301, { location: `${p}/` }).end();
   const file = resolveFile(p);
   if (!file) {
     // Same as the Caddyfile's handle_errors: the site's 404 page, as a 404.

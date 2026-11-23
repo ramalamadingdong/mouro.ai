@@ -40,6 +40,7 @@ before(async () => {
       { name: 'backgammon', rules: rules('games/backgammon/database.rules.json'), reap: ['bgRooms'] },
       { name: 'yahtzee', rules: rules('games/yahtzee/database.rules.json'), reap: ['rooms'] },
       { name: 'holdem', rules: rules('games/holdem/database.rules.json'), reap: ['rooms'] },
+      { name: 'blackjack', rules: rules('games/blackjack/database.rules.json'), reap: ['rooms'] },
       { name: 'dots', rules: rules('games/dots/database.rules.json'), reap: ['rooms'] },
       { name: 'pawprints', rules: rules('games/pawprints/database.rules.json'), reap: ['rooms'] },
       { name: 'tabby-eights', rules: rules('games/tabby-eights/database.rules.json'), reap: ['rooms'] },
@@ -318,6 +319,89 @@ describe('holdem rules', () => {
     const outsider = await player('holdem');
     await denied(set(state(outsider), holdemState(uids, { version: 2, toAct: 2, by: outsider.uid, kind: 'away' })));
     await set(state(b), holdemState(uids, { version: 2, toAct: 2, by: b.uid, kind: 'away' }));
+  });
+});
+
+describe('blackjack rules', () => {
+  // A structurally valid GameState for `uids`, as the engine would write it.
+  // The rules bound shape and authority, not blackjack, so the cards are arbitrary.
+  const bjState = (uids, { version, toAct = null, by, kind, house = -150 }) => ({
+    version,
+    config: { startingStack: 1000, minBet: 10, maxBet: 500, rounds: 20 },
+    players: uids.map((uid, i) => ({
+      uid, name: `P${i}`, isHuman: true, stack: 950, active: 0, sitOut: false,
+      hands: [{ cards: [i * 2, i * 2 + 1], bet: 50, done: false, doubled: false, split: false, paid: 0 }],
+      lastAction: { kind: 'bet', amount: 50 },
+    })),
+    phase: 'playing',
+    handNo: 1,
+    house,
+    shoe: [300, 301, 302, 311],
+    dealer: [40, 41],
+    ...(toAct === null ? { turnUid: '*' } : { toAct, turnUid: uids[toAct] }),
+    lastMove: { by, kind, seat: 0 },
+  });
+
+  async function table(code, seats = 3) {
+    const players = [];
+    for (let i = 0; i < seats; i++) players.push(await player('blackjack'));
+    const [host] = players;
+    const now = Date.now();
+    await set(ref(host.db, `rooms/${code}`), {
+      meta: { host: host.uid, status: 'waiting', createdAt: now, updatedAt: now },
+      seats: { [host.uid]: `${now}|Host` },
+    });
+    for (const p of players.slice(1)) {
+      await update(ref(p.db, `rooms/${code}`), { [`seats/${p.uid}`]: `${now}|Guest`, 'meta/updatedAt': serverTimestamp() });
+    }
+    const uids = players.map((p) => p.uid);
+    const state = (p) => ref(p.db, `rooms/${code}/state`);
+    return { players, uids, state };
+  }
+
+  test('only the host deals the first round', async () => {
+    const { players: [host, guest], uids, state } = await table('BJA22');
+    await denied(set(state(guest), bjState(uids, { version: 1, toAct: 1, by: guest.uid, kind: 'deal' })));
+    await denied(set(state(host), bjState(uids, { version: 1, toAct: 1, by: host.uid, kind: 'bet' })));
+    await set(state(host), bjState(uids, { version: 1, toAct: 1, by: host.uid, kind: 'deal' }));
+  });
+
+  test('only the player on turn may move, and the shape is closed', async () => {
+    const { players: [host, a, b], uids, state } = await table('BJB33');
+    await set(state(host), bjState(uids, { version: 1, toAct: 1, by: host.uid, kind: 'deal' }));
+    await denied(set(state(b), bjState(uids, { version: 2, toAct: 2, by: b.uid, kind: 'hit' })));
+    await denied(set(state(a), bjState(uids, { version: 1, toAct: 2, by: a.uid, kind: 'hit' })));
+    await denied(set(state(a), bjState(uids, { version: 2, toAct: 2, by: b.uid, kind: 'hit' })));
+    await denied(set(state(a), { ...bjState(uids, { version: 2, toAct: 2, by: a.uid, kind: 'hit' }), junk: 1 }));
+    await denied(set(state(a), { ...bjState(uids, { version: 2, toAct: 2, by: a.uid, kind: 'hit' }), dealer: [312] }));
+    await denied(set(state(a), bjState(uids, { version: 2, toAct: 2, by: a.uid, kind: 'fold' })));
+    // the house's bank may be negative (the table is ahead)
+    await set(state(a), bjState(uids, { version: 2, toAct: 2, by: a.uid, kind: 'hit', house: -500 }));
+    await denied(set(ref(b.db, 'rooms/BJB33/state/players/2/stack'), 999999));
+    const outsider = await player('blackjack');
+    await update(ref(host.db, 'rooms/BJB33/meta'), { status: 'playing', updatedAt: serverTimestamp() });
+    await denied(get(state(outsider)));
+  });
+
+  test('eight seats: the eighth player can take their turn', async () => {
+    const { players, uids, state } = await table('BJC44', 8);
+    await set(state(players[0]), bjState(uids, { version: 1, toAct: 7, by: players[0].uid, kind: 'deal' }));
+    await denied(set(state(players[6]), bjState(uids, { version: 2, by: players[6].uid, kind: 'stand' })));
+    await set(state(players[7]), bjState(uids, { version: 2, by: players[7].uid, kind: 'stand' }));
+    // nobody on turn: any seated player may be the dealer, but only as a dealer move
+    await denied(set(state(players[5]), bjState(uids, { version: 3, toAct: 0, by: players[5].uid, kind: 'bet' })));
+    await set(state(players[5]), bjState(uids, { version: 3, by: players[5].uid, kind: 'next' }));
+  });
+
+  test('away: another player may act for the one on turn only while their presence is gone', async () => {
+    const { players: [host, a, b], uids, state } = await table('BJD55');
+    await set(state(host), bjState(uids, { version: 1, toAct: 1, by: host.uid, kind: 'deal' }));
+    const presence = ref(a.db, `rooms/BJD55/presence/${a.uid}`);
+    await set(presence, serverTimestamp());
+    await denied(set(state(b), bjState(uids, { version: 2, toAct: 2, by: b.uid, kind: 'away' })));
+    await remove(presence);
+    await denied(set(state(b), bjState(uids, { version: 2, toAct: 2, by: b.uid, kind: 'stand' })));
+    await set(state(b), bjState(uids, { version: 2, toAct: 2, by: b.uid, kind: 'away' }));
   });
 });
 

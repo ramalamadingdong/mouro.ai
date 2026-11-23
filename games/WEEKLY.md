@@ -29,6 +29,7 @@ are not weekly picks and never rotate off it.
 
 | Added | Game | Where | What |
 |---|---|---|---|
+| 2026-11-23 | Blackjack | `games/blackjack`, `/blackjack/` | Blackjack against a dealer cat for up to eight: 2–8 online, or you plus 0–7 computer cats (Vite) |
 | 2026-11-22 | Mahjong | `games/mahjong`, `/mahjong/` | Japanese (Riichi) and Hong Kong mahjong, four-handed or heads-up, online or vs computer cats, with lessons and a coach (Vite) |
 
 ## Weekly games

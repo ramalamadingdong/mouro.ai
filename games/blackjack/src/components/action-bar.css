@@ -1,0 +1,168 @@
+/*
+ * The action bar. Big targets in a row along the bottom, where a thumb
+ * already is, with the bet sizing directly above them while betting.
+ */
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-sm) 0;
+}
+
+/* Fixed height whether it holds the raise controls or the status line, so the
+   table above does not jump every time the turn changes hands. */
+.actions__top {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-sm);
+  min-height: 5.25rem;
+}
+
+.actions__status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: var(--size-body);
+}
+
+/* ── Slider ─────────────────────────────────────────────────────────────── */
+
+.actions__slider {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  /* The INPUT is 44px tall so the whole strip is a touch target; the visible
+     track is drawn by the pseudo-elements below. */
+  height: 2.75rem;
+  margin: 0;
+  background: none;
+  cursor: pointer;
+  /* Horizontal drags move the thumb; vertical ones still scroll the page. */
+  touch-action: pan-y;
+}
+
+.actions__slider::-webkit-slider-runnable-track {
+  height: 0.5rem;
+  border-radius: var(--radius-pill);
+  background: var(--wood-deep);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+.actions__slider::-moz-range-track {
+  height: 0.5rem;
+  border-radius: var(--radius-pill);
+  background: var(--wood-deep);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+.actions__slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 2rem;
+  height: 2rem;
+  margin-top: -0.75rem;
+  border-radius: var(--radius-pill);
+  border: 2px solid var(--text-on-accent);
+  background: var(--accent);
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.5);
+}
+
+.actions__slider::-moz-range-thumb {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: var(--radius-pill);
+  border: 2px solid var(--text-on-accent);
+  background: var(--accent);
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.5);
+}
+
+.actions__slider:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ── Presets ────────────────────────────────────────────────────────────── */
+
+.actions__presets {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-sm);
+}
+
+.actions__preset {
+  min-height: 2.25rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  background: var(--wood-raised);
+  color: var(--text-muted);
+  font-size: var(--size-sm);
+  font-weight: var(--weight-medium);
+  text-align: center;
+}
+
+.actions__preset[aria-pressed='true'] {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ── The buttons ──────────────────────────────────────────────────── */
+
+.actions__buttons {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.actions__btn {
+  flex: 1 1 0;
+  /* Stops a long "Raise to 12,400" from pushing its neighbours narrower than
+     their own labels. */
+  min-width: 0;
+  min-height: 3.25rem;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--surface-raised);
+  color: var(--text);
+  font-size: var(--size-label);
+  font-weight: var(--weight-bold);
+  line-height: 1.15;
+  text-align: center;
+  transition:
+    transform var(--dur-fast) var(--ease),
+    opacity var(--dur-fast) var(--ease);
+}
+
+.actions__btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.actions__btn:disabled {
+  opacity: 0.4;
+}
+
+.actions__btn--quiet {
+  flex-grow: 0.7;
+  color: var(--text-muted);
+}
+
+.actions__btn--side {
+  flex-grow: 0.85;
+  font-size: var(--size-body);
+}
+
+.actions__btn--main {
+  flex-grow: 1.25;
+  border-color: transparent;
+  background: var(--accent);
+  color: var(--text-on-accent);
+}
+
+/* While playing, the status line needs less room than the bet slider. */
+.actions__top--short {
+  min-height: 2.5rem;
+}
