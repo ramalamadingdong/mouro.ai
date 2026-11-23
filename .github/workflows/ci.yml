@@ -59,7 +59,7 @@ jobs:
             yahtzee|holdem|blackjack|dots|pawprints|tabby-eights|mahjong) grep -q '/${{ matrix.game }}/assets/' dist/index.html ;;
             *)       grep -q '/${{ matrix.game }}/_expo/' dist/index.html ;;
           esac || { echo "dist is not sub-path aware"; exit 1; }
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: dist-${{ matrix.game }}
           path: games/${{ matrix.game }}/dist
