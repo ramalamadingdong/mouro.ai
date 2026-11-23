@@ -362,7 +362,11 @@ export async function leaveRoom(code: string): Promise<void> {
   // anything but a delete, and deletes are cheapest while still a member.
   await removeQuietly(`rooms/${code}/presence/${uid}`);
   await removeQuietly(`rooms/${code}/seats/${uid}`);
-  void deleteRoomIfStale(code);
+  // The rules let the HOST delete their room at any time, so the host's
+  // "blind" stale-room cleanup would not be refused by a live game — it would
+  // wipe the table out from under everyone still playing. Only try it when the
+  // room really is stale (or, for anyone else, let the rule decide).
+  if (!room?.meta || room.meta.host !== uid || isRoomStale(room.meta)) void deleteRoomIfStale(code);
 }
 
 async function removeQuietly(path: string): Promise<void> {
