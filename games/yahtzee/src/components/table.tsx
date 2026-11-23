@@ -177,6 +177,9 @@ export function Table({
           held={keep}
           rollsUsed={state.rollsUsed}
           canRoll={canRoll}
+          // Only the player on turn may toggle holds; everyone else sees the
+          // same dice and HELD rings read-only.
+          canToggleHold={myTurn}
           canScore={canScore}
           motion={motion}
           onToggleHold={onToggleHold}
