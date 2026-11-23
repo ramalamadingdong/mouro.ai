@@ -155,6 +155,15 @@ const games = [
     icon: 'games/holdem/public/icons/icon-512.png',
   },
   {
+    name: 'blackjack',
+    title: 'Blackjack',
+    text: 'Twenty-one against the dealer cat. Up to seven computer cats at your table, or eight friends online.',
+    tags: ['1–8 players', 'Online', 'vs computer cats'],
+    path: 'mouro.ai/blackjack',
+    a: '#2f6b45', b: '#163a25', ink: '#efe3c9',
+    icon: 'games/blackjack/public/icons/icon-512.png',
+  },
+  {
     name: 'mahjong',
     title: 'Mahjong',
     text: 'Japanese or Hong Kong rules, four-handed or heads-up. Learn with lessons and a coach.',

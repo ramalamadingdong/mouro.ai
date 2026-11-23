@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Blackjack app icon: an Ace and a King fanned on green felt, with a cream cat's
+       paw resting on them. Full-bleed so it also serves as a maskable icon: everything
+       that matters sits inside the middle 80%. Shapes only (no text), so it renders the
+       same anywhere. -->
+  <defs>
+    <radialGradient id="felt" cx="50%" cy="30%" r="80%">
+      <stop offset="0" stop-color="#2f7d4f"/>
+      <stop offset="1" stop-color="#16432b"/>
+    </radialGradient>
+    <g id="card">
+      <rect x="-88" y="-124" width="176" height="248" rx="20" fill="#000" opacity="0.28" transform="translate(6 10)"/>
+      <rect x="-88" y="-124" width="176" height="248" rx="20" fill="#fbf7ee" stroke="#d9cfb8" stroke-width="3"/>
+    </g>
+    <path id="spade" d="M0-46s44 32 44 60a22 22 0 0 1-37 16c1 11 5 20 11 27h-36c6-7 10-16 11-27a22 22 0 0 1-37-16C-44-14 0-46 0-46z"/>
+    <path id="heart" d="M0 40S-44 9-44-20a23 23 0 0 1 44-11 23 23 0 0 1 44 11C44 9 0 40 0 40z"/>
+  </defs>
+  <rect width="512" height="512" fill="url(#felt)"/>
+  <!-- A brass arc, like the line printed on a blackjack table. -->
+  <path d="M70 120q186-80 372 0" fill="none" stroke="#e0b64a" stroke-width="6" opacity="0.55"/>
+
+  <!-- King of hearts, behind -->
+  <g transform="translate(300 262) rotate(12)">
+    <use href="#card"/>
+    <path d="M30-96v58M30-67l34-29M38-74l28 36" fill="none" stroke="#c0392b" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+    <use href="#heart" fill="#c0392b" transform="translate(28 34) scale(1.1)"/>
+  </g>
+  <!-- Ace of spades, in front -->
+  <g transform="translate(206 258) rotate(-10)">
+    <use href="#card"/>
+    <path d="M-72-38l20-58 20 58M-64-58h24" fill="none" stroke="#1d1b22" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+    <use href="#spade" fill="#1d1b22" transform="translate(6 30) scale(1.2)"/>
+  </g>
+
+  <!-- A cream paw with dark toe beans, resting on the cards. -->
+  <g transform="translate(352 396) rotate(-20)">
+    <ellipse cx="0" cy="-6" rx="78" ry="66" fill="#efe3c9" stroke="#c9b48e" stroke-width="4"/>
+    <rect x="-56" y="10" width="112" height="90" fill="#efe3c9"/>
+    <path d="M-56 10v90M56 10v90" stroke="#c9b48e" stroke-width="4"/>
+    <ellipse cx="0" cy="12" rx="30" ry="24" fill="#6b4f3d"/>
+    <ellipse cx="-44" cy="-22" rx="12" ry="15" fill="#6b4f3d"/>
+    <ellipse cx="-16" cy="-42" rx="12" ry="15" fill="#6b4f3d"/>
+    <ellipse cx="16" cy="-42" rx="12" ry="15" fill="#6b4f3d"/>
+    <ellipse cx="44" cy="-22" rx="12" ry="15" fill="#6b4f3d"/>
+  </g>
+</svg>

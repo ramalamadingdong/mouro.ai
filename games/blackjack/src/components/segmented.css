@@ -1,0 +1,29 @@
+.segmented {
+  display: flex;
+  gap: var(--space-xs);
+  padding: var(--space-xs);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--wood-deep);
+}
+
+.segmented__option {
+  flex: 1 1 0;
+  min-width: 0;
+  /* 44px touch target, like every other control. */
+  min-height: 2.75rem;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: var(--size-body);
+  font-weight: var(--weight-medium);
+  text-align: center;
+  transition:
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
+}
+
+.segmented__option[aria-checked='true'] {
+  background: var(--accent);
+  color: var(--text-on-accent);
+  font-weight: var(--weight-bold);
+}
