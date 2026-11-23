@@ -25,6 +25,11 @@ export interface DiceTrayProps {
   rollsUsed: number;
   /** Whether the viewer may roll right now (their turn, rolls remaining). */
   canRoll: boolean;
+  /**
+   * Whether the viewer may change holds. False while watching an opponent's
+   * turn: their holds are still drawn, just not clickable.
+   */
+  canToggleHold: boolean;
   /** Whether the viewer may score right now. Drives the "pick a box" hint. */
   canScore: boolean;
   /** Animation allowed. Combine the app setting with the OS veto before passing. */
@@ -41,6 +46,7 @@ export function DiceTray({
   held,
   rollsUsed,
   canRoll,
+  canToggleHold,
   canScore,
   motion,
   onToggleHold,
@@ -91,7 +97,8 @@ export function DiceTray({
    * the five slots on screen are placeholders. Disabling the toggles is more
    * honest than letting someone "hold" a die that does not exist yet.
    */
-  const canHold = rollsUsed > 0 && dice.length === RULES.DICE;
+  const hasDice = rollsUsed > 0 && dice.length === RULES.DICE;
+  const canHold = hasDice && canToggleHold;
 
   /*
    * The engine rejects a roll that keeps every die ("keeping every die is not a
@@ -128,7 +135,7 @@ export function DiceTray({
                 // reader; the ring and tint alone announce nothing.
                 aria-pressed={isHeld}
                 aria-label={
-                  canHold
+                  hasDice
                     ? `Die ${i + 1}, showing ${face}. ${isHeld ? 'Held' : 'Not held'}.`
                     : `Die ${i + 1}. No dice yet.`
                 }
@@ -143,7 +150,9 @@ export function DiceTray({
                   key={rollId}
                   face={face}
                   held={isHeld}
-                  disabled={!canHold}
+                  // Dimmed only when there are no dice yet. An opponent's dice
+                  // stay at full strength so their HELD rings read clearly.
+                  disabled={!hasDice}
                   // A held die is not being re-rolled, so it must not tumble.
                   rolling={rolling && !isHeld}
                   motion={motion}

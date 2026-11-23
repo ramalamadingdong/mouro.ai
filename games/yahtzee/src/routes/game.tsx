@@ -109,6 +109,11 @@ export function GameRoute() {
   // disagree with the seat the table is rendering us as.
   const myUid = mySeat === null ? null : (state.players[mySeat]?.uid ?? null);
   const myHolds = myUid ? (allHolds[myUid] ?? []) : [];
+  // What the TRAY shows: the holds of whoever is on turn, so a player waiting
+  // their turn can watch which dice the opponent is keeping. The store already
+  // filters `holds` down to the on-turn player's entry; on our own turn this is
+  // exactly `myHolds`, so the roll's `keep` is unchanged.
+  const turnHolds = allHolds[state.turnUid] ?? [];
 
   function handleToggleHold(index: number): void {
     // Toggle computed here rather than in the table, because the store owns the
@@ -141,7 +146,7 @@ export function GameRoute() {
     <Table
       state={state}
       mySeat={mySeat}
-      holds={myHolds}
+      holds={turnHolds}
       pending={pendingMove}
       error={error}
       presence={presence}
