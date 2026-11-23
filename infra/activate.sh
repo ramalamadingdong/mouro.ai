@@ -7,7 +7,7 @@ set -euo pipefail
 WEB=/srv/mouro.ai
 RT=/opt/mouro/realtime
 
-for app in site backgammon gin-rummy yahtzee holdem dots pawprints mahjong infra; do
+for app in site backgammon gin-rummy yahtzee holdem dots pawprints tabby-eights mahjong infra; do
   if [ -d "$WEB/$app.new" ]; then
     rm -rf "$WEB/$app.old"
     [ -d "$WEB/$app" ] && mv "$WEB/$app" "$WEB/$app.old"

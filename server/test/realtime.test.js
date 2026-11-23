@@ -42,6 +42,7 @@ before(async () => {
       { name: 'holdem', rules: rules('games/holdem/database.rules.json'), reap: ['rooms'] },
       { name: 'dots', rules: rules('games/dots/database.rules.json'), reap: ['rooms'] },
       { name: 'pawprints', rules: rules('games/pawprints/database.rules.json'), reap: ['rooms'] },
+      { name: 'tabby-eights', rules: rules('games/tabby-eights/database.rules.json'), reap: ['rooms'] },
       { name: 'mahjong', rules: rules('games/mahjong/database.rules.json'), reap: ['rooms'] },
       { name: 'road-trip', rules: rules('games/road-trip/database.rules.json'), reap: ['rooms'] },
     ],
@@ -618,6 +619,124 @@ describe('pawprints rules', () => {
     const outsider = await player('pawprints');
     await denied(set(state(outsider), pawState(uids, { version: 2, toAct: 2, by: outsider.uid, kind: 'away', cells })));
     await set(state(b), pawState(uids, { version: 2, toAct: 2, by: b.uid, kind: 'away', cells }));
+  });
+});
+
+describe('tabby-eights rules', () => {
+  // A structurally valid GameState for `uids`, as the engine would write it.
+  // The rules bound shape and authority, not the game, so the cards are arbitrary.
+  const eightState = (uids, { version, toAct = null, by, kind, phase, target = 100, hand = 'fAf2f3', extra = {} }) => ({
+    version,
+    config: { target },
+    players: uids.map((uid, i) => ({ uid, name: `P${i}`, isHuman: true, sitOut: false, hand: i === 0 ? hand : 'yAy2', score: 0 })),
+    stock: 'mAm2m3',
+    pile: 'b4',
+    suit: 'b',
+    phase: phase ?? (toAct === null ? 'roundover' : 'playing'),
+    drew: false,
+    passes: 0,
+    starter: 0,
+    round: 1,
+    gameNo: 1,
+    ...(toAct === null ? { turnUid: '*' } : { toAct, turnUid: uids[toAct] }),
+    lastMove: { by, kind, seat: 0, ...(kind === 'play' ? { card: 'b4' } : {}) },
+    ...extra,
+  });
+
+  async function room(code, seats = 3) {
+    const players = [];
+    for (let i = 0; i < seats; i++) players.push(await player('tabby-eights'));
+    const [host] = players;
+    const now = Date.now();
+    await set(ref(host.db, `rooms/${code}`), {
+      meta: { host: host.uid, status: 'waiting', createdAt: now, updatedAt: now },
+      seats: { [host.uid]: `${now}|Host` },
+    });
+    for (const p of players.slice(1)) {
+      await update(ref(p.db, `rooms/${code}`), { [`seats/${p.uid}`]: `${now}|Guest`, 'meta/updatedAt': serverTimestamp() });
+    }
+    const uids = players.map((p) => p.uid);
+    const state = (p) => ref(p.db, `rooms/${code}/state`);
+    return { players, uids, state };
+  }
+
+  test('create and join: a waiting room is readable, a playing one only by its members', async () => {
+    const { players: [host, guest], uids, state } = await room('TAB22', 2);
+    const stranger = await player('tabby-eights');
+    assert.equal((await get(ref(stranger.db, 'rooms/TAB22/meta/status'))).val(), 'waiting');
+    await set(state(host), eightState(uids, { version: 1, toAct: 0, by: host.uid, kind: 'start' }));
+    await update(ref(host.db, 'rooms/TAB22/meta'), { status: 'playing', updatedAt: serverTimestamp() });
+    await denied(get(ref(stranger.db, 'rooms/TAB22')));
+    await denied(set(ref(stranger.db, `rooms/TAB22/seats/${stranger.uid}`), `${Date.now()}|Late`));
+    assert.equal((await get(ref(guest.db, 'rooms/TAB22/state/turnUid'))).val(), host.uid);
+    assert.equal((await get(ref(guest.db, 'rooms/TAB22/state/players/0/hand'))).val(), 'fAf2f3');
+  });
+
+  test('only the host writes the first state, and it must be a start', async () => {
+    const { players: [host, guest], uids, state } = await room('TAB33', 2);
+    await denied(set(state(guest), eightState(uids, { version: 1, toAct: 0, by: guest.uid, kind: 'start' })));
+    await denied(set(state(host), eightState(uids, { version: 1, toAct: 0, by: host.uid, kind: 'play' })));
+    await denied(set(state(host), eightState(uids, { version: 1, toAct: 0, by: guest.uid, kind: 'start' })));
+    await denied(set(state(host), eightState(uids, { version: 1, toAct: 0, by: host.uid, kind: 'start', target: 501 })));
+    await set(state(host), eightState(uids, { version: 1, toAct: 0, by: host.uid, kind: 'start' }));
+  });
+
+  test('only the player on turn plays, draws or passes; version rises; every field is bounded', async () => {
+    const { players: [host, a, b], uids, state } = await room('TAB44');
+    await set(state(host), eightState(uids, { version: 1, toAct: 1, by: host.uid, kind: 'start' }));
+    const next = (over) => eightState(uids, { version: 2, toAct: 2, by: a.uid, kind: 'play', ...over });
+    await denied(set(state(b), { ...next(), lastMove: { by: b.uid, kind: 'play', seat: 1 } }));
+    await denied(set(state(host), { ...next(), lastMove: { by: host.uid, kind: 'play', seat: 1 } }));
+    await denied(set(state(a), next({ version: 1 })));
+    await denied(set(state(a), next({ by: b.uid })));
+    await denied(set(state(a), { ...next(), turnUid: a.uid }));
+    await denied(set(state(a), { ...next(), junk: 1 }));
+    await denied(set(state(a), next({ hand: 'fAzz' })));
+    await denied(set(state(a), next({ hand: 'fA'.repeat(53) })));
+    await denied(set(state(a), next({ extra: { pile: '' } })));
+    await denied(set(state(a), next({ extra: { suit: 'h' } })));
+    await denied(set(state(a), next({ extra: { passes: 5 } })));
+    await denied(set(state(a), eightState(uids, { version: 2, by: a.uid, kind: 'deal' })));
+    // The target and the seats cannot change mid-game.
+    await denied(set(state(a), next({ target: 50 })));
+    await denied(set(state(a), { ...next(), players: next().players.map((p, i) => (i === 2 ? { ...p, uid: a.uid } : p)) }));
+    // A draw keeps the turn.
+    await denied(set(state(a), eightState(uids, { version: 2, toAct: 2, by: a.uid, kind: 'draw' })));
+    await set(state(a), eightState(uids, { version: 2, toAct: 1, by: a.uid, kind: 'draw', extra: { drew: true } }));
+    await set(state(a), next({ version: 3 }));
+    await denied(set(ref(b.db, 'rooms/TAB44/state/players/2/hand'), 'fK'));
+    await denied(set(ref(b.db, 'rooms/TAB44/state/version'), 99));
+    const outsider = await player('tabby-eights');
+    await denied(set(state(outsider), eightState(uids, { version: 4, toAct: 0, by: outsider.uid, kind: 'play' })));
+  });
+
+  test('between rounds any seated player deals; after the game, only a rematch', async () => {
+    const { players: [host, a, b], uids, state } = await room('TAB55');
+    await set(state(host), eightState(uids, { version: 1, toAct: 0, by: host.uid, kind: 'start' }));
+    await set(state(host), eightState(uids, { version: 2, by: host.uid, kind: 'play', hand: '' })); // round over
+    await denied(set(state(b), eightState(uids, { version: 3, toAct: 1, by: b.uid, kind: 'play' })));
+    await denied(set(state(b), eightState(uids, { version: 3, toAct: 1, by: b.uid, kind: 'rematch' })));
+    await set(state(b), eightState(uids, { version: 3, toAct: 1, by: b.uid, kind: 'deal' }));
+    await set(state(a), eightState(uids, { version: 4, by: a.uid, kind: 'play', phase: 'gameover', hand: '' }));
+    await remove(ref(a.db, `rooms/TAB55/seats/${a.uid}`));
+    await denied(set(state(a), eightState(uids, { version: 5, toAct: 1, by: a.uid, kind: 'rematch' })));
+    await denied(set(state(b), eightState(uids, { version: 5, toAct: 1, by: b.uid, kind: 'deal' })));
+    await denied(set(state(b), eightState(uids, { version: 4, toAct: 1, by: b.uid, kind: 'rematch' })));
+    await set(state(b), eightState(uids, { version: 5, toAct: 1, by: b.uid, kind: 'rematch' }));
+  });
+
+  test('away: another player may take the turn of the one on turn only while their presence is gone', async () => {
+    const { players: [host, a, b], uids, state } = await room('TAB66');
+    await set(state(host), eightState(uids, { version: 1, toAct: 1, by: host.uid, kind: 'start' }));
+    const presence = ref(a.db, `rooms/TAB66/presence/${a.uid}`);
+    await set(presence, serverTimestamp());
+    await denied(set(state(b), eightState(uids, { version: 2, toAct: 2, by: b.uid, kind: 'away' })));
+    await remove(presence);
+    await denied(set(state(b), eightState(uids, { version: 2, toAct: 2, by: b.uid, kind: 'play' })));
+    await denied(set(state(a), eightState(uids, { version: 2, toAct: 2, by: a.uid, kind: 'away' })));
+    const outsider = await player('tabby-eights');
+    await denied(set(state(outsider), eightState(uids, { version: 2, toAct: 2, by: outsider.uid, kind: 'away' })));
+    await set(state(b), eightState(uids, { version: 2, toAct: 2, by: b.uid, kind: 'away' }));
   });
 });
 

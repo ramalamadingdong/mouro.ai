@@ -1,0 +1,33 @@
+.help {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  color: var(--text-muted);
+}
+
+.help strong {
+  color: var(--text);
+}
+
+.help__heading {
+  font-family: var(--font-display);
+  font-size: var(--size-md);
+  color: var(--text);
+}
+
+.help__tips {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding-left: 1.1rem;
+  list-style: disc;
+}
+
+/* Suit marks in the text sit on a cream disc, so their inks read at night too. */
+.help .suit {
+  display: inline-block;
+  padding: 2px;
+  border-radius: var(--radius-pill);
+  background: var(--card);
+  box-sizing: content-box;
+}

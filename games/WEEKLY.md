@@ -36,3 +36,4 @@ are not weekly picks and never rotate off it.
 | Added | Game | Slug (URL, folder, namespace) | Kind | Players |
 |---|---|---|---|---|
 | 2026-11-15 | Pawprints — five paws in a row on a patchwork quilt (gomoku; four in a row with 3–4 players) | `pawprints` | Board / abstract strategy | 2–4 online, or 1 vs 1–3 computer cats |
+| 2026-11-23 | Tabby Eights — crazy eights with fish, yarn, mice and bells; every eight is a wild tabby; first to 50/100/200 points | `tabby-eights` | Card (shedding) | 2–4 online, or 1 vs 1–3 computer cats |

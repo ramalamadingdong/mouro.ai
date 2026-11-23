@@ -200,6 +200,15 @@ const games = [
     icon: 'games/pawprints/public/icons/icon-512.png',
   },
   {
+    name: 'tabby-eights',
+    title: 'Tabby Eights',
+    text: 'Match the pile by suit or number; every eight is a wild tabby. Play friends online, or the computer cats.',
+    tags: ['2–4 players', 'Online', 'vs computer cats'],
+    path: 'mouro.ai/tabby-eights',
+    a: '#b8642a', b: '#5e2a0c', ink: '#ffe2b0',
+    icon: 'games/tabby-eights/public/icons/icon-512.png',
+  },
+  {
     name: 'yahtzee',
     title: 'Yahtzee',
     text: 'Five dice, thirteen boxes. Up to four players on their own phones, or pass one around.',

@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Tabby Eights app icon: three cards fanned on a green felt table — a
+       fish, a ball of yarn, and in front the wild eight with its tabby face.
+       Full-bleed so it also serves as a maskable icon: everything that
+       matters sits inside the middle 80%. -->
+  <defs>
+    <radialGradient id="felt" cx="50%" cy="42%" r="70%">
+      <stop offset="0" stop-color="#36796a"/>
+      <stop offset="1" stop-color="#1f4a40"/>
+    </radialGradient>
+    <symbol id="card" viewBox="0 0 150 210">
+      <rect x="2" y="2" width="146" height="206" rx="16" fill="#fffaf0" stroke="#cdbf9f" stroke-width="3"/>
+    </symbol>
+  </defs>
+  <rect width="512" height="512" fill="url(#felt)"/>
+  <g fill="none" stroke="#ffffff" stroke-opacity="0.06" stroke-width="2">
+    <circle cx="256" cy="256" r="230"/>
+    <circle cx="256" cy="256" r="200"/>
+  </g>
+
+  <!-- Left card: fish. -->
+  <g transform="translate(200 318) rotate(-20) translate(-75 -210)">
+    <rect x="4" y="8" width="146" height="206" rx="16" fill="#000" opacity="0.18"/>
+    <use href="#card" width="150" height="210"/>
+    <text x="18" y="52" font-family="Arial Rounded MT Bold, Helvetica, Arial, sans-serif" font-weight="800" font-size="40" fill="#1d5f8a">7</text>
+    <g transform="translate(12 64) scale(2.6)" fill="#1d5f8a">
+      <path d="M3 12c3.2-4.6 9.6-6 14-1.4L21.5 7v10L17 13.4C12.6 18 6.2 16.6 3 12Z"/>
+      <circle cx="7.4" cy="11.2" r="1.15" fill="#fffaf0"/>
+    </g>
+  </g>
+
+  <!-- Right card: yarn. -->
+  <g transform="translate(312 318) rotate(20) translate(-75 -210)">
+    <rect x="4" y="8" width="146" height="206" rx="16" fill="#000" opacity="0.18"/>
+    <use href="#card" width="150" height="210"/>
+    <text x="132" y="52" text-anchor="end" font-family="Arial Rounded MT Bold, Helvetica, Arial, sans-serif" font-weight="800" font-size="40" fill="#b0303f">K</text>
+    <g transform="translate(84 66) scale(2.6)">
+      <circle cx="11" cy="11" r="8" fill="#b0303f"/>
+      <g stroke="#fffaf0" stroke-width="1.1" fill="none" stroke-linecap="round" opacity="0.85">
+        <path d="M5 7.5c3.5 1 7.5 5 9 11"/><path d="M8.5 3.6c2.4 2 5 6.5 5.6 9.8"/><path d="M3.4 12.6c4-.6 9 .4 13.6 3.6"/>
+      </g>
+    </g>
+  </g>
+
+  <!-- Front card: the tabby eight. -->
+  <g transform="translate(256 322) translate(-82 -222)">
+    <rect x="5" y="10" width="164" height="230" rx="18" fill="#000" opacity="0.22"/>
+    <rect x="2" y="2" width="160" height="228" rx="18" fill="#fffaf0" stroke="#cdbf9f" stroke-width="3"/>
+    <text x="18" y="56" font-family="Arial Rounded MT Bold, Helvetica, Arial, sans-serif" font-weight="800" font-size="46" fill="#845c00">8</text>
+    <g transform="translate(26 74) scale(2.75)">
+      <path d="M4 3l10 8h12l10-8 1 15c0 9-8 15-17 15S3 27 3 18Z" fill="#c8742c"/>
+      <g stroke="#a65a1b" stroke-width="2" stroke-linecap="round" fill="none">
+        <path d="M20 11v5M15.5 12l1 4M24.5 12l-1 4"/>
+        <path d="M5 20h5M5 24l5-1.5M35 20h-5M35 24l-5-1.5"/>
+      </g>
+      <ellipse cx="14" cy="20" rx="2.4" ry="3" fill="#2b2720"/>
+      <ellipse cx="26" cy="20" rx="2.4" ry="3" fill="#2b2720"/>
+      <circle cx="14.7" cy="19" r="0.8" fill="#fff"/>
+      <circle cx="26.7" cy="19" r="0.8" fill="#fff"/>
+      <path d="M18.4 25h3.2L20 27Z" fill="#e8908a"/>
+      <path d="M20 27c-1 1.6-3 1.6-3.6.6M20 27c1 1.6 3 1.6 3.6.6" stroke="#2b2720" stroke-width="1" fill="none" stroke-linecap="round"/>
+    </g>
+    <text x="136" y="204" text-anchor="middle" font-family="Arial Rounded MT Bold, Helvetica, Arial, sans-serif" font-weight="800" font-size="46" fill="#845c00" transform="rotate(180 136 188)">8</text>
+  </g>
+</svg>

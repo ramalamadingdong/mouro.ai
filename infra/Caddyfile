@@ -8,6 +8,7 @@
 #   /holdem/           Texas Hold'em SPA (Vite)     /srv/mouro.ai/holdem
 #   /dots/             Dots and Boxes SPA (Vite)    /srv/mouro.ai/dots
 #   /pawprints/        Pawprints SPA (Vite)         /srv/mouro.ai/pawprints
+#   /tabby-eights/     Tabby Eights SPA (Vite)      /srv/mouro.ai/tabby-eights
 #   /mahjong/          Mahjong SPA (Vite)           /srv/mouro.ai/mahjong
 #   /rt                realtime server (WebSocket)  127.0.0.1:8787
 #   anything else      404 page                     /srv/mouro.ai/site/404.html
@@ -38,7 +39,7 @@ www.mouro.ai {
 	}
 
 	# Content-hashed build output can be cached forever.
-	@hashed path_regexp hashed ^/(backgammon|gin-rummy)/_expo/static/|^/(yahtzee|holdem|dots|pawprints|mahjong)/assets/
+	@hashed path_regexp hashed ^/(backgammon|gin-rummy)/_expo/static/|^/(yahtzee|holdem|dots|pawprints|tabby-eights|mahjong)/assets/
 	header @hashed Cache-Control "public, max-age=31536000, immutable"
 
 	# ── realtime server ─────────────────────────────────────────────────────
@@ -98,6 +99,12 @@ www.mouro.ai {
 	redir /pawprints /pawprints/ permanent
 	handle /pawprints/* {
 		try_files {path} /pawprints/index.html
+		file_server
+	}
+
+	redir /tabby-eights /tabby-eights/ permanent
+	handle /tabby-eights/* {
+		try_files {path} /tabby-eights/index.html
 		file_server
 	}
 

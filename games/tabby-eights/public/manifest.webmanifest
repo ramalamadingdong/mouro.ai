@@ -1,0 +1,24 @@
+{
+  "_comment_paths": "start_url, scope and every icon src are RELATIVE: a manifest's relative URLs resolve against the manifest's own URL (/tabby-eights/manifest.webmanifest), so they stay in step with Vite's `base` with no build-time substitution.",
+  "_comment_no_sw": "Deliberately no service worker, like the other games: a site redeployed this often is more likely to strand a player on a stale cached bundle than to be opened offline.",
+  "name": "Tabby Eights",
+  "short_name": "Tabby Eights",
+  "description": "A cat card game with no sign-up: match the pile, eights are wild. Play the computer cats, or share a room code and play friends online.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#f3eadb",
+  "background_color": "#f3eadb",
+  "categories": ["games"],
+  "handle_links": "preferred",
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "_comment": "Full-bleed paper with everything inside the middle 80%, so the same files are maskable.", "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

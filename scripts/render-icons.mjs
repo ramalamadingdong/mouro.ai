@@ -32,6 +32,7 @@ const icons = [
   ['games/dots/public/icons/icon.svg', web('games/dots/public/icons')],
   ['games/mahjong/public/icons/icon.svg', web('games/mahjong/public/icons')],
   ['games/pawprints/public/icons/icon.svg', web('games/pawprints/public/icons')],
+  ['games/tabby-eights/public/icons/icon.svg', web('games/tabby-eights/public/icons')],
   [
     'games/backgammon/public/icons/icon.svg',
     // The assets/images copies are what app.json points Expo at.

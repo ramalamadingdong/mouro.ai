@@ -1,0 +1,12 @@
+/* Join screen. */
+
+.join {
+  max-width: 26rem;
+  gap: var(--space-lg);
+}
+
+.join__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
