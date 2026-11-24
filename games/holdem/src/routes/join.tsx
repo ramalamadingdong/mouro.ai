@@ -10,19 +10,24 @@
  * re-typing five characters that are already in the URL bar.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { isOnlineConfigured } from '@/net/config';
 import { retryAuth, useAuth } from '@/net/auth';
 import { joinRoom } from '@/net/rooms';
 import { useSettingsStore } from '@/store/settingsStore';
 import { isRoomCode, sanitizeRoomCode, CODE_LENGTH } from '@/util/seed';
 import { CodeInput } from '@/components/code-input';
+import { isIosBrowserTab, prefersPlayingHere, rememberPlayingHere } from '@/util/app-hop';
+import { NearbyRooms } from '@/components/nearby-rooms';
 import './screen.css';
 import './join.css';
 
 export function JoinRoute() {
   const navigate = useNavigate();
   const params = useParams<{ code?: string }>();
+  // Set when a tap inside the game sent us here ("On your Wi-Fi"), as opposed
+  // to an invite link opened from a message: no app-hop question then.
+  const fromInside = (useLocation().state as { inside?: boolean } | null)?.inside === true;
 
   const playerName = useSettingsStore((s) => s.playerName);
   const setPlayerName = useSettingsStore((s) => s.setPlayerName);
@@ -48,6 +53,26 @@ export function JoinRoute() {
    * "that game has already started".
    */
   const autoJoined = useRef(false);
+
+  /*
+   * iPhone: an invite link always lands in a Safari tab, even when the player
+   * has the app on their home screen (see util/app-hop.ts). Before joining
+   * here, which would seat a Safari identity the app does not share, offer to
+   * copy the invite for the app. Asked once: "Play here" is remembered.
+   */
+  const [hop, setHop] = useState(() => isRoomCode(linkCode) && !fromInside && isIosBrowserTab() && !prefersPlayingHere());
+  const [hopCopy, setHopCopy] = useState<'copied' | 'failed' | null>(null);
+
+  async function copyForApp(): Promise<void> {
+    const clipboard = navigator.clipboard as Clipboard | undefined;
+    try {
+      if (!clipboard?.writeText) throw new Error('no clipboard');
+      await clipboard.writeText(window.location.href);
+      setHopCopy('copied');
+    } catch {
+      setHopCopy('failed');
+    }
+  }
 
   const join = useCallback(
     async (raw: string): Promise<void> => {
@@ -79,6 +104,7 @@ export function JoinRoute() {
 
   useEffect(() => {
     if (autoJoined.current) return;
+    if (hop) return;
     if (!isRoomCode(linkCode)) return;
     // A join is a write, and a write needs an identity. Waiting for `uid`
     // rather than calling ensureAnonymousAuth here keeps the single-flight
@@ -86,11 +112,48 @@ export function JoinRoute() {
     if (!uid) return;
     autoJoined.current = true;
     void join(linkCode);
-  }, [linkCode, uid, join]);
+  }, [linkCode, uid, join, hop]);
 
   const connecting = isOnlineConfigured && uid === null && !authError;
   const ready = isOnlineConfigured && uid !== null;
   const canSubmit = ready && !joining && isRoomCode(sanitizeRoomCode(code));
+
+  if (hop) {
+    return (
+      <main className="screen screen--centred">
+        <div className="screen__inner join">
+          <h1 className="screen__title">Join room {linkCode}</h1>
+          <p className="screen__subtitle">
+            Playing in the Hold&apos;em app on your home screen? Copy the invite, open the app, and tap
+            Join copied invite.
+          </p>
+          <button type="button" className="btn btn--primary btn--block" onClick={() => void copyForApp()}>
+            Copy invite for the app
+          </button>
+          {hopCopy === 'copied' && (
+            <p className="notice" role="status">
+              Copied. Now open Hold&apos;em from your home screen.
+            </p>
+          )}
+          {hopCopy === 'failed' && (
+            <p className="notice notice--bad" role="status">
+              Couldn&apos;t copy. In the app, tap Join with a code and enter {linkCode}.
+            </p>
+          )}
+          <button
+            type="button"
+            className="btn btn--secondary btn--block"
+            onClick={() => {
+              rememberPlayingHere();
+              setHop(false);
+            }}
+          >
+            Play here in Safari
+          </button>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="screen screen--centred">
@@ -99,6 +162,8 @@ export function JoinRoute() {
         <p className="screen__subtitle">
           Enter the {CODE_LENGTH}-character code from whoever set up the room.
         </p>
+
+        {!linkCode && <NearbyRooms enabled={ready && !joining} onJoin={(c) => void join(c)} />}
 
         <form
           className="join__form"

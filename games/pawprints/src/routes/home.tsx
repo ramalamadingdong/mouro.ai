@@ -10,11 +10,30 @@ import { useSettingsStore } from '@/store/settingsStore';
 import { useSoloStore } from '@/store/soloStore';
 import { HelpModal } from '@/components/help';
 import { MAX_NAME_LENGTH } from '@/util/seat';
+import { isInstalledApp } from '@/util/app-hop';
+import { CODE_LENGTH, extractRoomCode } from '@/util/seed';
 import './screen.css';
 import './home.css';
 
 export function HomeRoute() {
   const navigate = useNavigate();
+  // The installed app's half of the iPhone invite hop (util/app-hop.ts): the
+  // Safari tab copied the invite, this reads it back and joins.
+  const installed = isInstalledApp();
+  const [pasteNote, setPasteNote] = useState<string | null>(null);
+
+  async function joinCopiedInvite(): Promise<void> {
+    try {
+      const code = extractRoomCode(await navigator.clipboard.readText());
+      if (code.length === CODE_LENGTH) {
+        navigate(`/join/${code}`);
+        return;
+      }
+      setPasteNote('No invite on the clipboard. Copy the invite link, then tap again.');
+    } catch {
+      setPasteNote('Couldn’t read the clipboard. Tap Join with a code and paste it there.');
+    }
+  }
   const playerName = useSettingsStore((s) => s.playerName);
   const setPlayerName = useSettingsStore((s) => s.setPlayerName);
   const lastRoom = useSettingsStore((s) => s.lastRoom);
@@ -108,6 +127,16 @@ export function HomeRoute() {
           >
             {creating ? 'Creating room…' : 'Create online game'}
           </button>
+          {installed && (
+            <button
+              type="button"
+              className="btn btn--secondary btn--block"
+              disabled={!onlineReady}
+              onClick={() => void joinCopiedInvite()}
+            >
+              Join copied invite
+            </button>
+          )}
           <button
             type="button"
             className="btn btn--secondary btn--block"
@@ -116,6 +145,11 @@ export function HomeRoute() {
           >
             Join with a code
           </button>
+          {pasteNote && (
+            <p className="notice" role="status">
+              {pasteNote}
+            </p>
+          )}
           <button type="button" className="btn btn--ghost btn--block" onClick={() => setHelpOpen(true)}>
             How to play
           </button>

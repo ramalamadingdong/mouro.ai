@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -18,7 +18,9 @@ import { createRoom } from '@/net/rooms';
 import { useSettingsStore } from '@/store/settingsStore';
 import { accent, felt, text } from '@/theme/colors';
 import { mono } from '@/theme/typography';
+import { isInstalledApp } from '@/util/app-hop';
 import { CardBackPickError, pickCardBackImage } from '@/util/card-back-image';
+import { extractCode, isRoomCode } from '@/util/room-code';
 
 /**
  * Home — nickname entry plus Create / Join / Resume. Kicks off anonymous auth
@@ -47,6 +49,30 @@ export default function HomeScreen() {
 
   const ready = isOnlineConfigured && uid !== null;
   const actionsDisabled = !ready || creating;
+
+  /*
+   * The installed app's half of the iPhone invite hop (util/app-hop.ts): the
+   * Safari tab copied the invite, this reads it back and opens it. Read in an
+   * effect, not during render: `/` is prerendered in Node, where there is no
+   * `window`, and the client's first pass has to match that HTML.
+   */
+  const [installed, setInstalled] = useState(false);
+  const [pasteNote, setPasteNote] = useState<string | null>(null);
+  useEffect(() => setInstalled(isInstalledApp()), []);
+
+  const joinCopiedInvite = async (): Promise<void> => {
+    setPasteNote(null);
+    try {
+      const code = extractCode(await navigator.clipboard.readText());
+      if (isRoomCode(code)) {
+        router.push(`/join/${code}`);
+        return;
+      }
+      setPasteNote('No invite on the clipboard. Copy the invite link, then tap again.');
+    } catch {
+      setPasteNote('Couldn’t read the clipboard. Tap Join game and paste it there.');
+    }
+  };
 
   const handleCreate = async () => {
     if (actionsDisabled) return;
@@ -119,6 +145,15 @@ export default function HomeScreen() {
           disabled={actionsDisabled}
           style={styles.action}
         />
+        {installed && (
+          <Button
+            title="Join copied invite"
+            onPress={() => void joinCopiedInvite()}
+            variant="secondary"
+            disabled={actionsDisabled}
+            style={styles.action}
+          />
+        )}
         <Button
           title="Join game"
           onPress={handleJoin}
@@ -126,6 +161,11 @@ export default function HomeScreen() {
           disabled={actionsDisabled}
           style={styles.action}
         />
+        {pasteNote && (
+          <Text style={styles.pasteNote} accessibilityLiveRegion="polite">
+            {pasteNote}
+          </Text>
+        )}
         {/* Offline — intentionally NOT gated on Firebase/auth readiness. */}
         <Button
           title="Play vs Marmalade the cat"
@@ -286,6 +326,12 @@ const styles = StyleSheet.create({
   },
   action: {
     marginTop: 12,
+  },
+  pasteNote: {
+    color: text.hint,
+    fontSize: 14,
+    marginTop: 12,
+    textAlign: 'center',
   },
   error: {
     color: accent.bad,

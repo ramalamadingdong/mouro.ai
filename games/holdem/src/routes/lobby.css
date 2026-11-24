@@ -109,3 +109,17 @@
 .lobby__dot[data-online='true'] {
   background: var(--good);
 }
+
+.lobby__nearby {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  font-size: 0.95rem;
+}
+
+.lobby__nearby input {
+  width: 20px;
+  height: 20px;
+  accent-color: currentColor;
+}

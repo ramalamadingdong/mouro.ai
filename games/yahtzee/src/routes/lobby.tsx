@@ -152,10 +152,11 @@ export function LobbyRoute() {
      * from the invite link rather than written down a second time.
      */
     const shareHost = new URL(inviteLink).host;
+    // Short on purpose: the link, then the one-time-code line. No separate
+    // `url`: share targets that take both print the link twice.
     const payload = {
       title: 'Yahtzee',
-      text: `Join my Yahtzee game — room ${code}\n${inviteLink}\n\n@${shareHost} #${code}`,
-      url: inviteLink,
+      text: `Join my Yahtzee game: ${inviteLink}\n\n@${shareHost} #${code}`,
     };
     // Clear last attempt's failure up front, so a retry that works (or a share
     // sheet on a device that has one) does not leave the apology on screen.

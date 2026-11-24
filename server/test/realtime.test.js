@@ -20,7 +20,10 @@ import {
   set,
   signInAnonymously,
   update,
+  announceNearbyRoom,
+  listNearbyRooms,
 } from '../../packages/realtime/src/index.ts';
+import { networkKey } from '../src/server.js';
 
 const repo = resolve(import.meta.dirname, '../..');
 const rules = (p) => new Rules(JSON.parse(readFileSync(join(repo, p), 'utf8')));
@@ -993,5 +996,73 @@ describe('server behaviour', () => {
     assert.deepEqual(s.hand, ['a', 'b']);
     assert.equal('empty' in s, false);
     assert.equal('none' in s, false);
+  });
+});
+
+describe('on your Wi-Fi (nearby rooms)', () => {
+  // A second server whose "network" is a query parameter, so one machine can
+  // play several houses. The real key comes from networkKey (tested below).
+  let srv, base;
+  const nets = [];
+  before(async () => {
+    srv = createRealtimeServer({
+      store: new Store(join(dir, 'nearby.sqlite')),
+      secret: 'nearby-secret',
+      games: [{ name: 'holdem', rules: rules('games/holdem/database.rules.json'), reap: ['rooms'] }],
+      netKeyOf: (req) => new URL(req.url, 'http://x').searchParams.get('net'),
+    });
+    await new Promise((r) => srv.http.listen(0, '127.0.0.1', r));
+    base = `ws://127.0.0.1:${srv.http.address().port}/rt`;
+  });
+  after(() => {
+    for (const c of nets) c.close();
+    srv.close();
+  });
+  async function at(net) {
+    const rt = initializeRealtime({ database: 'holdem', url: `${base}?net=${net}`, storage: memStorage() });
+    nets.push(rt.client);
+    const { user } = await signInAnonymously(rt.auth);
+    return { ...rt, uid: user.uid };
+  }
+  async function lobby(host, code) {
+    const now = Date.now();
+    await set(ref(host.db, `rooms/${code}`), {
+      meta: { host: host.uid, status: 'waiting', createdAt: now, updatedAt: now },
+      seats: { [host.uid]: `${now}|Host` },
+    });
+  }
+
+  test('a lobby shows to the same network only, and not to its host', async () => {
+    const host = await at('house');
+    const sibling = await at('house');
+    const stranger = await at('elsewhere');
+    await lobby(host, 'NB2AA');
+    await announceNearbyRoom(host.db, { code: 'NB2AA', name: 'Mom', players: 1 });
+    assert.deepEqual(await listNearbyRooms(sibling.db), [{ code: 'NB2AA', name: 'Mom', players: 1 }]);
+    assert.deepEqual(await listNearbyRooms(stranger.db), []);
+    assert.deepEqual(await listNearbyRooms(host.db), []);
+  });
+
+  test('withdrawn or disconnected lobbies disappear; unknown rooms are refused', async () => {
+    const host = await at('flat');
+    const sibling = await at('flat');
+    await lobby(host, 'NB3BB');
+    await announceNearbyRoom(host.db, { code: 'NB3BB', name: 'Dad', players: 2 });
+    assert.equal((await listNearbyRooms(sibling.db)).length, 1);
+    await announceNearbyRoom(host.db, null);
+    assert.deepEqual(await listNearbyRooms(sibling.db), []);
+    await assert.rejects(announceNearbyRoom(host.db, { code: 'NOPE9', name: 'x', players: 1 }));
+    await announceNearbyRoom(host.db, { code: 'NB3BB', name: 'Dad', players: 2 });
+    host.client.close();
+    await waitFor(async () => (await listNearbyRooms(sibling.db)).length === 0);
+  });
+
+  test('networkKey: forwarded address only from loopback; IPv6 by /64', () => {
+    const req = (peer, xff) => ({ socket: { remoteAddress: peer }, headers: xff ? { 'x-forwarded-for': xff } : {} });
+    assert.equal(networkKey(req('127.0.0.1', '203.0.113.9, 10.0.0.1')), '4:203.0.113.9');
+    assert.equal(networkKey(req('198.51.100.2', '203.0.113.9')), '4:198.51.100.2');
+    assert.equal(networkKey(req('::1', '2001:db8:abcd:12::5')), networkKey(req('::1', '2001:db8:abcd:12:9:8:7:6')));
+    assert.notEqual(networkKey(req('::1', '2001:db8:abcd:12::5')), networkKey(req('::1', '2001:db8:abcd:13::5')));
+    assert.equal(networkKey(req('::ffff:198.51.100.2')), '4:198.51.100.2');
   });
 });

@@ -29,12 +29,15 @@ interface SettingsData {
   playerName: string;
   lastRoom: LastRoom | null;
   table: TableOptions;
+  /** Host's switch: list a waiting room to players on the same Wi-Fi. */
+  showNearby: boolean;
 }
 
 interface SettingsState extends SettingsData {
   setPlayerName: (name: string) => void;
   setLastRoom: (room: LastRoom | null) => void;
   setTable: (patch: Partial<TableOptions>) => void;
+  setShowNearby: (on: boolean) => void;
 }
 
 const DEFAULT_TABLE: TableOptions = { opponents: 5, startingStack: 2000, blindUpEvery: 6, difficulty: 'medium' };
@@ -58,15 +61,17 @@ export const useSettingsStore = create<SettingsState>()(
       playerName: '',
       lastRoom: null,
       table: DEFAULT_TABLE,
+      showNearby: true,
       setPlayerName: (playerName) => set({ playerName }),
       setLastRoom: (lastRoom) => set({ lastRoom }),
       setTable: (patch) => set((s) => ({ table: cleanTable({ ...s.table, ...patch }) })),
+      setShowNearby: (showNearby) => set({ showNearby }),
     }),
     {
       name: 'holdem-settings',
       storage: createJSONStorage(() => localStorage),
       version: 1,
-      partialize: (s): SettingsData => ({ playerName: s.playerName, lastRoom: s.lastRoom, table: s.table }),
+      partialize: (s): SettingsData => ({ playerName: s.playerName, lastRoom: s.lastRoom, table: s.table, showNearby: s.showNearby }),
       // Storage is user-editable and survives app updates: never trust its shape.
       merge: (persisted, current) => {
         const old = (typeof persisted === 'object' && persisted !== null ? persisted : {}) as Partial<SettingsData>;
@@ -79,6 +84,7 @@ export const useSettingsStore = create<SettingsState>()(
               ? { code: room.code, role: room.role }
               : null,
           table: cleanTable(old.table),
+          showNearby: old.showNearby !== false,
         };
       },
     },

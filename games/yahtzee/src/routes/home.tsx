@@ -17,6 +17,8 @@ import { retryAuth, useAuth } from '@/net/auth';
 import { createRoom } from '@/net/rooms';
 import { useSettingsStore } from '@/store/settingsStore';
 import { InstallPrompt } from '@/components/install-prompt';
+import { isInstalledApp } from '@/util/app-hop';
+import { CODE_LENGTH, extractRoomCode } from '@/util/seed';
 import './screen.css';
 import './home.css';
 
@@ -25,6 +27,23 @@ const MAX_NAME_LENGTH = 24;
 
 export function HomeRoute() {
   const navigate = useNavigate();
+  // The installed app's half of the iPhone invite hop (util/app-hop.ts): the
+  // Safari tab copied the invite, this reads it back and joins.
+  const installed = isInstalledApp();
+  const [pasteNote, setPasteNote] = useState<string | null>(null);
+
+  async function joinCopiedInvite(): Promise<void> {
+    try {
+      const code = extractRoomCode(await navigator.clipboard.readText());
+      if (code.length === CODE_LENGTH) {
+        navigate(`/join/${code}`);
+        return;
+      }
+      setPasteNote('No invite on the clipboard. Copy the invite link, then tap again.');
+    } catch {
+      setPasteNote('Couldn’t read the clipboard. Tap Join with a code and paste it there.');
+    }
+  }
 
   const playerName = useSettingsStore((s) => s.playerName);
   const setPlayerName = useSettingsStore((s) => s.setPlayerName);
@@ -146,6 +165,16 @@ export function HomeRoute() {
             {creating ? 'Creating room…' : 'Create game'}
           </button>
 
+          {installed && (
+            <button
+              type="button"
+              className="btn btn--secondary btn--block"
+              disabled={!onlineReady}
+              onClick={() => void joinCopiedInvite()}
+            >
+              Join copied invite
+            </button>
+          )}
           <button
             type="button"
             className="btn btn--secondary btn--block"
@@ -154,6 +183,11 @@ export function HomeRoute() {
           >
             Join with a code
           </button>
+          {pasteNote && (
+            <p className="notice" role="status">
+              {pasteNote}
+            </p>
+          )}
 
           {/* NOT gated. See the header comment. */}
           <button

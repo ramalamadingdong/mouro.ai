@@ -46,17 +46,17 @@ export function inviteUrl(code: string): string {
  *
  * Three things are in here on purpose.
  *
- * 1. THE URL IS INLINE IN THE TEXT. Android's share intent ignores React
- *    Native's separate `url` field entirely, so a message without the link in
- *    the body reaches Android recipients as a bare sentence with nothing to
- *    tap. iOS reads `url` separately for its rich preview and tolerates the
- *    duplicate.
+ * 1. THE URL IS INLINE IN THE TEXT, and it is the ONLY copy of it: the
+ *    lobby shares this text with no separate `url`. Android's share intent
+ *    ignores React Native's `url` field entirely, so the link has to be in the
+ *    body; and share targets that take both print the link twice.
  *
- * 2. THE CODE IS SPELLED OUT AS TEXT, not just encoded in the URL. On iOS an
- *    installed PWA cannot be opened from a link at all, so a link-only invite
- *    is USELESS to the most common recipient: someone who already has the app
- *    on their home screen. With the code in the text they open their app and
- *    type five characters.
+ * 2. THE CODE IS READABLE AS TEXT, not just encoded in the URL — the last
+ *    line below spells it out. On iOS an installed PWA cannot be opened from a
+ *    link at all, so a link-only invite is no use to the most common
+ *    recipient: someone who already has the app on their home screen. They can
+ *    copy the invite and tap Join copied invite in the app (util/app-hop.ts),
+ *    or open the app and type five characters.
  *
  * 3. THE LAST LINE IS `@host #CODE` — the origin-bound one-time-code format.
  *    It is what lets the phone offer the code straight above the keyboard
@@ -71,5 +71,5 @@ export function inviteMessage(code: string): string {
   // The `@host` must match the origin the code will be typed into, so derive it
   // from the very URL we are sharing rather than hardcoding it twice.
   const host = url.replace(/^https?:\/\//, '').split('/')[0];
-  return `Join my backgammon game — code ${code}\n${url}\n\n@${host} #${code}`;
+  return `Join my backgammon game: ${url}\n\n@${host} #${code}`;
 }

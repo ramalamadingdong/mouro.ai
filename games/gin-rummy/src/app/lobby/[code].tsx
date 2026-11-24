@@ -125,8 +125,10 @@ export default function LobbyScreen() {
         typeof navigator !== 'undefined' ? navigator : undefined;
 
       if (nav?.share) {
+        // No `url` beside the text: the link is in the text already, and share
+        // targets that take both print it twice.
         nav
-          .share({ title: 'Gin Rummy', text: inviteMessage(code), url })
+          .share({ title: 'Gin Rummy', text: inviteMessage(code) })
           // A rejection here is usually the user dismissing the sheet, not a
           // failure — don't fall through to copying behind their back.
           .catch(() => {});
@@ -144,10 +146,10 @@ export default function LobbyScreen() {
       return;
     }
 
-    // Native. iOS reads `url` separately to build the rich share sheet preview;
-    // Android IGNORES `url` entirely, which is why inviteMessage() also embeds
-    // the link in the text.
-    Share.share({ message: inviteMessage(code), url }).catch(() => {});
+    // Native. The link is already in the message (Android ignores `url`
+    // entirely), so no separate `url`: share targets that take both print the
+    // link twice.
+    Share.share({ message: inviteMessage(code) }).catch(() => {});
   };
 
   // Room is gone / access denied — but only trust this once we're actually

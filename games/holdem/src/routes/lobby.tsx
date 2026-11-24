@@ -27,6 +27,7 @@ import { BLIND_SPEED_CHOICES, STACK_CHOICES } from '@/store/settingsStore';
 import { sanitizeRoomCode } from '@/util/seed';
 import './screen.css';
 import './lobby.css';
+import { useAnnounceRoom } from '@/net/nearby';
 
 /**
  * How long to wait before calling an empty room empty.
@@ -118,6 +119,16 @@ export function LobbyRoute() {
   const order = meta ? seatOrder(seats, meta.host) : [];
   const canStart = isHost && order.length >= 2 && !starting;
 
+  // "On your Wi-Fi": while the host waits here, players on the same network
+  // see this room on their home and join screens (net/nearby.ts).
+  const showNearby = useSettingsStore((s) => s.showNearby);
+  const setShowNearby = useSettingsStore((s) => s.setShowNearby);
+  useAnnounceRoom(
+    isHost && showNearby && meta?.status === 'waiting' && code
+      ? { code, name: seats[meta.host]?.name ?? '', players: order.length }
+      : null,
+  );
+
   /*
    * The invite link. `import.meta.env.BASE_URL` is read by STATIC DOT NOTATION
    * because Vite performs a literal text substitution at build time — a computed
@@ -159,10 +170,11 @@ export function LobbyRoute() {
      * from the invite link rather than written down a second time.
      */
     const shareHost = new URL(inviteLink).host;
+    // Short on purpose: the link, then the one-time-code line. No separate
+    // `url`: share targets that take both print the link twice.
     const payload = {
       title: "Texas Hold'em",
-      text: `Join my Hold'em table — room ${code}\n${inviteLink}\n\n@${shareHost} #${code}`,
-      url: inviteLink,
+      text: `Join my Hold'em table: ${inviteLink}\n\n@${shareHost} #${code}`,
     };
     // Clear last attempt's failure up front, so a retry that works (or a share
     // sheet on a device that has one) does not leave the apology on screen.
@@ -282,6 +294,12 @@ export function LobbyRoute() {
             </p>
           )}
           <p className="field__hint selectable">{inviteLink}</p>
+          {isHost && (
+            <label className="lobby__nearby">
+              <input type="checkbox" checked={showNearby} onChange={(e) => setShowNearby(e.target.checked)} />
+              Show this room to players on my Wi-Fi
+            </label>
+          )}
         </section>
 
         <section className="panel">
