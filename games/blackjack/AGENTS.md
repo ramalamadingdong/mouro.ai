@@ -82,8 +82,10 @@ checks every invariant and the wire round-trip after every move).
   once" stays checkable.
 - **Dealer stands on all 17s**, and **peeks** for blackjack under an Ace or a
   ten: a dealer blackjack settles at once, before anyone can double or split.
-- **Blackjack pays 3:2.** Bets move in steps of 10 (`RULES.BET_STEP`, even) so
-  that is always whole chips. Table limits 10–500, capped at the stack.
+- **Blackjack pays 3:2, rounded down to a whole chip.** Bets move in steps of
+  5 (`RULES.BET_STEP`) so the 10/25/50/100 betting chips all work, which
+  means a 25 bet's blackjack pays 37 (not 37½). Table limits 10–500, capped
+  at the stack.
 - **Double** on any first two cards, including after a split. **Split** any
   two cards of the same value (K-Q splits), up to four hands; split Aces get
   one card each; a two-card 21 after a split is a plain 21, paid 1:1. A hand

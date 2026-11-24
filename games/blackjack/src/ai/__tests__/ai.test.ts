@@ -91,7 +91,7 @@ describe('decide', () => {
       const move = decide(s, 0, cat.personality, SKILL.medium, makeRng([1]));
       expect(move.kind).toBe('bet');
       if (move.kind === 'bet') {
-        expect(move.amount % 10).toBe(0);
+        expect(move.amount % 5).toBe(0);
         expect(move.amount).toBeGreaterThanOrEqual(10);
         expect(move.amount).toBeLessThanOrEqual(500);
       }

@@ -17,7 +17,7 @@
  *
  * House rules (see AGENTS.md for why): six decks, reshuffled at the cut card
  * between rounds; dealer stands on all 17s and peeks for blackjack under an
- * Ace or ten; blackjack pays 3:2; double on any first two cards, also after a
+ * Ace or ten; blackjack pays 3:2 (rounded down to a whole chip); double on any first two cards, also after a
  * split; split any two cards of the same value, up to four hands; split Aces
  * take one card each; a two-card 21 after a split is not a blackjack. No
  * insurance, no surrender.
@@ -243,8 +243,8 @@ function settle(state: GameState): void {
       else outcome = 'lose';
       h.outcome = outcome;
       h.done = true;
-      // 3:2 is whole because every bet is a multiple of an even step.
-      h.paid = outcome === 'blackjack' ? h.bet + (h.bet * 3) / 2 : outcome === 'win' ? h.bet * 2 : outcome === 'push' ? h.bet : 0;
+      // 3:2, rounded down to a whole chip when the bet is an odd multiple of 5.
+      h.paid = outcome === 'blackjack' ? h.bet + Math.floor((h.bet * 3) / 2) : outcome === 'win' ? h.bet * 2 : outcome === 'push' ? h.bet : 0;
       staked += h.bet;
       paid += h.paid;
     }

@@ -1,6 +1,6 @@
 /**
- * The human's controls. While betting: a bet slider with presets, "Sit out"
- * and "Bet". While playing: Hit, Stand, Double and Split. Everything it offers
+ * The human's controls. While betting: 10/25/50/100 chips that each add to
+ * the bet, "Clear", "Sit out" and "Bet". While playing: Hit, Stand, Double and Split. Everything it offers
  * comes from `legalActions` — the bar never works out legality itself, so it
  * cannot disagree with the engine.
  */
@@ -24,6 +24,9 @@ export interface ActionBarProps {
 
 const chips = (n: number): string => n.toLocaleString('en-US');
 
+/** The betting chips. Each tap adds its value to the bet. */
+const CHIPS = [10, 25, 50, 100] as const;
+
 function BetControls({
   legal,
   defaultBet,
@@ -35,49 +38,41 @@ function BetControls({
   busy: boolean;
   onMove: (move: PlayerMove) => void;
 }) {
-  const { minBet: min, maxBet: max, step } = legal;
-  const clamp = (n: number): number => Math.min(max, Math.max(min, Math.round(n / step) * step));
-  // The table remounts this component (via `key`) for each new round, so the
-  // amount always starts from the default, never from a stale one.
-  const [bet, setBet] = useState(() => clamp(defaultBet));
-  const amount = clamp(bet);
-  const steps = Math.max(1, (max - min) / step);
-  const presets = [
-    { label: `Min ${chips(min)}`, to: min },
-    { label: chips(clamp(50)), to: clamp(50) },
-    { label: chips(clamp(100)), to: clamp(100) },
-    { label: `Max ${chips(max)}`, to: max },
-  ];
+  const { minBet: min, maxBet: max } = legal;
+  // Starts at the last bet (so repeating it is one tap). The table remounts
+  // this component (via `key`) for each new round, so it is never stale.
+  const [bet, setBet] = useState(() => (defaultBet >= min && defaultBet <= max ? defaultBet : 0));
+  const short = bet < min;
 
   return (
     <section className="actions" aria-label="Your bet">
       <div className="actions__top">
-        <input
-          className="actions__slider"
-          type="range"
-          min={0}
-          max={steps}
-          step={1}
-          value={(amount - min) / step}
-          disabled={busy || min >= max}
-          aria-label="Bet size"
-          aria-valuetext={`${chips(amount)} chips`}
-          onChange={(e) => setBet(min + Number(e.target.value) * step)}
-        />
-        <div className="actions__presets">
-          {presets.map((preset) => (
+        <div className="bet-chips">
+          {CHIPS.map((value) => (
             <button
-              key={preset.label}
+              key={value}
               type="button"
-              className="actions__preset"
-              aria-pressed={amount === preset.to}
-              disabled={busy}
-              onClick={() => setBet(preset.to)}
+              className="bet-chip"
+              data-value={value}
+              disabled={busy || bet + value > max}
+              aria-label={`Add ${value}`}
+              onClick={() => setBet(bet + value)}
             >
-              {preset.label}
+              {value}
             </button>
           ))}
+          <button
+            type="button"
+            className="bet-chips__clear"
+            disabled={busy || bet === 0}
+            onClick={() => setBet(0)}
+          >
+            Clear
+          </button>
         </div>
+        <p className="bet-chips__hint" aria-live="polite">
+          {short ? `Tap chips to bet — ${chips(min)} to ${chips(max)}` : `Betting ${chips(bet)} of ${chips(max)} max`}
+        </p>
       </div>
       <div className="actions__buttons">
         <button
@@ -91,10 +86,10 @@ function BetControls({
         <button
           type="button"
           className="actions__btn actions__btn--main"
-          disabled={busy}
-          onClick={() => onMove({ kind: 'bet', amount })}
+          disabled={busy || short}
+          onClick={() => onMove({ kind: 'bet', amount: bet })}
         >
-          Bet {chips(amount)}
+          {short ? 'Add chips' : `Bet ${chips(bet)}`}
         </button>
       </div>
     </section>
