@@ -20,6 +20,9 @@ import {
   isGameOver,
   legalActions,
   maxTip,
+  maxTransfer,
+  netWorth,
+  owed,
   type Card,
   type GameState,
   type Hand,
@@ -54,6 +57,12 @@ export interface TableProps {
   tag?: string;
   /** Offered once the human's own hands are finished (offline only). */
   onSkipAhead?: (() => void) | null;
+  /**
+   * Offline: ask the cat in `seat` for a loan. Returns null if it lent, or
+   * what it said when it refused. Absent online, where people lend each
+   * other by themselves.
+   */
+  onAskLoan?: (seat: number, amount: number) => string | null;
   onMove: (move: PlayerMove) => void;
   /** Deal the next round (the "tap to continue" after a round is paid). */
   onDeal: () => void;
@@ -154,6 +163,10 @@ export function Table(props: TableProps) {
   const DEALER_UID = `cat-${DEALER.id}`;
   const voice = DEALER.voice;
   const [tipOpen, setTipOpen] = useState(false);
+  // The player whose loan sheet is open, and the last refusal shown in it.
+  const [loanSeat, setLoanSeat] = useState<number | null>(null);
+  const [loanNote, setLoanNote] = useState<string | null>(null);
+  const loansOpen = mySeat !== null && state.phase !== 'idle' && state.phase !== 'gameover';
   const vibrate = useSettingsStore((s) => s.vibrate);
   const setVibrate = useSettingsStore((s) => s.setVibrate);
   const chime = useSettingsStore((s) => s.chime);
@@ -324,9 +337,28 @@ export function Table(props: TableProps) {
         data-idle={p.hands.length === 0 && state.phase !== 'betting' ? 'true' : undefined}
         data-winner={net !== null && net > 0 ? 'true' : undefined}
       >
-        <div className="seat__who">
+        <button
+          type="button"
+          className="seat__who"
+          disabled={!loansOpen}
+          aria-label={`${p.name}: lend or pay back`}
+          onClick={() => {
+            setLoanNote(null);
+            setLoanSeat(seat);
+          }}
+        >
           <div className="seat__avatar">
             <Avatar uid={p.uid} name={p.name} />
+            {mySeat !== null && owed(state, mySeat, seat) > 0 && (
+              <span className="seat__iou" data-kind="owed" title={`${p.name} owes you ${chips(owed(state, mySeat, seat))}`}>
+                +{chips(owed(state, mySeat, seat))}
+              </span>
+            )}
+            {mySeat !== null && owed(state, seat, mySeat) > 0 && (
+              <span className="seat__iou" data-kind="owe" title={`You owe ${p.name} ${chips(owed(state, seat, mySeat))}`}>
+                −{chips(owed(state, seat, mySeat))}
+              </span>
+            )}
             {thinkingSeat === seat && (
               <span className="seat__dots" aria-hidden="true">
                 <i />
@@ -344,7 +376,7 @@ export function Table(props: TableProps) {
             <span className="seat__name">{p.name}</span>
             <span className="seat__stack">{out ? 'Out' : isAway ? 'Away' : chips(p.stack)}</span>
           </div>
-        </div>
+        </button>
         {p.hands.length > 0 && (
           <div className="seat__hands" data-many={p.hands.length > 1 ? 'true' : undefined}>
             {p.hands.map((h, i) => handView(p, h, i, 'sm', onTurn && p.active === i && p.hands.length > 1))}
@@ -513,6 +545,12 @@ export function Table(props: TableProps) {
                 </>
               )}
             </p>
+            {mySeat !== null && hero.stack < state.config.minBet && !isGameOver(state) && (
+              <p className="result__broke">
+                You&apos;re out of chips. Tap a player to {props.onAskLoan ? 'ask for' : 'borrow'} a loan before the next deal —
+                otherwise you&apos;re done.
+              </p>
+            )}
             {/* The result stays on screen until someone taps: no timer. */}
             <button type="button" className="btn btn--primary btn--block result__next" disabled={busy} onClick={props.onDeal}>
               {isGameOver(state) ? 'See the final result' : `Deal round ${state.handNo + 1}`}
@@ -568,14 +606,17 @@ export function Table(props: TableProps) {
         <ol className="standings">
           {state.players
             .map((p, seat) => ({ p, seat }))
-            .sort((a, b) => b.p.stack - a.p.stack)
+            .sort((a, b) => netWorth(state, b.seat) - netWorth(state, a.seat))
             .map(({ p, seat }) => (
               <li key={p.uid}>
                 <span>
                   {nameOf(seat)}
                   {p.tipped > 0 && <span className="standings__tips"> · tipped {chips(p.tipped)}</span>}
+                  {netWorth(state, seat) !== p.stack && (
+                    <span className="standings__tips"> · {chips(p.stack)} in chips, loans {netWorth(state, seat) > p.stack ? '+' : '−'}{chips(Math.abs(netWorth(state, seat) - p.stack))}</span>
+                  )}
                 </span>
-                <span>{chips(p.stack)}</span>
+                <span>{chips(netWorth(state, seat))}</span>
               </li>
             ))}
           <li className="standings__house">
@@ -615,8 +656,112 @@ export function Table(props: TableProps) {
         </div>
       </Modal>
 
+      {loanSeat !== null && mySeat !== null && (() => {
+        const them = state.players[loanSeat];
+        const theyOwe = owed(state, mySeat, loanSeat);
+        const iOwe = owed(state, loanSeat, mySeat);
+        const spare = maxTransfer(state, mySeat);
+        const close = (): void => setLoanSeat(null);
+        return (
+          <Modal open={loansOpen} title={them.name} onClose={close}>
+            <div className="stack loan">
+              <p className="tip__note">
+                {theyOwe > 0
+                  ? `${them.name} owes you ${chips(theyOwe)}.`
+                  : iOwe > 0
+                    ? `You owe ${them.name} ${chips(iOwe)}.`
+                    : `No loans between you and ${them.name}.`}{' '}
+                {them.name} has {chips(them.stack)}; you have {chips(hero.stack)}.
+              </p>
+
+              {iOwe > 0 && (
+                <>
+                  <h3 className="loan__heading">Pay back</h3>
+                  <div className="tip__options">
+                    {[...new Set([Math.min(iOwe, spare), 25, 50, 100].filter((n) => n > 0 && n <= Math.min(iOwe, spare)))]
+                      .sort((a, b) => a - b)
+                      .map((amount) => (
+                        <button
+                          key={amount}
+                          type="button"
+                          className="btn btn--secondary btn--small"
+                          disabled={busy}
+                          onClick={() => {
+                            close();
+                            onMove({ kind: 'repay', to: loanSeat, amount });
+                          }}
+                        >
+                          {amount === iOwe ? `All ${chips(amount)}` : chips(amount)}
+                        </button>
+                      ))}
+                  </div>
+                </>
+              )}
+
+              <h3 className="loan__heading">Lend {them.name}</h3>
+              <div className="tip__options">
+                {[25, 50, 100, 250, 500].map((amount) => (
+                  <button
+                    key={amount}
+                    type="button"
+                    className="bet-chip tip__chip"
+                    data-value={amount >= 100 ? 100 : amount >= 50 ? 50 : amount >= 25 ? 25 : 10}
+                    disabled={busy || amount > spare}
+                    onClick={() => {
+                      close();
+                      onMove({ kind: 'loan', to: loanSeat, amount });
+                    }}
+                  >
+                    {amount}
+                  </button>
+                ))}
+              </div>
+
+              {props.onAskLoan && !them.isHuman && (
+                <>
+                  <h3 className="loan__heading">Ask {them.name} for</h3>
+                  <div className="tip__options">
+                    {[50, 100, 250, 500].map((amount) => (
+                      <button
+                        key={amount}
+                        type="button"
+                        className="btn btn--secondary btn--small"
+                        onClick={() => {
+                          const refused = props.onAskLoan!(loanSeat, amount);
+                          if (refused === null) close();
+                          else setLoanNote(`${them.name}: “${refused}”`);
+                        }}
+                      >
+                        {amount}
+                      </button>
+                    ))}
+                  </div>
+                  {loanNote && <p className="loan__refused">{loanNote}</p>}
+                </>
+              )}
+              <button type="button" className="btn btn--ghost btn--block" onClick={close}>
+                Done
+              </button>
+            </div>
+          </Modal>
+        );
+      })()}
+
       <Modal open={menuOpen} title="Menu" onClose={() => setMenuOpen(false)}>
         <div className="stack">
+          {state.debts.length > 0 && (
+            <div className="loans">
+              <h3 className="loan__heading">Loans</h3>
+              <ul>
+                {state.debts.map((d) => (
+                  <li key={`${d.lender}>${d.borrower}`}>
+                    <strong>{nameOf(d.borrower)}</strong> {isMe(d.borrower) ? 'owe' : 'owes'} <strong>{isMe(d.lender) ? 'you' : nameOf(d.lender)}</strong>{' '}
+                    {chips(d.amount)}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           <button
             type="button"
             className="btn btn--secondary btn--block"

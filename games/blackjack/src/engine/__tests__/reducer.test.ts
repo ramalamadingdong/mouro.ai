@@ -260,6 +260,65 @@ describe('the dealer', () => {
   });
 });
 
+describe('loans between players', () => {
+  it('moves chips, records the debt, and does not move the turn', () => {
+    let s = deal(newGame(3));
+    s = must(s, { kind: 'loan', to: 2, amount: 100 }, uidOf(1));
+    expect(s.toAct).toBe(0);
+    expect(s.players[1].stack).toBe(900);
+    expect(s.players[2].stack).toBe(1100);
+    expect(s.debts).toEqual([{ lender: 1, borrower: 2, amount: 100 }]);
+    s = must(s, { kind: 'loan', to: 2, amount: 50 }, uidOf(1));
+    expect(s.debts).toEqual([{ lender: 1, borrower: 2, amount: 150 }]);
+    expect(totalChips(s)).toBe(3000);
+  });
+
+  it('repay reduces the debt and clears it when paid in full', () => {
+    let s = deal(newGame(2));
+    s = must(s, { kind: 'loan', to: 1, amount: 100 }, uidOf(0));
+    expect(applyMove(s, { kind: 'repay', to: 0, amount: 101 }, uidOf(1)).ok).toBe(false);
+    expect(applyMove(s, { kind: 'repay', to: 1, amount: 10 }, uidOf(0)).ok).toBe(false); // seat 0 owes nothing
+    s = must(s, { kind: 'repay', to: 0, amount: 40 }, uidOf(1));
+    expect(s.debts).toEqual([{ lender: 0, borrower: 1, amount: 60 }]);
+    s = must(s, { kind: 'repay', to: 0, amount: 60 }, uidOf(1));
+    expect(s.debts).toEqual([]);
+    expect(s.players.map((p) => p.stack)).toEqual([1000, 1000]);
+  });
+
+  it('refuses lending to yourself, more than you have, or before/after a game', () => {
+    const fresh = newGame(2);
+    expect(applyMove(fresh, { kind: 'loan', to: 1, amount: 10 }, uidOf(0)).ok).toBe(false);
+    const s = deal(fresh);
+    expect(applyMove(s, { kind: 'loan', to: 1, amount: 0 }, uidOf(1)).ok).toBe(false);
+    expect(applyMove(s, { kind: 'loan', to: 1, amount: 10 }, uidOf(1)).ok).toBe(false);
+    expect(applyMove(s, { kind: 'loan', to: 0, amount: 1001 }, uidOf(1)).ok).toBe(false);
+    // On your own betting turn you keep the minimum bet.
+    expect(applyMove(s, { kind: 'loan', to: 1, amount: 995 }, uidOf(0)).ok).toBe(false);
+    expect(applyMove(s, { kind: 'loan', to: 1, amount: 990 }, uidOf(0)).ok).toBe(true);
+  });
+
+  it('a broke player can be lent back into the game', () => {
+    let s = deal(newGame(2, 100));
+    s = finish(stack(betAll(s, [100, 10]), 'Tc Kc As 6d Kd Qh')); // dealer blackjack
+    expect(s.players.map((p) => p.stack)).toEqual([0, 90]);
+    s = must(s, { kind: 'loan', to: 0, amount: 50 }, uidOf(1));
+    s = deal(s);
+    expect(s.phase).toBe('betting');
+    expect(s.toAct).toBe(0);
+  });
+
+  it('the winner is decided on net worth: chips plus loans out, minus loans owed', () => {
+    let s = newGame(2, 1000, 1);
+    s = deal(s);
+    s = must(s, { kind: 'loan', to: 1, amount: 300 }, uidOf(0));
+    s = finish(stack(betAll(s, 10), '2c 3c Tc Td 9h 8h'));
+    s = deal(s);
+    expect(s.phase).toBe('gameover');
+    expect(s.players[1].stack).toBeGreaterThan(s.players[0].stack);
+    expect(s.winner).toBe(0);
+  });
+});
+
 describe('tipping the dealer', () => {
   it('goes to the house, keeps your turn, and is counted', () => {
     let s = deal(newGame(2));

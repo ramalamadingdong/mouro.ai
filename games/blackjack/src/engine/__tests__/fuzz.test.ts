@@ -4,7 +4,7 @@
  * a pure function of its index, so any failure reproduces exactly.
  */
 import { describe, expect, it } from 'vitest';
-import { applyMove, makeRng, totalChips } from '@/engine';
+import { applyMove, makeRng, netWorth, totalChips } from '@/engine';
 import { checkInvariants, newGame, randomLegalMove } from './helpers';
 
 describe('fuzz', () => {
@@ -17,6 +17,8 @@ describe('fuzz', () => {
     let reshuffles = 0;
     let surrenders = 0;
     let tips = 0;
+    let loans = 0;
+    let repays = 0;
     for (let game = 0; rounds < 3000; game++) {
       const rng = makeRng([game, 0xb1a]);
       const seats = 1 + (game % 8);
@@ -49,13 +51,16 @@ describe('fuzz', () => {
         if (move.kind === 'double') doubles++;
         if (move.kind === 'surrender') surrenders++;
         if (move.kind === 'tip') tips++;
+        if (move.kind === 'loan') loans++;
+        if (move.kind === 'repay') repays++;
         if (s.phase === 'settled' && prev.phase !== 'settled' && s.result) {
           if (s.result.dealerTotal > 21) dealerBusts++;
           blackjacks += s.players.flatMap((p) => p.hands).filter((h) => h.outcome === 'blackjack').length;
         }
       }
 
-      expect(s.players[s.winner!].stack, `game ${game}: winner is the chip leader`).toBe(Math.max(...s.players.map((p) => p.stack)));
+      const worth = s.players.map((_, i) => netWorth(s, i));
+      expect(worth[s.winner!], `game ${game}: winner has the highest net worth`).toBe(Math.max(...worth));
     }
     // The run must actually have exercised the interesting paths.
     expect(blackjacks).toBeGreaterThan(100);
@@ -65,5 +70,7 @@ describe('fuzz', () => {
     expect(reshuffles).toBeGreaterThan(5);
     expect(surrenders).toBeGreaterThan(30);
     expect(tips).toBeGreaterThan(30);
+    expect(loans).toBeGreaterThan(100);
+    expect(repays).toBeGreaterThan(30);
   });
 });

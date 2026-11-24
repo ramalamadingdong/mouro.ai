@@ -358,6 +358,13 @@
 
 .seat__who {
   position: relative;
+  /* A button (tap a player to lend or pay back), drawn as before. */
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -955,4 +962,58 @@
   75% {
     transform: rotate(-6deg);
   }
+}
+
+/* ── Loans ───────────────────────────────────────────────────────────────── */
+
+.seat__who:disabled {
+  cursor: default;
+}
+
+/* What a seat owes you (+) or you owe it (−), on the avatar's lower edge. */
+.seat__iou {
+  position: absolute;
+  bottom: -0.35rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+  padding: 0 0.3rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.625rem;
+  font-weight: var(--weight-bold);
+  white-space: nowrap;
+  line-height: 1.4;
+}
+.seat__iou[data-kind='owed'] {
+  background: var(--good);
+  color: var(--text-on-accent);
+}
+.seat__iou[data-kind='owe'] {
+  background: var(--card-red);
+  color: #fff;
+}
+
+.loan__heading {
+  margin: 0;
+  font-size: var(--size-sm);
+  color: var(--accent);
+  text-align: center;
+}
+.loan__refused {
+  color: var(--text-muted);
+  font-size: var(--size-sm);
+  font-style: italic;
+  text-align: center;
+}
+.loans ul {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: var(--size-sm);
+  color: var(--text-muted);
+}
+.result__broke {
+  color: var(--bad);
+  font-size: var(--size-sm);
+  text-align: center;
 }

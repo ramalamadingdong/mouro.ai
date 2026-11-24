@@ -52,7 +52,9 @@ export function HelpModal({ open, onClose }: { open: boolean; onClose: () => voi
           every bet that is not a blackjack. There is no insurance at this table.
         </p>
         <p>
-          While you bet you can <strong>tip the dealer</strong> (5 to 100 chips) — it goes to the house, never below your
+          <strong>Loans:</strong> tap any other player to lend them chips or pay back what you owe (against the cats,
+          you can ask them for a loan — not all of them will say yes). The final standings count loans: chips, plus
+          what you&apos;re owed, minus what you owe. While you bet you can <strong>tip the dealer</strong> (5 to 100 chips) — it goes to the house, never below your
           minimum bet, and she will have something to say about it. The game lasts a set number of rounds. Whoever has the most chips at the end wins; run out and you are done.
         </p>
 

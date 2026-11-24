@@ -190,6 +190,17 @@ export const LOU: Voice = {
       "{who} tips {n}! Ladies and gentlecats, the real headliner!",
       "{n}! {who}, baby, Lou's naming a song after you!",
     ],
+    loan: [
+      "{who} spots {to} {n}, baby! That's friendship!",
+      'A loan! {who} to {to}, {n} chips! Put it on the tab!',
+      "{who} lends {n}! Pally, that's class.",
+      "{to} gets {n} from {who}! Lou's getting misty!",
+    ],
+    repay: [
+      '{who} pays {to} back {n}! Square deal!',
+      'Debts paid, baby! {n} back to {to}!',
+      '{who} settles up with {to}! Ring-a-ding!',
+    ],
     push: [
       "A push! Nobody wins, nobody loses. Like a tie at the talent show!",
       'Push, folks! Keep your chips, keep your smiles!',
@@ -235,6 +246,8 @@ export const LOU: Voice = {
   ],
   finallyEmoji: ['🎉', '👏', '🎤'],
   emoji: {
+    loan: ['🤝', '💸', '🎩'],
+    repay: ['💰', '🤝', '🎉'],
     open: ['🎩', '🎤', '✨'],
     round: ['🎰', '🎤', '✨', '🎩'],
     shuffle: ['🔀', '🎩', '✨'],

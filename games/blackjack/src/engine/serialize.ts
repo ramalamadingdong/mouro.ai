@@ -51,6 +51,8 @@ const MOVE_KINDS: readonly LastMove['kind'][] = [
   'rematch',
   'bet',
   'tip',
+  'loan',
+  'repay',
   'hit',
   'stand',
   'double',
@@ -216,7 +218,15 @@ function decode(raw: unknown): GameState {
     result: raw.result === undefined || raw.result === null ? null : decodeResult(raw.result, seatCount),
     winner: raw.winner === undefined || raw.winner === null ? null : int(raw.winner, 0, seatCount - 1, 'winner'),
     lastMove,
+    debts: list(raw.debts, seatCount * (seatCount - 1), 'debts').map((d) => {
+      if (!isObj(d)) return bad('debt');
+      const lender = int(d.lender, 0, seatCount - 1, 'debt');
+      const borrower = int(d.borrower, 0, seatCount - 1, 'debt');
+      if (lender === borrower) bad('debt');
+      return { lender, borrower, amount: int(d.amount, 1, MAX_CHIPS, 'debt') };
+    }),
   };
+  if (new Set(state.debts.map((d) => `${d.lender}>${d.borrower}`)).size !== state.debts.length) bad('duplicate debt');
 
   // ── Integrity: what a modified client would have to break to cheat ───────
   // Chips are conserved for the whole game, the house's bank included.

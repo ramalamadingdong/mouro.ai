@@ -191,6 +191,17 @@ export const NANA: Voice = {
       "{who}! {n}! You're putting Nana's grandkittens through school!",
       'Oh, {who}. {n}. You are my favorite. Don\'t tell the others.',
     ],
+    loan: [
+      '{who} lends {to} {n}! Sharing is caring, dears.',
+      'Oh, {who}, how generous! {n} for {to}.',
+      '{to}, say thank you to {who}, dear.',
+      "{who} helps {to} out with {n}. That's what friends are for!",
+    ],
+    repay: [
+      '{who} pays {to} back {n}. Good manners!',
+      'Paid back, {who}! Nana is proud.',
+      "{n} back to {to}. That's how you keep friends, dear.",
+    ],
     push: [
       "A push! Nobody loses. Isn't that nice?",
       'Tie, dears. Everyone keeps their chips. Lovely.',
@@ -236,6 +247,8 @@ export const NANA: Voice = {
   ],
   finallyEmoji: ['😊', '👏', '☕'],
   emoji: {
+    loan: ['🤗', '💕', '🍪'],
+    repay: ['😊', '👏', '🤝'],
     open: ['🍪', '☕', '😊'],
     round: ['🍪', '😊', '🧶', '☕'],
     shuffle: ['🔀', '🃏', '😊'],

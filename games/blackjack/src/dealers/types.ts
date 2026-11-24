@@ -36,6 +36,8 @@ export const LINE_KEYS = [
   'tipS',
   'tipN',
   'tipB',
+  'loan',
+  'repay',
   'push',
 ] as const;
 

@@ -27,6 +27,9 @@ export {
   isGameOver,
   legalActions,
   maxTip,
+  maxTransfer,
+  netWorth,
+  owed,
   totalChips,
 } from './reducer';
 export { normalize } from './serialize';

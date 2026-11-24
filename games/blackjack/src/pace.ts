@@ -49,6 +49,7 @@ export function dealerDelay(): number {
 
 /** How long a cat "thinks" before making `move`. Decided AFTER the move, so big decisions take longer. */
 export function thinkDelay(move: PlayerMove, legal: LegalActions): number {
+  if (move.kind === 'repay') return between(CPU_PACE.quick);
   if (legal.kind === 'bet') return between(CPU_PACE.bet);
   if (move.kind === 'double' || move.kind === 'split') return between(CPU_PACE.big);
   return between(CPU_PACE.quick);

@@ -49,7 +49,7 @@
           }
         },
         "state": {
-          ".write": "auth != null && $code.matches(/^[A-HJKMNP-Z2-9]{5}$/) && newData.hasChildren(['version', 'config', 'players', 'phase', 'turnUid', 'handNo', 'house', 'lastMove']) && newData.child('version').isNumber() && newData.child('version').val() >= 0 && newData.child('version').val() <= 1000000 && ((newData.child('turnUid').val() === '*' && !newData.hasChild('toAct')) || (newData.child('toAct').val() === 0 && newData.child('turnUid').val() === newData.child('players/0/uid').val()) || (newData.child('toAct').val() === 1 && newData.child('turnUid').val() === newData.child('players/1/uid').val()) || (newData.child('toAct').val() === 2 && newData.child('turnUid').val() === newData.child('players/2/uid').val()) || (newData.child('toAct').val() === 3 && newData.child('turnUid').val() === newData.child('players/3/uid').val()) || (newData.child('toAct').val() === 4 && newData.child('turnUid').val() === newData.child('players/4/uid').val()) || (newData.child('toAct').val() === 5 && newData.child('turnUid').val() === newData.child('players/5/uid').val()) || (newData.child('toAct').val() === 6 && newData.child('turnUid').val() === newData.child('players/6/uid').val()) || (newData.child('toAct').val() === 7 && newData.child('turnUid').val() === newData.child('players/7/uid').val())) && (root.child('rooms').child($code).child('seats').hasChild(auth.uid) || root.child('rooms').child($code).child('meta/host').val() === auth.uid) && (!data.exists() ? (root.child('rooms').child($code).child('meta/host').val() === auth.uid && newData.child('lastMove/kind').val() === 'deal') : (data.child('turnUid').val() === auth.uid || ((data.child('players/0/uid').val() === auth.uid || data.child('players/1/uid').val() === auth.uid || data.child('players/2/uid').val() === auth.uid || data.child('players/3/uid').val() === auth.uid || data.child('players/4/uid').val() === auth.uid || data.child('players/5/uid').val() === auth.uid || data.child('players/6/uid').val() === auth.uid || data.child('players/7/uid').val() === auth.uid) && ((data.child('turnUid').val() === '*' && (newData.child('lastMove/kind').val() === 'deal' || newData.child('lastMove/kind').val() === 'next' || newData.child('lastMove/kind').val() === 'rematch')) || (newData.child('lastMove/kind').val() === 'away' && data.hasChild('toAct') && !root.child('rooms').child($code).child('presence').hasChild(data.child('turnUid').val())))))) && newData.child('lastMove/by').val() === auth.uid && (!data.exists() || newData.child('version').val() > data.child('version').val())",
+          ".write": "auth != null && $code.matches(/^[A-HJKMNP-Z2-9]{5}$/) && newData.hasChildren(['version', 'config', 'players', 'phase', 'turnUid', 'handNo', 'house', 'lastMove']) && newData.child('version').isNumber() && newData.child('version').val() >= 0 && newData.child('version').val() <= 1000000 && ((newData.child('turnUid').val() === '*' && !newData.hasChild('toAct')) || (newData.child('toAct').val() === 0 && newData.child('turnUid').val() === newData.child('players/0/uid').val()) || (newData.child('toAct').val() === 1 && newData.child('turnUid').val() === newData.child('players/1/uid').val()) || (newData.child('toAct').val() === 2 && newData.child('turnUid').val() === newData.child('players/2/uid').val()) || (newData.child('toAct').val() === 3 && newData.child('turnUid').val() === newData.child('players/3/uid').val()) || (newData.child('toAct').val() === 4 && newData.child('turnUid').val() === newData.child('players/4/uid').val()) || (newData.child('toAct').val() === 5 && newData.child('turnUid').val() === newData.child('players/5/uid').val()) || (newData.child('toAct').val() === 6 && newData.child('turnUid').val() === newData.child('players/6/uid').val()) || (newData.child('toAct').val() === 7 && newData.child('turnUid').val() === newData.child('players/7/uid').val())) && (root.child('rooms').child($code).child('seats').hasChild(auth.uid) || root.child('rooms').child($code).child('meta/host').val() === auth.uid) && (!data.exists() ? (root.child('rooms').child($code).child('meta/host').val() === auth.uid && newData.child('lastMove/kind').val() === 'deal') : (data.child('turnUid').val() === auth.uid || ((data.child('players/0/uid').val() === auth.uid || data.child('players/1/uid').val() === auth.uid || data.child('players/2/uid').val() === auth.uid || data.child('players/3/uid').val() === auth.uid || data.child('players/4/uid').val() === auth.uid || data.child('players/5/uid').val() === auth.uid || data.child('players/6/uid').val() === auth.uid || data.child('players/7/uid').val() === auth.uid) && ((data.child('turnUid').val() === '*' && (newData.child('lastMove/kind').val() === 'deal' || newData.child('lastMove/kind').val() === 'next' || newData.child('lastMove/kind').val() === 'rematch')) || newData.child('lastMove/kind').val() === 'loan' || newData.child('lastMove/kind').val() === 'repay' || (newData.child('lastMove/kind').val() === 'away' && data.hasChild('toAct') && !root.child('rooms').child($code).child('presence').hasChild(data.child('turnUid').val())))))) && newData.child('lastMove/by').val() === auth.uid && (!data.exists() || newData.child('version').val() > data.child('version').val())",
           ".validate": "newData.hasChildren(['version', 'config', 'players', 'phase', 'turnUid', 'handNo', 'house', 'lastMove'])",
           "version": {
             ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000000",
@@ -306,7 +306,7 @@
               }
             },
             "kind": {
-              ".validate": "newData.isString() && (newData.val() === 'deal' || newData.val() === 'next' || newData.val() === 'rematch' || newData.val() === 'bet' || newData.val() === 'tip' || newData.val() === 'hit' || newData.val() === 'stand' || newData.val() === 'double' || newData.val() === 'split' || newData.val() === 'surrender' || newData.val() === 'away')",
+              ".validate": "newData.isString() && (newData.val() === 'deal' || newData.val() === 'next' || newData.val() === 'rematch' || newData.val() === 'bet' || newData.val() === 'tip' || newData.val() === 'loan' || newData.val() === 'repay' || newData.val() === 'hit' || newData.val() === 'stand' || newData.val() === 'double' || newData.val() === 'split' || newData.val() === 'surrender' || newData.val() === 'away')",
               "$deep": {
                 ".validate": false
               }
@@ -319,6 +319,33 @@
             },
             "$other": {
               ".validate": false
+            }
+          },
+          "debts": {
+            ".validate": "newData.hasChildren()",
+            "$i": {
+              ".validate": "$i.matches(/^[0-9]{1,2}$/) && newData.hasChildren(['lender', 'borrower', 'amount'])",
+              "lender": {
+                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 7",
+                "$deep": {
+                  ".validate": false
+                }
+              },
+              "borrower": {
+                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 7",
+                "$deep": {
+                  ".validate": false
+                }
+              },
+              "amount": {
+                ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 10000000",
+                "$deep": {
+                  ".validate": false
+                }
+              },
+              "$other": {
+                ".validate": false
+              }
             }
           },
           "$other": {

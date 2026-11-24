@@ -147,6 +147,21 @@ function dealerText(
     return say('round', { n: s.handNo });
   }
 
+  if ((s.lastMove?.kind === 'loan' || s.lastMove?.kind === 'repay') && s.version !== prev.version) {
+    // Find the pair whose debt changed.
+    const key = (d: { lender: number; borrower: number }) => `${d.lender}>${d.borrower}`;
+    const before = new Map(prev.debts.map((d) => [key(d), d.amount]));
+    const after = new Map(s.debts.map((d) => [key(d), d.amount]));
+    for (const k of new Set([...before.keys(), ...after.keys()])) {
+      const delta = (after.get(k) ?? 0) - (before.get(k) ?? 0);
+      if (delta === 0) continue;
+      const [lender, borrower] = k.split('>').map(Number);
+      if (delta > 0) return say('loan', { who: nameOf(lender), to: nameOf(borrower), n: delta });
+      return say('repay', { who: nameOf(borrower), to: nameOf(lender), n: -delta });
+    }
+    return null;
+  }
+
   if (s.lastMove?.kind === 'tip' && s.version !== prev.version) {
     const n = s.players[by].tipped - prev.players[by].tipped;
     return say(n >= 100 ? 'tipB' : n >= 25 ? 'tipN' : 'tipS', { n });
