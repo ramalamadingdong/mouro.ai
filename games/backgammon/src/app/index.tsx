@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
 
@@ -10,6 +10,8 @@ import { createRoom } from '@/net/rooms';
 import { useSettingsStore } from '@/store/settingsStore';
 import { accent, felt, text } from '@/theme/colors';
 import { mono } from '@/theme/typography';
+import { isInstalledApp } from '@/util/app-hop';
+import { extractCode, isRoomCode } from '@/util/room-code';
 
 export default function Home() {
   const router = useRouter();
@@ -35,6 +37,30 @@ export default function Home() {
   const nameFor = () => (playerName.trim().length > 0 ? playerName.trim() : 'Player');
   const online = isOnlineConfigured;
   const ready = online && !!uid;
+
+  /*
+   * The installed app's half of the iPhone invite hop (util/app-hop.ts): the
+   * Safari tab copied the invite, this reads it back and opens it. Read in an
+   * effect, not during render: `/` is prerendered in Node, where there is no
+   * `window`, and the client's first pass has to match that HTML.
+   */
+  const [installed, setInstalled] = useState(false);
+  const [pasteNote, setPasteNote] = useState<string | null>(null);
+  useEffect(() => setInstalled(isInstalledApp()), []);
+
+  const joinCopiedInvite = async (): Promise<void> => {
+    setPasteNote(null);
+    try {
+      const code = extractCode(await navigator.clipboard.readText());
+      if (isRoomCode(code)) {
+        router.push(`/join/${code}`);
+        return;
+      }
+      setPasteNote('No invite on the clipboard. Copy the invite link, then tap again.');
+    } catch {
+      setPasteNote('Couldn’t read the clipboard. Tap Join game and paste it there.');
+    }
+  };
 
   const handleCreate = async () => {
     if (creating) return;
@@ -116,6 +142,15 @@ export default function Home() {
           disabled={!ready || creating}
           style={styles.action}
         />
+        {installed && (
+          <Button
+            title="Join copied invite"
+            variant="secondary"
+            onPress={() => void joinCopiedInvite()}
+            disabled={!ready}
+            style={styles.action}
+          />
+        )}
         <Button
           title="Join game"
           variant="secondary"
@@ -123,6 +158,11 @@ export default function Home() {
           disabled={!ready}
           style={styles.action}
         />
+        {pasteNote && (
+          <Text style={styles.pasteNote} accessibilityLiveRegion="polite">
+            {pasteNote}
+          </Text>
+        )}
         {/*
           Deliberately NOT gated on `ready`: solo play is entirely offline, so
           making it wait on Firebase auth would leave the one thing that always
@@ -271,6 +311,7 @@ const styles = StyleSheet.create({
   connectingText: { color: text.hint, fontSize: 14 },
 
   error: { color: accent.bad, fontSize: 14, textAlign: 'center', marginTop: 16 },
+  pasteNote: { color: text.hint, fontSize: 14, textAlign: 'center', marginTop: 12 },
 
   actions: { width: '100%', maxWidth: 340, alignSelf: 'center', marginTop: 28 },
   action: { marginTop: 12 },

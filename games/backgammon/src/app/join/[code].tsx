@@ -1,8 +1,13 @@
 import { useEffect, useState } from 'react';
+import { StyleSheet, Text } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 
 import { JoinScreen } from '@/components/join-screen';
+import { Button } from '@/components/ui/button';
 import { CODE_LENGTH, sanitizeCode } from '@/components/ui/code-input';
+import { Screen } from '@/components/ui/screen';
+import { accent, text } from '@/theme/colors';
+import { isIosBrowserTab, prefersPlayingHere, rememberPlayingHere } from '@/util/app-hop';
 
 /**
  * `/join/<code>` — the landing route for an invite link (see `@/util/invite`).
@@ -37,7 +42,25 @@ export default function InvitedJoinRoute() {
    * effect has run.
    */
   const [hydrated, setHydrated] = useState(false);
-  useEffect(() => setHydrated(true), []);
+
+  /*
+   * iPhone: an invite link always lands in a Safari tab, even when the player
+   * has the app on their home screen (see util/app-hop.ts). Before the join
+   * screen, which would seat a Safari identity the app does not share, offer
+   * to copy the invite for the app. Asked once: "Play here" is remembered.
+   *
+   * Decided in the same effect that ends the pending shell, never during
+   * render: the prerender has no `navigator`, so reading it there would be the
+   * very hydration mismatch the shell exists to avoid. Both updates land in one
+   * render, so the join screen never flashes up first.
+   */
+  const [hop, setHop] = useState(false);
+  const [hopCopy, setHopCopy] = useState<'copied' | 'failed' | null>(null);
+
+  useEffect(() => {
+    setHop(isIosBrowserTab() && !prefersPlayingHere());
+    setHydrated(true);
+  }, []);
 
   // Same alphabet/length rules the keyboard path uses — a code copied out of a
   // chat app can arrive lowercase or with trailing punctuation.
@@ -58,6 +81,53 @@ export default function InvitedJoinRoute() {
    */
   if (!hydrated) return <JoinScreen key="pending" invited pending />;
 
+  if (hop && valid) {
+    const copyForApp = async (): Promise<void> => {
+      const clipboard = typeof navigator !== 'undefined' ? navigator.clipboard : undefined;
+      try {
+        if (!clipboard?.writeText) throw new Error('no clipboard');
+        await clipboard.writeText(window.location.href);
+        setHopCopy('copied');
+      } catch {
+        setHopCopy('failed');
+      }
+    };
+
+    return (
+      <Screen center>
+        <Text style={styles.title}>Join room {code}</Text>
+        <Text style={styles.subtitle}>
+          Playing in the Backgammon app on your home screen? Copy the invite, open the app, and tap
+          Join copied invite.
+        </Text>
+        <Button
+          title="Copy invite for the app"
+          onPress={() => void copyForApp()}
+          style={styles.action}
+        />
+        {hopCopy === 'copied' && (
+          <Text style={styles.status} accessibilityLiveRegion="polite">
+            Copied. Now open Backgammon from your home screen.
+          </Text>
+        )}
+        {hopCopy === 'failed' && (
+          <Text style={[styles.status, styles.statusBad]} accessibilityLiveRegion="polite">
+            Couldn’t copy. In the app, tap Join game and enter {code}.
+          </Text>
+        )}
+        <Button
+          title="Play here in Safari"
+          variant="secondary"
+          onPress={() => {
+            rememberPlayingHere();
+            setHop(false);
+          }}
+          style={styles.action}
+        />
+      </Screen>
+    );
+  }
+
   // A malformed link is a bad link, not a crash: fall back to manual entry and
   // say why, so the player can still type the code their friend read out.
   return valid ? (
@@ -69,3 +139,31 @@ export default function InvitedJoinRoute() {
     />
   );
 }
+
+// Matches JoinScreen's title and subtitle, so the hop reads as the same screen.
+const styles = StyleSheet.create({
+  title: {
+    color: accent.gold,
+    fontSize: 30,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    textAlign: 'center',
+  },
+  subtitle: {
+    color: text.muted,
+    fontSize: 15,
+    marginTop: 6,
+    marginBottom: 20,
+    textAlign: 'center',
+    maxWidth: 340,
+  },
+  action: { marginTop: 12, width: '100%', maxWidth: 340 },
+  status: {
+    color: text.hint,
+    fontSize: 14,
+    marginTop: 12,
+    textAlign: 'center',
+    maxWidth: 340,
+  },
+  statusBad: { color: accent.bad },
+});
