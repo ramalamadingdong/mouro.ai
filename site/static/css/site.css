@@ -2246,16 +2246,3 @@ details.more > summary {
         display: none;
     }
 }
-
-/* A quiet hover on the work cards: a small lift and a yellow top rule. */
-@media (hover: hover) and (prefers-reduced-motion: no-preference) {
-    .work-item {
-        transition: transform 0.2s ease, border-top-color 0.2s ease, box-shadow 0.2s ease;
-    }
-
-    .work-item:hover {
-        transform: translateY(-3px);
-        border-top-color: var(--yellow);
-        box-shadow: 0 12px 24px -18px rgba(22, 32, 43, 0.5);
-    }
-}
