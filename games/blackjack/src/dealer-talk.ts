@@ -329,6 +329,84 @@ const PUSHES_ONLY = [
   'Push. What a waste of everyone\'s time. Mostly mine.',
 ];
 
+// ── Impatience: the longer you take, the worse it gets ─────────────────────
+
+/** Seconds of nobody moving before each step up in impatience. */
+export const NAG_AFTER = [8, 16, 28, 45, 70] as const;
+
+const NAG: readonly (readonly string[])[] = [
+  [
+    'Any day now, {who}.',
+    'Tick tock, {who}.',
+    '{who}? Hello? Your turn.',
+    "We're all waiting, {who}. All of us. Staring at you.",
+    'Take your time, {who}. Not that much time.',
+  ],
+  [
+    "{who}, it's not brain surgery. It's barely cards.",
+    "I've aged a year waiting for you, {who}.",
+    '{who}, did you fall asleep? Blink twice if you need help.',
+    "{who}, the cards aren't going to play themselves. Sadly.",
+    'Is {who} thinking? Is that what that face is?',
+  ],
+  [
+    '{who}, I swear to God.',
+    'My nails grew, {who}. Watching you think. My NAILS.',
+    'Somebody poke {who} with a stick.',
+    "{who}, you're boring me to death and I have nine lives.",
+    "{who}, there are two buttons. TWO. Pick one.",
+  ],
+  [
+    '{who}, I have buried cats who decide faster.',
+    "This is the slowest thing I've ever seen, and I've watched you play all night, {who}.",
+    "Hell's going to freeze over before {who} makes a move.",
+    "I'm filing a complaint. With myself. About {who}.",
+    '{who}, the cut card is going to come out of sheer boredom.',
+  ],
+  [
+    '{who}. {who}. {who}. MOVE.',
+    "I'm starting to think {who} left. Good riddance, honestly.",
+    'At this point I would take a bust, {who}. Any bust. Just DO something.',
+    'Fine. I will just sit here. Being gorgeous. Forever. Because of {who}.',
+    "{who}, I've seen statues with more initiative.",
+  ],
+];
+
+const NAG_DEAL: readonly (readonly string[])[] = [
+  ['Somebody deal. I\'m not doing it, I\'m a lady.', 'Next hand? Today?', 'Tap the button, kittens. The big one.'],
+  ["Hello? Next hand? Are we done? Are you broke? Is that it?", 'Deal the next round or go home. Either. Choose.'],
+  ['I am getting OLD here.', "Nobody's dealing? Are you scared of me? You should be."],
+  ["Fine, sulk. I'll be over here, winning by default.", 'Still nothing? Unbelievable. Unbelievable.'],
+  ['Wake me up when somebody grows a spine and deals.', "I'm going on break. Forever. Thanks to you lot."],
+];
+
+const NAG_EMOJI = ['⏳', '🥱', '🙄', '😤', '💀'];
+
+const FINALLY = [
+  'Finally. Was that so hard?',
+  'Oh, look who finally woke up.',
+  'There it is. Only took a lifetime.',
+  'Wow. A decision. Somebody mark the calendar.',
+  'Thank you. I was about to retire.',
+  "Oh, NOW you're ready. Lovely. Wonderful. Great.",
+];
+
+/** What she says when someone she was nagging finally moves (and nothing else happened worth a line). */
+export function finallyLine(seed: number): Talk {
+  return { text: pick(FINALLY, seed, 'finally'), emoji: pick(['🙄', '👏', '😒', '💅'], seed, 'finally!') };
+}
+
+/**
+ * What she says after `level` steps (1..5) of nobody moving. `who` is the
+ * player she is waiting on, or null when the round is over and nobody has
+ * dealt the next one.
+ */
+export function impatienceLine(level: number, who: string | null, seed: number): Talk {
+  const i = Math.min(Math.max(level, 1), NAG.length) - 1;
+  const text = who === null ? pick(NAG_DEAL[i], seed, `deal${i}`) : fill(pick(NAG[i], seed, `nag${i}`), { who });
+  return { text, emoji: NAG_EMOJI[i] };
+}
+
 // ── What she says ──────────────────────────────────────────────────────────
 
 /** What she says when the game opens: the house rules, with attitude. */
@@ -340,7 +418,11 @@ export function openingLine(seed = 0): string {
  * What she is saying about the table as it stands, for when there is no
  * previous state to compare with (the page was just opened or reloaded).
  */
-export function ambientLine(s: GameState): string {
+export function ambientLine(s: GameState): Talk {
+  return { text: ambientText(s), emoji: '💅' };
+}
+
+function ambientText(s: GameState): string {
   switch (s.phase) {
     case 'idle':
     case 'betting':
@@ -358,14 +440,68 @@ export function ambientLine(s: GameState): string {
   }
 }
 
-export function dealerLine(prev: GameState, s: GameState, nameOf: (seat: number) => string): string | null {
+/** One thing she says: the line, and the emoji she sends with it. */
+export interface Talk {
+  text: string;
+  emoji: string;
+}
+
+/**
+ * The emoji she sends, by moment. Kept to long-established emoji (Unicode 12
+ * or older) so they draw on older phones too.
+ */
+const EMOJI: Record<string, readonly string[]> = {
+  open: ['💅', '👑', '😼'],
+  round: ['💅', '🙄', '⏳', '💸', '🎰', '😏'],
+  shuffle: ['🔀', '🃏', '💅'],
+  closed: ['✋', '🚫', '😼'],
+  peekA: ['👀', '😏', '😼'],
+  peek10: ['👀', '😏', '😼'],
+  show: ['😼', '😏', '🃏', '😈'],
+  dbj: ['👑', '😂', '💰', '😹'],
+  pbj: ['🙄', '😒', '😤'],
+  sat: ['🐔', '🙄', '🥱'],
+  surr: ['🏳️', '🐔', '😹'],
+  split: ['✂️', '🤡', '😏'],
+  double: ['🤡', '😂', '💸', '😈'],
+  dbust: ['💀', '😂', '🤡'],
+  low: ['🤦‍♀️', '🙄', '🤡'],
+  stiff: ['💀', '🤦‍♀️', '😂'],
+  bust: ['💀', '😂', '⚰️', '😹', '👋'],
+  '21': ['🙄', '😒', '😤'],
+  hole: ['👀', '😈', '😼'],
+  holeX: ['😂', '💅', '😹'],
+  s17: ['🃏', '😈'],
+  draw: ['😈', '🃏', '👀'],
+  dbc: ['😤', '🙄', '😾'],
+  busted: ['😤', '🙄', '😾', '💅'],
+  sweep: ['👑', '💰', '😹', '💅'],
+  some: ['😒', '🙄', '💸'],
+  push: ['🥱', '😴'],
+  tipS: ['🙄', '🤏', '😒'],
+  tipN: ['😘', '💅', '😌'],
+  tipB: ['😍', '💖', '👑'],
+  over: ['👋', '💅', '👑'],
+  ambient: ['💅', '😼'],
+};
+
+export function dealerLine(prev: GameState, s: GameState, nameOf: (seat: number) => string): Talk | null {
+  const ctx = { key: 'ambient' };
+  const text = dealerText(prev, s, nameOf, ctx);
+  return text === null ? null : { text, emoji: pick(EMOJI[ctx.key] ?? EMOJI.ambient, s.version, `${ctx.key}!`) };
+}
+
+function dealerText(prev: GameState, s: GameState, nameOf: (seat: number) => string, ctx: { key: string }): string | null {
   const v = s.version;
   const by = s.lastMove?.seat ?? 0;
   const who = nameOf(by);
-  const say = (pool: readonly string[], key: string, vars: Record<string, string | number> = {}): string =>
-    fill(pick(pool, v, key), { who, ...vars });
+  const say = (pool: readonly string[], key: string, vars: Record<string, string | number> = {}): string => {
+    ctx.key = key;
+    return fill(pick(pool, v, key), { who, ...vars });
+  };
 
   if (s.phase === 'gameover' && prev.phase !== 'gameover') {
+    ctx.key = 'over';
     const winner = s.winner === null ? '' : ` ${nameOf(s.winner)} leaves with the most chips — the least bad of a bad bunch.`;
     const house = s.house > 0 ? ' The house is up, as God intended. Get out.' : ' The house is down. This never happened. Tell anyone and you\'re banned.';
     const tips = s.players.reduce((a, p) => a + p.tipped, 0);
@@ -376,14 +512,17 @@ export function dealerLine(prev: GameState, s: GameState, nameOf: (seat: number)
 
   // A new round.
   if (s.phase === 'betting' && s.handNo !== prev.handNo) {
-    if (s.handNo === 1) return openingLine(v);
+    if (s.handNo === 1) {
+      ctx.key = 'open';
+      return openingLine(v);
+    }
     if (s.shoe.length === SHOE_SIZE) return say(SHUFFLE, 'shuffle');
     return say(NEW_ROUND, 'round', { n: s.handNo });
   }
 
   if (s.lastMove?.kind === 'tip' && s.version !== prev.version) {
     const n = s.players[by].tipped - prev.players[by].tipped;
-    return say(n >= 100 ? TIP_BIG : n >= 25 ? TIP_NICE : TIP_SMALL, 'tip', { n });
+    return say(n >= 100 ? TIP_BIG : n >= 25 ? TIP_NICE : TIP_SMALL, n >= 100 ? 'tipB' : n >= 25 ? 'tipN' : 'tipS', { n });
   }
 
   if (s.phase === 'betting' && prev.phase === 'betting' && s.toAct === null && prev.toAct !== null) {

@@ -221,6 +221,7 @@
 }
 
 .dealer__avatar {
+  position: relative;
   width: 1.9rem;
   border-radius: var(--radius-pill);
   box-shadow: 0 0 0 2px var(--rail), 0 2px 6px rgb(0 0 0 / 0.5);
@@ -902,4 +903,56 @@
   color: var(--text-hint);
   font-size: var(--size-sm);
   font-weight: 400;
+}
+
+/* ── Duchess's emoji ─────────────────────────────────────────────────────── */
+
+.talk__emoji {
+  font-style: normal;
+  white-space: nowrap;
+}
+
+/* The emoji she sends pops up beside her head and stays there, a little
+   tilted, until she sends another. */
+.dealer__emoji {
+  position: absolute;
+  /* On her left: her name is on the right. */
+  right: calc(100% + 0.15rem);
+  bottom: 45%;
+  font-size: calc(1.5rem * var(--card-scale, 1));
+  line-height: 1;
+  filter: drop-shadow(0 2px 3px rgb(0 0 0 / 0.5));
+  transform-origin: bottom right;
+  animation: emoji-pop 0.45s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+  pointer-events: none;
+  z-index: 3;
+}
+.dealer__emoji[data-mad='true'] {
+  animation:
+    emoji-pop 0.45s cubic-bezier(0.2, 1.6, 0.4, 1) both,
+    emoji-shake 0.5s ease-in-out 0.45s 2;
+}
+
+@keyframes emoji-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.2) rotate(-30deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(8deg);
+  }
+}
+
+@keyframes emoji-shake {
+  0%,
+  100% {
+    transform: rotate(8deg);
+  }
+  25% {
+    transform: rotate(20deg);
+  }
+  75% {
+    transform: rotate(-6deg);
+  }
 }

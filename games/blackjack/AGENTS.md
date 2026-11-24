@@ -152,6 +152,19 @@ finished.
 Online there are no cats: only the dealer pause before each `next` and the
 held result.
 
+## Duchess gets impatient, and sends emoji
+
+The owner asked: "the longer the person takes the more she shit talks them",
+and "her ability to send emojis". `dealerLine` returns `{ text, emoji }`
+(an `EMOJI` pool per moment, Unicode 12 or older so old phones draw them);
+the emoji ends her line and pops up beside her on the felt. In `table.tsx`,
+while a HUMAN is on turn (or a settled round waits for someone to deal),
+timers at `NAG_AFTER` seconds (8/16/28/45/70) step `impatienceLine` up five
+levels of rudeness; any move resets them, and a move she has nothing else to
+say about gets a `finallyLine`. Cats are never nagged. Online each client runs
+its own timers, but the lines are picked from the state version, so they
+match.
+
 ## Never scroll the table
 
 The table screen must fit the viewport at every size with no page scroll,
