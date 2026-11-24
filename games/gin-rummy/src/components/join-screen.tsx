@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 
+import { NearbyRooms } from '@/components/nearby-rooms';
 import { Button } from '@/components/ui/button';
 import { CodeInput, CODE_LENGTH } from '@/components/ui/code-input';
 import { Screen } from '@/components/ui/screen';
@@ -92,6 +93,9 @@ export function JoinScreen({ initialCode, invited, notice, pending }: JoinScreen
       </Text>
 
       {notice && <Text style={styles.notice}>{notice}</Text>}
+
+      {/* Typing a code by hand? A room on the same Wi-Fi is one tap instead. */}
+      {!invited && <NearbyRooms enabled={!joining} replace style={styles.nearby} />}
 
       {invited && (
         <View style={styles.inviteBanner}>
@@ -189,6 +193,7 @@ const styles = StyleSheet.create({
     letterSpacing: 4,
     marginTop: 2,
   },
+  nearby: { marginTop: -8, marginBottom: 24 },
   codeArea: {
     marginBottom: 8,
   },

@@ -34,6 +34,8 @@ interface SettingsStore {
    * `null` falls back to the drawn diamond-lattice back.
    */
   customCardBack: string | null;
+  /** Host's switch: list a waiting room to players on the same Wi-Fi (web only). */
+  showNearby: boolean;
   setPlayerName: (name: string) => void;
   setSortMode: (mode: SortMode) => void;
   setLastRoom: (room: LastRoom | null) => void;
@@ -42,6 +44,7 @@ interface SettingsStore {
   setShowKnockHints: (show: boolean) => void;
   setMotion: (on: boolean) => void;
   setCustomCardBack: (uri: string | null) => void;
+  setShowNearby: (on: boolean) => void;
 }
 
 export const useSettingsStore = create<SettingsStore>()(
@@ -55,6 +58,7 @@ export const useSettingsStore = create<SettingsStore>()(
       showKnockHints: true,
       motion: true,
       customCardBack: null,
+      showNearby: true,
       setPlayerName: (playerName) => set({ playerName }),
       setSortMode: (sortMode) => set({ sortMode }),
       setLastRoom: (lastRoom) => set({ lastRoom }),
@@ -63,6 +67,7 @@ export const useSettingsStore = create<SettingsStore>()(
       setShowKnockHints: (showKnockHints) => set({ showKnockHints }),
       setMotion: (motion) => set({ motion }),
       setCustomCardBack: (customCardBack) => set({ customCardBack }),
+      setShowNearby: (showNearby) => set({ showNearby }),
     }),
     {
       name: 'gin-settings',

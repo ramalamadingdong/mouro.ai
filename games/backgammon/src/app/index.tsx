@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
 
+import { NearbyRooms } from '@/components/nearby-rooms';
 import { Button } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
 import { isOnlineConfigured } from '@/net/config';
@@ -133,6 +134,8 @@ export default function Home() {
       )}
 
       {error && <Text style={styles.error}>{error}</Text>}
+
+      <NearbyRooms enabled={ready && !creating} />
 
       <View style={styles.actions}>
         <Button

@@ -10,6 +10,7 @@ import {
 import { useRouter } from 'expo-router';
 
 import { CardBack } from '@/components/card-back';
+import { NearbyRooms } from '@/components/nearby-rooms';
 import { Button } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
 import { retryAuth, useAuth } from '@/net/auth';
@@ -137,6 +138,8 @@ export default function HomeScreen() {
           style={styles.input}
           returnKeyType="done"
         />
+
+        <NearbyRooms enabled={!actionsDisabled} />
 
         <Button
           title={creating ? 'Creating…' : 'Create game'}

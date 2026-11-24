@@ -53,6 +53,8 @@ interface SettingsData {
   motion: boolean;
   /** Names for pass-and-play seats, 1..RULES.MAX_PLAYERS. */
   localPlayers: string[];
+  /** Host's switch: list a waiting room to players on the same Wi-Fi. */
+  showNearby: boolean;
 }
 
 interface SettingsState extends SettingsData {
@@ -60,6 +62,7 @@ interface SettingsState extends SettingsData {
   setLastRoom: (room: LastRoom | null) => void;
   setMotion: (motion: boolean) => void;
   setLocalPlayers: (names: string[]) => void;
+  setShowNearby: (on: boolean) => void;
 }
 
 function defaults(): SettingsData {
@@ -68,6 +71,7 @@ function defaults(): SettingsData {
     lastRoom: null,
     motion: prefersMotion(),
     localPlayers: [...DEFAULT_LOCAL_PLAYERS],
+    showNearby: true,
   };
 }
 
@@ -112,6 +116,7 @@ function migrate(persisted: unknown, version: number): SettingsState {
     // and that expression would silently turn animation back on for them.
     motion: typeof old.motion === 'boolean' ? old.motion : base.motion,
     localPlayers: localPlayers.length > 0 ? localPlayers : base.localPlayers,
+    showNearby: old.showNearby !== false,
   } as SettingsState;
 }
 
@@ -129,6 +134,7 @@ export const useSettingsStore = create<SettingsState>()(
       setLastRoom: (room) => set({ lastRoom: room }),
       setMotion: (motion) => set({ motion }),
       setLocalPlayers: (names) => set({ localPlayers: names.slice(0, RULES.MAX_PLAYERS) }),
+      setShowNearby: (showNearby) => set({ showNearby }),
     }),
     {
       name: 'yahtzee-settings',
@@ -144,6 +150,7 @@ export const useSettingsStore = create<SettingsState>()(
         lastRoom: s.lastRoom,
         motion: s.motion,
         localPlayers: s.localPlayers,
+        showNearby: s.showNearby,
       }),
     },
   ),

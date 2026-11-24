@@ -32,6 +32,8 @@ interface SettingsData {
   playerName: string;
   lastRoom: LastRoom | null;
   table: TableOptions;
+  /** Host's switch: list a waiting room to players on the same Wi-Fi. */
+  showNearby: boolean;
   /** Buzz the phone when it becomes this player's turn (where the browser can). */
   vibrate: boolean;
   /** Play a short chime when it becomes this player's turn (works on iPhone too). */
@@ -42,6 +44,7 @@ interface SettingsState extends SettingsData {
   setPlayerName: (name: string) => void;
   setLastRoom: (room: LastRoom | null) => void;
   setTable: (patch: Partial<TableOptions>) => void;
+  setShowNearby: (on: boolean) => void;
   setVibrate: (on: boolean) => void;
   setChime: (on: boolean) => void;
 }
@@ -74,6 +77,7 @@ export const useSettingsStore = create<SettingsState>()(
       playerName: '',
       lastRoom: null,
       table: DEFAULT_TABLE,
+      showNearby: true,
       vibrate: true,
       chime: true,
       setPlayerName: (playerName) => set({ playerName }),
@@ -81,12 +85,13 @@ export const useSettingsStore = create<SettingsState>()(
       setVibrate: (vibrate) => set({ vibrate }),
       setChime: (chime) => set({ chime }),
       setTable: (patch) => set((s) => ({ table: cleanTable({ ...s.table, ...patch }) })),
+      setShowNearby: (showNearby) => set({ showNearby }),
     }),
     {
       name: 'blackjack-settings',
       storage: createJSONStorage(() => localStorage),
       version: 1,
-      partialize: (s): SettingsData => ({ playerName: s.playerName, lastRoom: s.lastRoom, table: s.table, vibrate: s.vibrate, chime: s.chime }),
+      partialize: (s): SettingsData => ({ playerName: s.playerName, lastRoom: s.lastRoom, table: s.table, vibrate: s.vibrate, chime: s.chime, showNearby: s.showNearby }),
       // Storage is user-editable and survives app updates: never trust its shape.
       merge: (persisted, current) => {
         const old = (typeof persisted === 'object' && persisted !== null ? persisted : {}) as Partial<SettingsData>;
@@ -99,6 +104,7 @@ export const useSettingsStore = create<SettingsState>()(
               ? { code: room.code, role: room.role }
               : null,
           table: cleanTable(old.table),
+          showNearby: old.showNearby !== false,
           vibrate: old.vibrate !== false,
           chime: old.chime !== false,
         };

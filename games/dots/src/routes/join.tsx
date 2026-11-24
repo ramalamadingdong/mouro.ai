@@ -10,7 +10,7 @@
  * re-typing five characters that are already in the URL bar.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { isOnlineConfigured } from '@/net/config';
 import { retryAuth, useAuth } from '@/net/auth';
 import { joinRoom } from '@/net/rooms';
@@ -18,12 +18,16 @@ import { useSettingsStore } from '@/store/settingsStore';
 import { isRoomCode, sanitizeRoomCode, CODE_LENGTH } from '@/util/seed';
 import { CodeInput } from '@/components/code-input';
 import { isIosBrowserTab, prefersPlayingHere, rememberPlayingHere } from '@/util/app-hop';
+import { NearbyRooms } from '@/components/nearby-rooms';
 import './screen.css';
 import './join.css';
 
 export function JoinRoute() {
   const navigate = useNavigate();
   const params = useParams<{ code?: string }>();
+  // Set when a tap inside the game sent us here ("On your Wi-Fi"), as opposed
+  // to an invite link opened from a message: no app-hop question then.
+  const fromInside = (useLocation().state as { inside?: boolean } | null)?.inside === true;
 
   const playerName = useSettingsStore((s) => s.playerName);
   const setPlayerName = useSettingsStore((s) => s.setPlayerName);
@@ -56,7 +60,7 @@ export function JoinRoute() {
    * here, which would seat a Safari identity the app does not share, offer to
    * copy the invite for the app. Asked once: "Play here" is remembered.
    */
-  const [hop, setHop] = useState(() => isRoomCode(linkCode) && isIosBrowserTab() && !prefersPlayingHere());
+  const [hop, setHop] = useState(() => isRoomCode(linkCode) && !fromInside && isIosBrowserTab() && !prefersPlayingHere());
   const [hopCopy, setHopCopy] = useState<'copied' | 'failed' | null>(null);
 
   async function copyForApp(): Promise<void> {
@@ -158,6 +162,8 @@ export function JoinRoute() {
         <p className="screen__subtitle">
           Enter the {CODE_LENGTH}-character code from whoever set up the room.
         </p>
+
+        {!linkCode && <NearbyRooms enabled={ready && !joining} onJoin={(c) => void join(c)} />}
 
         <form
           className="join__form"
