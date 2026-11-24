@@ -47,8 +47,10 @@ www.mouro.ai {
 	# ── analytics (Umami, set up by infra/umami-setup.sh) ───────────────────
 	# Dashboard at /stats (login required); the tracker and its collect
 	# endpoint are /stats/script.js and /stats/api/send.
-	redir /stats /stats/ permanent
-	handle /stats/* {
+	# Umami (Next.js basePath) itself redirects /stats/ to /stats, so both go
+	# straight through; a Caddy redirect here would loop.
+	@stats path /stats /stats/*
+	handle @stats {
 		reverse_proxy 127.0.0.1:3100
 	}
 
