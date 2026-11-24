@@ -42,11 +42,11 @@
     <main class="page" id="main">
 
 <section class="hero">
-    <h1 class="name">Rami Mouro</h1>
     <figure class="frame">
         <img src="/static/img/Rami_Pic.jpg" alt="Rami Mouro" width="1024" height="1024">
     </figure>
     <div class="hero-copy">
+        <h1 class="name">Rami Mouro</h1>
         <p class="role">Lead Robotics / Physical AI Staff Software Engineer, Developer Relations, Qualcomm</p>
         <p class="lead" data-lens-sub="">
             I lead robotics and physical AI developer relations at Qualcomm. I get vision-language-action models
@@ -86,6 +86,8 @@
                 I live in Colorado. I studied Computer Science at the University of Colorado Boulder, with an embedded systems emphasis and a minor in Philosophy focused on
                 information ethics.
             </p>
+            <details class="more" open>
+            <summary>Army, Qualcomm and FIRST</summary>
             <p>
                 I served in the Colorado Army National Guard from 2017 to 2023. I started as a wheeled vehicle
                 mechanic (91B), then moved into logistics and interpreting. From 2021 to 2022 I deployed to the
@@ -109,6 +111,7 @@
                 <a href="https://podcasts.apple.com/us/podcast/rami-mouro/id1450870331?i=1000437179473" target="_blank" rel="noreferrer">Operation Code podcast</a>
                 <a href="https://cafirst.org/2024/10/30/qualcomm-career-chat-takeaways/" target="_blank" rel="noreferrer">California FIRST career chat</a>
             </p>
+            </details>
         </div>
         <div class="now">
             <h3>Current focus</h3>
@@ -303,6 +306,7 @@
             <span class="event-what">Guest</span>
         </li>
     </ol>
+    <button class="more-button" type="button" hidden>Show all talks and events</button>
 </section>
 </div>
 
@@ -355,6 +359,19 @@
 </footer>
 
     </main>
+    <script>
+        // On a phone, fold the longer lists until asked for.
+        if (matchMedia('(max-width: 720px)').matches) {
+            document.querySelectorAll('details.more').forEach((d) => { d.open = false; });
+            const events = document.querySelector('.events');
+            const more = document.querySelector('.more-button');
+            if (events.children.length > 6) {
+                events.classList.add('clipped');
+                more.hidden = false;
+                more.addEventListener('click', () => { events.classList.remove('clipped'); more.remove(); });
+            }
+        }
+    </script>
     <script src="/static/js/lens.js" onerror="document.documentElement.classList.remove('lens-pending')"></script>
 </body>
 </html>

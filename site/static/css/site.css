@@ -1744,3 +1744,505 @@ img {
         gap: 72px;
     }
 }
+
+/* ── Compact layout ─────────────────────────────────────────────────────── */
+/* Fit more on each screen: hero in one view, work as a card grid, talks in
+   two columns, and on /projects/ one write-up at a time (project-tabs.js).
+   Everything above stays the base; this block only tightens it. */
+
+.page {
+    gap: 56px;
+    padding-top: 28px;
+    padding-bottom: 48px;
+}
+
+.hero {
+    grid-template-columns: minmax(0, 260px) minmax(0, 1fr);
+    gap: 20px 40px;
+    align-items: center;
+}
+
+.hero .name {
+    font-size: min(calc((100vw - 2 * var(--gutter)) / 5.65), 5.25rem);
+}
+
+.hero-copy {
+    gap: 12px;
+}
+
+.hero-copy .button-row {
+    margin-top: 4px;
+}
+
+.lead {
+    font-size: 1.08rem;
+    max-width: 44em;
+}
+
+.section {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+    padding-top: 16px;
+}
+
+.section-head {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 6px 24px;
+}
+
+.section-head h2 {
+    font-size: clamp(1.4rem, 2.2vw, 1.75rem);
+}
+
+.section-body {
+    gap: 20px;
+}
+
+/* The about text reads in two columns on wide screens. */
+.section-body .prose {
+    display: block;
+    max-width: none;
+    columns: 2 22em;
+    column-gap: 40px;
+}
+
+.section-body .prose p {
+    margin-bottom: 14px;
+    break-inside: avoid;
+}
+
+.now {
+    gap: 10px;
+}
+
+.now-list {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 8px 28px;
+}
+
+/* Selected work: a grid of cards. */
+.work {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+}
+
+.work-item,
+.work-item:first-child,
+.work-item:last-child {
+    gap: 8px;
+    padding: 18px 20px 20px;
+    border-top: 3px solid var(--ink);
+    background: var(--plate);
+}
+
+.work-item.lens-off {
+    border-top-color: var(--line);
+}
+
+.work-item h3 {
+    font-size: 1.22rem;
+}
+
+.work-item p {
+    font-size: 0.97rem;
+    line-height: 1.5;
+}
+
+.work-item .kicker {
+    font-size: 0.94rem;
+}
+
+.work-item .stack {
+    margin-top: auto;
+    font-size: 0.88rem;
+}
+
+/* Talks: two columns of short rows. */
+.events {
+    columns: 2 26em;
+    column-gap: 40px;
+}
+
+.event,
+.event:first-child {
+    grid-template-columns: 6.5em minmax(0, 1fr);
+    gap: 2px 16px;
+    padding: 9px 0;
+    border-top: 1px solid var(--line);
+    break-inside: avoid;
+}
+
+.event:first-child {
+    border-top: 0;
+    padding-top: 0;
+}
+
+.event-what {
+    grid-column: 2;
+    color: var(--steel);
+    font-size: 0.94rem;
+}
+
+/* Awards: one wrapping row. */
+#awards .now-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 32px;
+}
+
+.band {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    gap: 20px 40px;
+    padding: 28px 32px;
+}
+
+.band-copy {
+    gap: 10px;
+}
+
+.band-copy h2 {
+    font-size: clamp(1.4rem, 2.4vw, 1.9rem);
+}
+
+.band-copy p {
+    font-size: 1rem;
+}
+
+.game-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 0 24px;
+}
+
+.game,
+.game-list li:first-child .game {
+    padding: 9px 0;
+    font-size: 1.02rem;
+    border-top: 1px solid var(--band-line);
+}
+
+.game svg {
+    width: 22px;
+    height: 22px;
+}
+
+.footer {
+    padding-top: 16px;
+    gap: 20px;
+}
+
+.footer-cta {
+    gap: 10px;
+}
+
+.footer-cta h2 {
+    font-size: clamp(1.3rem, 2vw, 1.6rem);
+}
+
+/* Projects page */
+
+.page-title {
+    gap: 12px;
+}
+
+.page-title h1 {
+    font-size: clamp(2.6rem, 6vw, 4.5rem);
+}
+
+.projects {
+    grid-template-columns: minmax(0, 260px) minmax(0, 1fr);
+    gap: 40px;
+}
+
+.index {
+    padding-top: 16px;
+}
+
+.index ul {
+    gap: 4px;
+}
+
+.index a {
+    padding: 6px 10px;
+    margin-left: -10px;
+    border-radius: 3px;
+}
+
+.index a[aria-current="true"] {
+    background: var(--ink);
+    color: var(--ground);
+}
+
+.index a[aria-current="true"] small {
+    color: inherit;
+    opacity: 0.8;
+}
+
+.index a[aria-current="true"]:hover strong {
+    background: none;
+    color: inherit;
+}
+
+.index .lens-off strong {
+    font-weight: 500;
+    color: var(--steel);
+}
+
+.index .index-sub a {
+    margin-left: 0;
+}
+
+.writeups {
+    gap: 56px;
+}
+
+.writeup {
+    gap: 14px;
+    padding-top: 16px;
+}
+
+.writeup h2 {
+    font-size: clamp(1.6rem, 3vw, 2.2rem);
+}
+
+.facts {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 0 24px;
+    margin: 4px 0;
+}
+
+.facts div {
+    padding: 6px 0 8px;
+}
+
+.sub {
+    gap: 14px;
+    margin-top: 14px;
+}
+
+/* One write-up at a time once project-tabs.js is running. */
+.tabbed .writeup:not(.is-current) {
+    display: none;
+}
+
+.pager {
+    align-self: stretch;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 8px 24px;
+    margin-top: 10px;
+    padding-top: 14px;
+    border-top: 1px solid var(--line);
+}
+
+.pager a {
+    text-decoration: none;
+    font-weight: 650;
+}
+
+.pager a:hover {
+    background: var(--yellow);
+    color: var(--on-yellow);
+}
+
+.pager small {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 400;
+    color: var(--steel);
+}
+
+.pager .pager-next {
+    margin-left: auto;
+    text-align: right;
+}
+
+@media (max-width: 900px) {
+    .page {
+        gap: 44px;
+    }
+
+    /* The index becomes a row of tabs that scrolls sideways. */
+    .index {
+        padding-top: 12px;
+        margin: 0 calc(-1 * var(--gutter));
+        padding-left: var(--gutter);
+        padding-right: var(--gutter);
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+
+    .index ul {
+        flex-direction: row;
+        gap: 6px;
+        width: max-content;
+    }
+
+    .index a,
+    .index .index-sub a {
+        margin: 0;
+        padding: 7px 12px;
+        box-shadow: inset 0 0 0 2px var(--ink);
+        white-space: nowrap;
+    }
+
+    .index small {
+        display: none;
+    }
+
+    .index .index-sub {
+        padding-left: 0;
+        border-left: 0;
+    }
+
+    .projects {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 20px;
+    }
+}
+
+@media (max-width: 720px) {
+    .hero {
+        grid-template-columns: 112px minmax(0, 1fr);
+        gap: 16px 18px;
+        align-items: start;
+    }
+
+    .frame {
+        max-width: none;
+    }
+
+    .hero-copy {
+        display: contents;
+    }
+
+    .hero .name {
+        grid-column: 1 / -1;
+        order: -1;
+    }
+
+    .role {
+        align-self: center;
+    }
+
+    .hero .lead,
+    .hero .button-row {
+        grid-column: 1 / -1;
+    }
+
+    .lens-label {
+        display: none;
+    }
+
+    .chip {
+        padding: 6px 10px;
+        font-size: 0.88rem;
+    }
+
+    /* Work cards scroll sideways on a phone. */
+    .work {
+        display: flex;
+        gap: 12px;
+        margin: 0 calc(-1 * var(--gutter));
+        padding: 0 var(--gutter) 6px;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        scroll-padding: 0 var(--gutter);
+    }
+
+    .work-item,
+    .work-item:first-child,
+    .work-item:last-child {
+        flex: 0 0 86%;
+        scroll-snap-align: start;
+    }
+
+    .event-when {
+        font-size: 0.9rem;
+    }
+
+    .event,
+    .event:first-child {
+        grid-template-columns: 5.2em minmax(0, 1fr);
+    }
+
+    .band {
+        grid-template-columns: 1fr;
+    }
+
+    .game-list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 600px) {
+    .page {
+        gap: 40px;
+        padding-top: 20px;
+    }
+
+    .band {
+        padding: 24px var(--gutter);
+    }
+
+    .writeups {
+        gap: 48px;
+    }
+}
+
+/* A card left alone on the last row of three takes the whole row. */
+.work-item:nth-child(3n + 1):last-child {
+    grid-column: 1 / -1;
+}
+
+/* Folded on a phone (inline script on /), open and unmarked elsewhere. */
+details.more > summary {
+    display: none;
+}
+
+.more-button {
+    justify-self: start;
+    padding: 8px 14px;
+    border: 0;
+    border-radius: 3px;
+    background: transparent;
+    color: var(--ink);
+    box-shadow: inset 0 0 0 2px var(--ink);
+    font: inherit;
+    font-weight: 650;
+    cursor: pointer;
+}
+
+.more-button:hover {
+    background: var(--yellow);
+    color: var(--on-yellow);
+}
+
+@media (max-width: 720px) {
+    details.more > summary {
+        display: list-item;
+        margin-bottom: 12px;
+        font-weight: 650;
+        cursor: pointer;
+    }
+
+    details.more[open] > summary {
+        display: none;
+    }
+
+    .events.clipped .event:nth-child(n + 7) {
+        display: none;
+    }
+}
+
+@media (max-width: 600px) {
+    /* LinkedIn and GitHub are in the bar above. */
+    .hero .button-quiet {
+        display: none;
+    }
+}
