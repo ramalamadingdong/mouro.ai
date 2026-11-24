@@ -42,11 +42,14 @@
     <main class="page" id="main">
 
 <section class="hero">
+    <canvas class="hero-net" aria-hidden="true"></canvas>
     <figure class="frame">
         <img src="/static/img/Rami_Pic.jpg" alt="Rami Mouro" width="1024" height="1024">
+        <span class="detect" aria-hidden="true"><span class="detect-label">person <b>0.98</b></span></span>
+        <span class="scan" aria-hidden="true"></span>
     </figure>
     <div class="hero-copy">
-        <h1 class="name">Rami Mouro</h1>
+        <h1 class="name" aria-label="Rami Mouro">Rami Mouro</h1>
         <p class="role">Lead Robotics / Physical AI Staff Software Engineer, Developer Relations, Qualcomm</p>
         <p class="lead" data-lens-sub="">
             I lead robotics and physical AI developer relations at Qualcomm. I get vision-language-action models
@@ -237,7 +240,7 @@
 <section class="section" id="talks" data-lens="robotics devrel product agents embedded" data-lens-order-devrel="1">
     <div class="section-head">
         <h2>Talks and events</h2>
-        <p class="kicker">10+ workshops and talks, 500+ participants.</p>
+        <p class="kicker"><span data-count="10">10</span>+ workshops and talks, <span data-count="500">500</span>+ participants.</p>
     </div>
     <ol class="events">
         <li class="event" data-lens="robotics devrel" data-lens-order-robotics="1">
@@ -373,5 +376,6 @@
         }
     </script>
     <script src="/static/js/lens.js" onerror="document.documentElement.classList.remove('lens-pending')"></script>
+    <script src="/static/js/home-motion.js"></script>
 </body>
 </html>
