@@ -269,6 +269,29 @@ const SOME_WIN = [
   'A few of you beat me. Write it down, it won\'t happen again.',
 ];
 
+const TIP_SMALL = [
+  'A {n}-chip tip? Wow. Don\'t strain yourself, {who}.',
+  '{n} chips. How… thoughtful. I\'ll buy myself a sardine.',
+  'Thank you, {who}. I\'ll frame it. It\'ll look lonely.',
+  'Oh, {who} tipped {n}. Somebody call the newspapers.',
+  "{n}? Cute. I'll take it. I always take it.",
+];
+
+const TIP_NICE = [
+  'Ooh, {who}! {n} chips. Now THAT is how you treat a lady.',
+  "{who} tips {n}. See? Some of you were raised right.",
+  'Well, well. {n} for Duchess. {who}, you just became my favorite.',
+  "{n} chips, {who}? Mm. I might even let you win one.",
+  'Thank you, sugar. The house remembers its friends.',
+];
+
+const TIP_BIG = [
+  '{n}?! {who}, darling, sit closer. You are my favorite and everyone else can leave.',
+  "{who} tips {n}! Somebody get this kitten a cushion. A velvet one.",
+  '{n} chips. {who}, I would take a bullet for you. A small one. A Nerf one.',
+  "Oh my. {n}! {who}, if I could deal you a blackjack right now, I would. I can't. But I'd want to.",
+];
+
 const PUSHES_ONLY = ['Push. Nobody wins, nobody loses. How boring.', "Tie. Your chips stay. I'm unimpressed."];
 
 // ── What she says ──────────────────────────────────────────────────────────
@@ -310,7 +333,9 @@ export function dealerLine(prev: GameState, s: GameState, nameOf: (seat: number)
   if (s.phase === 'gameover' && prev.phase !== 'gameover') {
     const winner = s.winner === null ? '' : ` ${nameOf(s.winner)} leaves with the most chips — don't let it go to your head.`;
     const house = s.house > 0 ? ' The house is up, as God intended.' : ' The house is down. This never happened. Tell no one.';
-    return `Last hand. Table's closed.${winner}${house}`;
+    const tips = s.players.reduce((a, p) => a + p.tipped, 0);
+    const tipNote = tips === 0 ? ' And not one tip all night. Wow. Noted.' : ` Thanks for the ${tips} in tips, darlings.`;
+    return `Last hand. Table's closed.${winner}${house}${tipNote}`;
   }
 
   // A new round.
@@ -318,6 +343,11 @@ export function dealerLine(prev: GameState, s: GameState, nameOf: (seat: number)
     if (s.handNo === 1) return openingLine(v);
     if (s.shoe.length === SHOE_SIZE) return say(SHUFFLE, 'shuffle');
     return say(NEW_ROUND, 'round', { n: s.handNo });
+  }
+
+  if (s.lastMove?.kind === 'tip' && s.version !== prev.version) {
+    const n = s.players[by].tipped - prev.players[by].tipped;
+    return say(n >= 100 ? TIP_BIG : n >= 25 ? TIP_NICE : TIP_SMALL, 'tip', { n });
   }
 
   if (s.phase === 'betting' && prev.phase === 'betting' && s.toAct === null && prev.toAct !== null) {

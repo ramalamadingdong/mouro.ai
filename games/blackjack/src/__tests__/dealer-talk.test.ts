@@ -54,6 +54,12 @@ describe('Duchess', () => {
     expect(say(s, act(s, { kind: 'stand' }))).toMatch(/9/);
   });
 
+  it('reacts to tips by size', () => {
+    const s = deal(newGame(1));
+    expect(say(s, act(s, { kind: 'tip', amount: 5 }))).toMatch(/5/);
+    expect(say(s, act(s, { kind: 'tip', amount: 100 }))).toMatch(/100/);
+  });
+
   it('names a bust', () => {
     let s = next(stack(betAll(deal(newGame(1)), 10), 'Tc 6c 6d 9d Kh'));
     const busted = act(s, { kind: 'hit' });

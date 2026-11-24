@@ -84,6 +84,10 @@ checks every invariant and the wire round-trip after every move).
   rules"). **Dealer hits soft 17** (`RULES.DEALER_HITS_SOFT_17`), and
   **peeks** for blackjack under an Ace or a ten: a dealer blackjack settles at
   once, before anyone can double or split.
+- **Tipping the dealer**: a `tip` move, only on your own betting turn, any
+  number of times, never leaving less than the minimum bet (`maxTip`). Tips
+  go to `house` (so chips still add up) and to `player.tipped`, shown on
+  the final standings; Duchess reacts by size.
 - **No insurance** (and so no even money): the owner tried it and took it
   out. The dealer peeks under an Ace or a ten straight after the deal.
 - **Late surrender** on the first two cards of an unsplit hand, after the

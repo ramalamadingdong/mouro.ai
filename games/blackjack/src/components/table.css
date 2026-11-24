@@ -884,3 +884,22 @@
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
+
+/* ── Tipping ─────────────────────────────────────────────────────────────── */
+
+.tip__note {
+  color: var(--text-muted);
+  font-size: var(--size-sm);
+  text-align: center;
+}
+.tip__options {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+.standings__tips {
+  color: var(--text-hint);
+  font-size: var(--size-sm);
+  font-weight: 400;
+}

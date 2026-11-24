@@ -174,6 +174,7 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-md);
+  flex-wrap: nowrap;
 }
 
 /* A casino chip: a coloured disc with a dashed white inlay. */
@@ -257,6 +258,20 @@
   opacity: 0.35;
 }
 
+/* Tip the dealer: a small brass pill at the end of the chips. */
+.bet-chips__tip {
+  min-height: 2.75rem;
+  padding: 0 var(--space-md);
+  border-radius: var(--radius-pill);
+  border: 1px dashed var(--accent);
+  color: var(--accent-bright);
+  font-size: var(--size-body);
+  font-weight: var(--weight-bold);
+}
+.bet-chips__tip:disabled {
+  opacity: 0.4;
+}
+
 /* A chip drawn in the betting spot: same look, much smaller, not a button. */
 .bet-chip--mini {
   --chip-size: 1.6rem;
@@ -285,5 +300,11 @@
   }
   .bet-chips__edit {
     min-height: 2.2rem;
+  }
+  .bet-chips {
+    gap: var(--space-sm);
+  }
+  .bet-chips__tip {
+    padding: 0 var(--space-sm);
   }
 }

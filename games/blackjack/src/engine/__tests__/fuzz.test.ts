@@ -16,6 +16,7 @@ describe('fuzz', () => {
     let dealerBusts = 0;
     let reshuffles = 0;
     let surrenders = 0;
+    let tips = 0;
     for (let game = 0; rounds < 3000; game++) {
       const rng = makeRng([game, 0xb1a]);
       const seats = 1 + (game % 8);
@@ -47,6 +48,7 @@ describe('fuzz', () => {
         if (move.kind === 'split') splits++;
         if (move.kind === 'double') doubles++;
         if (move.kind === 'surrender') surrenders++;
+        if (move.kind === 'tip') tips++;
         if (s.phase === 'settled' && prev.phase !== 'settled' && s.result) {
           if (s.result.dealerTotal > 21) dealerBusts++;
           blackjacks += s.players.flatMap((p) => p.hands).filter((h) => h.outcome === 'blackjack').length;
@@ -62,5 +64,6 @@ describe('fuzz', () => {
     expect(dealerBusts).toBeGreaterThan(100);
     expect(reshuffles).toBeGreaterThan(5);
     expect(surrenders).toBeGreaterThan(30);
+    expect(tips).toBeGreaterThan(30);
   });
 });

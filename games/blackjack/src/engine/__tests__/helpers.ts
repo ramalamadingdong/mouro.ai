@@ -120,6 +120,7 @@ export function randomLegalMove(s: GameState, rng: () => number): { move: Move; 
   if (roll < 0.03 && s.players.length > 1) return { move: { kind: 'away' }, uid: uidOf((legal.seat + 1) % s.players.length) };
   if (legal.kind === 'bet') {
     if (roll < 0.08) return { move: { kind: 'bet', amount: 0 }, uid: actor };
+    if (roll < 0.1 && s.players[legal.seat].stack - s.config.minBet >= 5) return { move: { kind: 'tip', amount: 5 }, uid: actor };
     const steps = (legal.maxBet - legal.minBet) / legal.step;
     const pick = rng();
     const amount = pick < 0.15 ? legal.maxBet : legal.minBet + legal.step * Math.floor(rng() * (steps + 1));

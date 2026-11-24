@@ -16,6 +16,8 @@ export interface ActionBarProps {
   onPush: (value: number) => void;
   onUndo: () => void;
   onClear: () => void;
+  /** Open the tip picker (betting only). */
+  onTip: () => void;
   /** Shown in place of the controls when it is not this player's turn. */
   status: string;
   /** A move is in flight (online): keep the buttons from being pressed twice. */
@@ -35,6 +37,7 @@ function BetControls({
   onPush,
   onUndo,
   onClear,
+  onTip,
   onMove,
 }: {
   legal: Extract<LegalActions, { kind: 'bet' }>;
@@ -43,6 +46,7 @@ function BetControls({
   onPush: (value: number) => void;
   onUndo: () => void;
   onClear: () => void;
+  onTip: () => void;
   onMove: (move: PlayerMove) => void;
 }) {
   const { minBet: min, maxBet: max } = legal;
@@ -66,6 +70,9 @@ function BetControls({
               {value}
             </button>
           ))}
+          <button type="button" className="bet-chips__tip" disabled={busy} onClick={onTip}>
+            Tip
+          </button>
         </div>
         <div className="bet-chips__row">
           <button type="button" className="bet-chips__edit" disabled={busy || pushed.length === 0} onClick={onUndo}>
@@ -108,7 +115,7 @@ function BetControls({
   );
 }
 
-export function ActionBar({ legal, pushed, onPush, onUndo, onClear, status, busy = false, extra, onMove }: ActionBarProps) {
+export function ActionBar({ legal, pushed, onPush, onUndo, onClear, onTip, status, busy = false, extra, onMove }: ActionBarProps) {
   if (legal?.kind === 'bet') {
     return (
       <BetControls
@@ -118,6 +125,7 @@ export function ActionBar({ legal, pushed, onPush, onUndo, onClear, status, busy
         onPush={onPush}
         onUndo={onUndo}
         onClear={onClear}
+        onTip={onTip}
         onMove={onMove}
       />
     );

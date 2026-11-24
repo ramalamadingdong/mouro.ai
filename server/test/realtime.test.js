@@ -404,6 +404,15 @@ describe('blackjack rules', () => {
     await denied(set(state(a), { ...bjState(uids, { version: 3, by: a.uid, kind: 'stand' }), players: surrendered.players.map((p) => ({ ...p, insurance: 25 })) }));
   });
 
+  test('tipping: the player on turn may tip (tipped total, tip action); others may not', async () => {
+    const { players: [host, a], uids, state } = await table('BJF77', 2);
+    await set(state(host), { ...bjState(uids, { version: 1, toAct: 0, by: host.uid, kind: 'deal' }), phase: 'betting' });
+    const tipped = { ...bjState(uids, { version: 2, toAct: 0, by: host.uid, kind: 'tip' }), phase: 'betting' };
+    tipped.players[0] = { ...tipped.players[0], tipped: 25, lastAction: { kind: 'tip', amount: 25 } };
+    await denied(set(state(a), { ...tipped, lastMove: { by: a.uid, kind: 'tip', seat: 0 } }));
+    await set(state(host), tipped);
+  });
+
   test('away: another player may act for the one on turn only while their presence is gone', async () => {
     const { players: [host, a, b], uids, state } = await table('BJD55');
     await set(state(host), bjState(uids, { version: 1, toAct: 1, by: host.uid, kind: 'deal' }));
