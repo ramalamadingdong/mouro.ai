@@ -21,6 +21,8 @@ export {
   chipsInPlay,
   createGame,
   dealerMustDraw,
+  dealerSoft17,
+  insuranceCost,
   holeCardShown,
   isBlackjack,
   isGameOver,

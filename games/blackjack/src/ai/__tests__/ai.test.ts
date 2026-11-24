@@ -16,8 +16,10 @@ describe('basicStrategy', () => {
     ['Tc 2d', '3h', 'H'],
     ['Tc 2d', '4h', 'S'],
     ['6c 5d', 'Th', 'D'],
-    ['6c 5d', 'Ah', 'H'],
-    ['As 7d', '2h', 'S'],
+    ['6c 5d', 'Ah', 'D'], // H17: double 11 against an Ace
+    ['As 7d', '2h', 'Ds'], // H17: double soft 18 against a 2
+    ['As 8d', '6h', 'Ds'],
+    ['As 7d', '7h', 'S'],
     ['As 7d', '5h', 'Ds'],
     ['As 7d', '9h', 'H'],
     ['As 6d', '4h', 'D'],
@@ -29,6 +31,17 @@ describe('basicStrategy', () => {
     ['Tc 7d', 'Ah', 'S'],
   ])('%s against %s → %s', (hand, dealer, play) => {
     expect(basicStrategy(parseCards(hand), up(dealer), true)).toBe(play);
+  });
+
+  it.each([
+    ['Tc 6d', 'Th', 'R'],
+    ['Tc 6d', '9h', 'R'],
+    ['Tc 5d', 'Ah', 'R'],
+    ['Tc 7d', 'Ah', 'Rs'],
+    ['Tc 6d', '8h', 'H'],
+    ['8c 8d', 'Th', 'P'], // split 8s, never surrender them
+  ])('with late surrender: %s against %s → %s', (hand, dealer, play) => {
+    expect(basicStrategy(parseCards(hand), up(dealer), true, true)).toBe(play);
   });
 });
 

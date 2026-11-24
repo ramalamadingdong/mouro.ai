@@ -393,6 +393,24 @@ describe('blackjack rules', () => {
     await set(state(players[5]), bjState(uids, { version: 3, by: players[5].uid, kind: 'next' }));
   });
 
+  test('Vegas rules: the insurance phase, insurance stakes and surrender are accepted', async () => {
+    const { players: [host, a], uids, state } = await table('BJE66', 2);
+    const insured = (s) => ({
+      ...s,
+      phase: 'insurance',
+      players: s.players.map((p, i) => ({ ...p, insurance: i === 0 ? 25 : 0, lastAction: { kind: i === 0 ? 'insure' : 'noinsure', amount: i === 0 ? 25 : 0 } })),
+    });
+    await set(state(host), insured(bjState(uids, { version: 1, toAct: 1, by: host.uid, kind: 'deal' })));
+    await set(state(a), insured(bjState(uids, { version: 2, by: a.uid, kind: 'insure' })));
+    const s = bjState(uids, { version: 3, toAct: 0, by: a.uid, kind: 'next' });
+    await denied(set(state(a), { ...s, phase: 'insured' }));
+    await set(state(a), s);
+    const surrendered = bjState(uids, { version: 4, toAct: 1, by: host.uid, kind: 'surrender' });
+    surrendered.players[0].hands[0] = { ...surrendered.players[0].hands[0], done: true, outcome: 'surrender' };
+    surrendered.players[0].lastAction = { kind: 'surrender', amount: 25 };
+    await set(state(host), surrendered);
+  });
+
   test('away: another player may act for the one on turn only while their presence is gone', async () => {
     const { players: [host, a, b], uids, state } = await table('BJD55');
     await set(state(host), bjState(uids, { version: 1, toAct: 1, by: host.uid, kind: 'deal' }));

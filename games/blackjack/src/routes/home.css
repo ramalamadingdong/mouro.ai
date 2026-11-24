@@ -61,20 +61,62 @@
   gap: var(--space-sm);
 }
 
+.setup__cats-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.setup__count {
+  margin-left: var(--space-xs);
+  color: var(--accent);
+  font-weight: var(--weight-bold);
+}
+
+.setup__cats-all {
+  display: flex;
+  gap: var(--space-xs);
+}
+
+/* Each cat is a toggle: seated cats are lit with a brass ring and a tick;
+   the rest stay listed, dimmed, so you can see who you sent home. */
 .setup__cat {
   display: flex;
   align-items: center;
   gap: var(--space-md);
+  width: 100%;
   padding: var(--space-sm) var(--space-md);
   border-radius: var(--radius-md);
+  border: 2px solid transparent;
   background: var(--wood-raised);
-  transition: opacity var(--dur-base) var(--ease);
+  color: var(--text);
+  text-align: left;
+  transition:
+    opacity var(--dur-base) var(--ease),
+    border-color var(--dur-base) var(--ease);
 }
-
-/* Cats beyond the chosen number of opponents stay listed, greyed, so the
-   choice shows who you are leaving out. */
+.setup__cat[data-in='true'] {
+  border-color: var(--accent);
+}
 .setup__cat[data-in='false'] {
-  opacity: 0.35;
+  opacity: 0.45;
+}
+.setup__cat-check {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  margin-left: auto;
+  border-radius: 50%;
+  border: 2px solid var(--accent-dim);
+  color: var(--text-on-accent);
+  font-weight: var(--weight-heavy);
+}
+.setup__cat[data-in='true'] .setup__cat-check {
+  border-color: var(--accent);
+  background: var(--accent);
 }
 
 .setup__cat .avatar {

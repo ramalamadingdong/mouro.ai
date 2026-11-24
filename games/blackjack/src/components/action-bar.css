@@ -266,3 +266,11 @@
     inset 0 0 0 0.24rem rgb(255 255 255 / 0.85),
     0 1px 2px rgb(0 0 0 / 0.6);
 }
+
+.actions__status--offer {
+  padding: 0 var(--space-sm);
+  line-height: 1.35;
+}
+.actions__status--offer strong {
+  color: var(--accent-bright);
+}

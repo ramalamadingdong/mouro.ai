@@ -15,14 +15,18 @@ import {
 } from '@/engine';
 import type { Personality, Skill } from './cats';
 
-/** H hit, S stand, D double (else hit), Ds double (else stand), P split. */
-export type Play = 'H' | 'S' | 'D' | 'Ds' | 'P';
+/**
+ * H hit, S stand, D double (else hit), Ds double (else stand), P split,
+ * R surrender (else hit), Rs surrender (else stand).
+ */
+export type Play = 'H' | 'S' | 'D' | 'Ds' | 'P' | 'R' | 'Rs';
 
 /**
- * Basic strategy for six decks, dealer stands on soft 17, double after split
- * allowed, no surrender. `up` is the dealer's upcard value (2..11).
+ * Basic strategy for this table's Vegas rules: six decks, dealer HITS soft
+ * 17, double after split, late surrender. `up` is the dealer's upcard value
+ * (2..11). `canSurrender` false gives the no-surrender chart.
  */
-export function basicStrategy(cards: readonly Card[], up: number, canSplit: boolean): Play {
+export function basicStrategy(cards: readonly Card[], up: number, canSplit: boolean, canSurrender = false): Play {
   const { total, soft } = handValue(cards);
   const between = (lo: number, hi: number): boolean => up >= lo && up <= hi;
 
@@ -37,9 +41,16 @@ export function basicStrategy(cards: readonly Card[], up: number, canSplit: bool
     // 5s and tens fall through to their totals.
   }
 
+  if (canSurrender && cards.length === 2 && !soft) {
+    if (total === 16 && up >= 9) return 'R';
+    if (total === 15 && up >= 10) return 'R';
+    if (total === 17 && up === 11) return 'Rs';
+  }
+
   if (soft) {
-    if (total >= 19) return 'S';
-    if (total === 18) return between(3, 6) ? 'Ds' : between(2, 8) ? 'S' : 'H';
+    if (total >= 20) return 'S';
+    if (total === 19) return up === 6 ? 'Ds' : 'S';
+    if (total === 18) return between(2, 6) ? 'Ds' : between(7, 8) ? 'S' : 'H';
     if (total === 17) return between(3, 6) ? 'D' : 'H';
     if (total >= 15) return between(4, 6) ? 'D' : 'H';
     if (total >= 13) return between(5, 6) ? 'D' : 'H';
@@ -49,7 +60,7 @@ export function basicStrategy(cards: readonly Card[], up: number, canSplit: bool
   if (total >= 17) return 'S';
   if (total >= 13) return between(2, 6) ? 'S' : 'H';
   if (total === 12) return between(4, 6) ? 'S' : 'H';
-  if (total === 11) return up <= 10 ? 'D' : 'H';
+  if (total === 11) return 'D';
   if (total === 10) return up <= 9 ? 'D' : 'H';
   if (total === 9) return between(3, 6) ? 'D' : 'H';
   return 'H';
@@ -85,6 +96,15 @@ export function decide(
   if (!legal || legal.seat !== seat) throw new Error('decide() called when this cat is not on turn');
   const p = state.players[seat];
 
+  if (legal.kind === 'insurance') {
+    // "Insurance is a sucker bet" — unless you are counting and the shoe is
+    // full of tens, or you are superstitious.
+    const take =
+      legal.cost > 0 &&
+      (personality.insurance === 'always' || (personality.insurance === 'count' && trueCount(state) >= 3));
+    return { kind: 'insure', take };
+  }
+
   if (legal.kind === 'bet') {
     let amount = Math.max(legal.minBet, p.stack * personality.betFraction);
     if (personality.counts) {
@@ -117,12 +137,14 @@ export function decide(
       else if (!soft && total >= 9 && total <= 11) play = 'D';
       break;
     default:
-      play = basicStrategy(hand.cards, up, legal.canSplit);
+      play = basicStrategy(hand.cards, up, legal.canSplit, legal.canSurrender);
   }
 
   // A fumble: the plain hit/stand choice goes the other way.
   if ((play === 'H' || play === 'S') && rng() < skill.mistake && total < 21) play = play === 'H' ? 'S' : 'H';
 
+  if ((play === 'R' || play === 'Rs') && legal.canSurrender) return { kind: 'surrender' };
+  if (play === 'Rs') return { kind: 'stand' };
   if (play === 'P' && legal.canSplit) return { kind: 'split' };
   if ((play === 'D' || play === 'Ds') && legal.canDouble) return { kind: 'double' };
   if (play === 'Ds' || play === 'S') return { kind: 'stand' };

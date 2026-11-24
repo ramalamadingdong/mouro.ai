@@ -9,7 +9,7 @@ import { Avatar } from '@/components/avatar';
 import { Segmented } from '@/components/segmented';
 import { Table } from '@/components/table';
 import { useSoloDriver } from '@/hooks/use-solo-driver';
-import { OPPONENT_CHOICES, ROUND_CHOICES, STACK_CHOICES, useSettingsStore } from '@/store/settingsStore';
+import { ROUND_CHOICES, STACK_CHOICES, useSettingsStore } from '@/store/settingsStore';
 import { SOLO_UID, useSoloStore } from '@/store/soloStore';
 import { MAX_NAME_LENGTH } from '@/util/seat';
 import { randomSeed } from '@/util/seed';
@@ -51,27 +51,52 @@ function Setup() {
           />
         </div>
 
-        <Segmented
-          label="Cats at the table"
-          value={table.opponents}
-          options={OPPONENT_CHOICES.map((n) => ({ value: n, label: String(n) }))}
-          onChange={(opponents) => setTable({ opponents })}
-        />
-
-        <ul className="setup__cats" aria-label="Who is at the table">
-          {CATS.map((cat, i) => (
-            <li key={cat.id} className="setup__cat" data-in={i < table.opponents ? 'true' : 'false'}>
-              <Avatar uid={`cat-${cat.id}`} name={cat.name} />
-              <span className="setup__cat-text">
-                <span>
-                  <span className="setup__cat-name">{cat.name}</span>{' '}
-                  <span className="setup__cat-style">· {cat.style}</span>
-                </span>
-                <span className="setup__cat-blurb">{cat.blurb}</span>
-              </span>
-            </li>
-          ))}
-        </ul>
+        <div className="field">
+          <div className="setup__cats-head">
+            <span className="field__label">
+              Cats at the table <span className="setup__count">{table.cats.length} of {CATS.length}</span>
+            </span>
+            <span className="setup__cats-all">
+              <button type="button" className="btn btn--ghost btn--small" onClick={() => setTable({ cats: CATS.map((c) => c.id) })}>
+                All
+              </button>
+              <button type="button" className="btn btn--ghost btn--small" onClick={() => setTable({ cats: [] })}>
+                None
+              </button>
+            </span>
+          </div>
+          <p className="field__hint">Tap a cat to seat it or send it home. None at all is fine — just you and Duchess.</p>
+          <ul className="setup__cats" aria-label="Who is at the table">
+            {CATS.map((cat) => {
+              const seated = table.cats.includes(cat.id);
+              return (
+                <li key={cat.id}>
+                  <button
+                    type="button"
+                    className="setup__cat"
+                    aria-pressed={seated}
+                    data-in={seated ? 'true' : 'false'}
+                    onClick={() =>
+                      setTable({ cats: seated ? table.cats.filter((id) => id !== cat.id) : [...table.cats, cat.id] })
+                    }
+                  >
+                    <Avatar uid={`cat-${cat.id}`} name={cat.name} />
+                    <span className="setup__cat-text">
+                      <span>
+                        <span className="setup__cat-name">{cat.name}</span>{' '}
+                        <span className="setup__cat-style">· {cat.style}</span>
+                      </span>
+                      <span className="setup__cat-blurb">{cat.blurb}</span>
+                    </span>
+                    <span className="setup__cat-check" aria-hidden="true">
+                      {seated ? '✓' : ''}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
 
         <Segmented
           label="Starting chips"

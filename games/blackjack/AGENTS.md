@@ -80,8 +80,18 @@ checks every invariant and the wire round-trip after every move).
 - **Six decks**, reshuffled between rounds when fewer than 78 cards (the cut
   card) remain. Each physical card is its own number 0..311, so "every card
   once" stays checkable.
-- **Dealer stands on all 17s**, and **peeks** for blackjack under an Ace or a
-  ten: a dealer blackjack settles at once, before anyone can double or split.
+- **Las Vegas Strip rules** (the owner asked for "real casino rules, Vegas
+  rules"). **Dealer hits soft 17** (`RULES.DEALER_HITS_SOFT_17`), and
+  **peeks** for blackjack under an Ace or a ten: a dealer blackjack settles at
+  once, before anyone can double or split.
+- **Insurance** (and **even money** for a blackjack, which is the same bet)
+  when the dealer shows an Ace: an `'insurance'` phase between the deal and
+  the peek, asked in seat order; half the bet rounded down, paid 2:1. At the
+  peek it is lost to the house (no blackjack) or paid with the round.
+  `player.insurance` keeps the stake for the round so the result can show it;
+  it only counts as chips in play during the `'insurance'` phase.
+- **Late surrender** on the first two cards of an unsplit hand, after the
+  peek: half the bet back (rounded down).
 - **Blackjack pays 3:2, rounded down to a whole chip.** Bets move in steps of
   5 (`RULES.BET_STEP`) so the 10/25/50/100 betting chips all work, which
   means a 25 bet's blackjack pays 37 (not 37½). Table limits 10–500, capped
@@ -90,8 +100,6 @@ checks every invariant and the wire round-trip after every move).
   two cards of the same value (K-Q splits), up to four hands; split Aces get
   one card each; a two-card 21 after a split is a plain 21, paid 1:1. A hand
   that reaches 21 stands by itself.
-- **No insurance, no even money, no surrender** — fewer buttons for a family
-  table. Adding insurance means a new phase between the deal and the peek.
 - **Betting goes round in seat order**, one seat at a time (the rules need a
   single `turnUid`). A bet of 0 sits the round out.
 - **The house has a bottomless bank**, tracked as `house` (net chips it has
@@ -144,14 +152,24 @@ finished.
 Online there are no cats: only the dealer pause before each `next` and the
 held result.
 
+## Duchess calls the game
+
+`src/dealer-talk.ts` is Duchess's patter: a Vegas lounge-act cat ("Place your
+bets, kittens!", "Winner winner, tuna dinner!"). `dealerLine(prev, next)` is
+pure and picks its variation from `version`, so every client shows the same
+line. She announces every rule moment — bets closed, insurance open, the peek,
+the hole card, hitting soft 17, the reshuffle — in the line under the header.
+The shoe gauge beside her shows the cards left and the cut card.
+
 ## Your-turn buzz
 
-`src/hooks/use-turn-buzz.ts` vibrates once (`navigator.vibrate`) on the edge
-into "my turn" (betting or playing), not again while it stays mine, and not
-when my own deal/rematch tap put me on turn. On by default; a switch in the
-table Menu (`settingsStore.vibrate`) turns it off, shown only where the
-browser has the API. Android only in practice: iPhone Safari has no
-Vibration API, so it silently does nothing there.
+`src/hooks/use-turn-buzz.ts` plays a two-note chime (Web Audio) and vibrates
+(`navigator.vibrate`) on the edge into "my turn", not again while it stays
+mine, and not when my own deal/rematch tap put me on turn. Both on by
+default, each with a switch in the table Menu (`settingsStore.chime` /
+`.vibrate`; the vibrate switch only where the API exists). iPhone Safari has
+no Vibration API at all — the chime is the iPhone's alert. The AudioContext
+is unlocked by the first tap on the page (iOS only allows sound after one).
 
 ## Disconnects (online)
 
