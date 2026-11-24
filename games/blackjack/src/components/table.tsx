@@ -157,11 +157,25 @@ export function Table(props: TableProps) {
   const nameOf = (seat: number): string => (isMe(seat) ? 'You' : state.players[seat].name);
 
   // Chips pushed into the betting spot this round, in the order they went in.
-  // Every round starts from nothing; keyed by the round so a new one clears it.
+  // The first round starts empty; every later one starts with the chips of
+  // the last bet placed (so repeating it is one tap), minus chips off the top
+  // if the stack can no longer cover it. Keyed by the round, so a new round
+  // starts afresh and a Clear within a round sticks.
   const roundKey = `${state.handNo}:${state.phase}`;
-  const [pushedFor, setPushedFor] = useState<{ key: string; chips: number[] }>({ key: roundKey, chips: [] });
-  const pushed = pushedFor.key === roundKey ? pushedFor.chips : [];
+  const [lastChips, setLastChips] = useState<number[]>([]);
+  const [pushedFor, setPushedFor] = useState<{ key: string; chips: number[] }>({ key: '', chips: [] });
+  const rebet = (): number[] => {
+    const limit = Math.min(state.config.maxBet, hero.stack);
+    const out = [...lastChips];
+    while (out.length > 0 && out.reduce((a, b) => a + b, 0) > limit) out.pop();
+    return out;
+  };
+  const pushed = pushedFor.key === roundKey ? pushedFor.chips : rebet();
   const setPushed = (next: number[]): void => setPushedFor({ key: roundKey, chips: next });
+  const move = (m: PlayerMove): void => {
+    if (m.kind === 'bet' && m.amount > 0) setLastChips([...pushed]);
+    onMove(m);
+  };
 
   const legal = mySeat !== null && state.toAct === mySeat ? legalActions(state) : null;
 
@@ -432,7 +446,7 @@ export function Table(props: TableProps) {
             onClear={() => setPushed([])}
             status={status}
             busy={busy}
-            onMove={onMove}
+            onMove={move}
             extra={
               heroDone && inRound && props.onSkipAhead ? (
                 <button type="button" className="btn btn--secondary btn--small" onClick={props.onSkipAhead}>
