@@ -2520,3 +2520,145 @@ details.more > summary {
         grid-column: span 3;
     }
 }
+
+/* ── Preview motion (static/js/work-previews.js) ────────────────────────── */
+/* .animated: the script is running, so start from the first frame.
+   .play: the card is in view, so run it. */
+
+.animated .pv-trace path,
+.animated .pv-arc {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+}
+
+.animated .pv-pad circle,
+.animated .pv-tag,
+.animated .pv-results li,
+.animated .pv-arc-vac,
+.animated .pv-small,
+.animated .pv-big {
+    opacity: 0;
+}
+
+.animated .pv-bar.is-hot::after {
+    width: 100%;
+}
+
+.animated .pv-dots {
+    clip-path: inset(0 100% 0 0);
+}
+
+.play .pv-trace path {
+    animation: pv-draw 0.9s cubic-bezier(0.5, 0, 0.3, 1) forwards;
+}
+
+.play .pv-trace path:nth-child(2) { animation-delay: 0.12s; }
+.play .pv-trace path:nth-child(3) { animation-delay: 0.24s; }
+.play .pv-trace path:nth-child(4) { animation-delay: 0.06s; }
+.play .pv-trace path:nth-child(5) { animation-delay: 0.18s; }
+.play .pv-trace path:nth-child(6) { animation-delay: 0.3s; }
+
+.play .pv-pad circle {
+    animation: pv-pop 0.3s ease forwards 1.1s;
+    transform-box: fill-box;
+    transform-origin: center;
+}
+
+.play .pv-tag {
+    animation: pv-pop 0.3s ease forwards 1.4s;
+}
+
+.play .pv-bar.is-hot::after {
+    animation: pv-shrink 1.3s cubic-bezier(0.3, 0, 0.2, 1) forwards 0.25s;
+}
+
+.play .pv-big {
+    animation: pv-fade 0.5s ease forwards 0.2s;
+}
+
+.play .pv-results li {
+    animation: pv-rise 0.35s ease forwards;
+}
+
+.play .pv-results li:nth-child(1) { animation-delay: 1.7s; }
+.play .pv-results li:nth-child(2) { animation-delay: 1.85s; }
+.play .pv-results li:nth-child(3) { animation-delay: 2s; }
+
+.play .pv-field::after {
+    animation: pv-blink 1s steps(1) infinite;
+}
+
+.play .pv-dots {
+    animation: pv-fill 1.4s steps(50) forwards 0.2s;
+}
+
+.play .pv-link {
+    animation: pv-flow 0.8s linear infinite;
+}
+
+.play .pv-small,
+.play .pv-arc-vac {
+    animation: pv-fade 0.5s ease forwards 0.3s;
+}
+
+.play .pv-arc {
+    animation: pv-draw 1.2s cubic-bezier(0.33, 1, 0.68, 1) forwards 0.2s;
+}
+
+@keyframes pv-draw {
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+
+@keyframes pv-pop {
+    from {
+        opacity: 0;
+        transform: scale(0.4);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@keyframes pv-fade {
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes pv-rise {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@keyframes pv-shrink {
+    to {
+        width: calc(var(--v) * 100%);
+    }
+}
+
+@keyframes pv-blink {
+    50% {
+        opacity: 0;
+    }
+}
+
+@keyframes pv-fill {
+    to {
+        clip-path: inset(0 0 0 0);
+    }
+}
+
+@keyframes pv-flow {
+    to {
+        stroke-dashoffset: -8;
+    }
+}

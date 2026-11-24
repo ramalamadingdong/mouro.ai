@@ -136,8 +136,8 @@
             <div class="preview pv-bars" aria-hidden="true">
                 <p class="pv-cap">Latency per action chunk</p>
                 <div class="pv-bar" style="--v: 1"><span>Before</span><b>4421 ms</b></div>
-                <div class="pv-bar is-hot" style="--v: 0.251"><span>Mixed quantization</span><b>1111 ms</b></div>
-                <p class="pv-big"><b>86/100</b> on LIBERO-10</p>
+                <div class="pv-bar is-hot" style="--v: 0.251"><span>Mixed quantization</span><b><span data-from="4421" data-to="1111">1111</span> ms</b></div>
+                <p class="pv-big"><b><span data-from="0" data-to="86">86</span>/100</b> on LIBERO-10</p>
             </div>
             <h3><a href="/projects/#pi05">Pi0.5 VLA on Dragonwing NPU</a></h3>
             <p>
@@ -157,12 +157,12 @@
                         <path d="M124 48h-6M124 58h-6M124 68h-6M124 78h-6M176 48h6M176 58h6M176 68h6M176 78h6"/>
                     </g>
                     <g class="pv-trace">
-                        <path d="M118 48H96l-14-14H48"/>
-                        <path d="M118 58H86l-10 10v26"/>
-                        <path d="M118 78h-10l-12 12v10"/>
-                        <path d="M182 48h22l16-16h34"/>
-                        <path d="M182 68h40l12 12v20"/>
-                        <path d="M182 78h8l10 10v12"/>
+                        <path pathLength="1" d="M118 48H96l-14-14H48"/>
+                        <path pathLength="1" d="M118 58H86l-10 10v26"/>
+                        <path pathLength="1" d="M118 78h-10l-12 12v10"/>
+                        <path pathLength="1" d="M182 48h22l16-16h34"/>
+                        <path pathLength="1" d="M182 68h40l12 12v20"/>
+                        <path pathLength="1" d="M182 78h8l10 10v12"/>
                     </g>
                     <g class="pv-pad">
                         <circle cx="48" cy="34" r="3.5"/><circle cx="76" cy="94" r="3.5"/><circle cx="96" cy="100" r="3.5"/>
@@ -181,7 +181,7 @@
         </li>
         <li class="work-item has-preview" data-lens="devrel product agents" data-lens-order-devrel="3" data-lens-order-product="3" data-lens-order-agents="2">
             <div class="preview pv-search" aria-hidden="true">
-                <p class="pv-field">How do I set the swerve module offsets?</p>
+                <p class="pv-field" data-type>How do I set the swerve module offsets?</p>
                 <ul class="pv-results">
                     <li><b>WPILib</b> Swerve drive kinematics</li>
                     <li><b>CTRE Phoenix 6</b> CANcoder magnet offset</li>
@@ -198,7 +198,7 @@
         <li class="work-item has-preview" data-lens="devrel product" data-lens-order-devrel="2" data-lens-order-product="1">
             <div class="preview pv-units" aria-hidden="true">
                 <div class="pv-dots"></div>
-                <p class="pv-big"><b>500</b> RUBIK Pi boards donated</p>
+                <p class="pv-big"><b data-from="0" data-to="500">500</b> RUBIK Pi boards donated</p>
             </div>
             <h3><a href="/projects/#first-k12">FIRST and K-12 robotics at Qualcomm</a></h3>
             <p>
@@ -235,7 +235,7 @@
                 <svg viewBox="0 0 300 130">
                     <path class="pv-floor" d="M10 112H290"/>
                     <path class="pv-arc-vac" d="M44 92Q150 -36 270 92"/>
-                    <path class="pv-arc" d="M44 92Q140 -18 236 66"/>
+                    <path class="pv-arc" pathLength="1" d="M44 92Q140 -18 236 66"/>
                     <rect class="pv-node" x="24" y="92" width="32" height="20" rx="2"/>
                     <path class="pv-goal" d="M222 58l8 20h20l8-20"/>
                     <path class="pv-goal" d="M240 78V112"/>
@@ -412,5 +412,6 @@
         }
     </script>
     <script src="/static/js/lens.js" onerror="document.documentElement.classList.remove('lens-pending')"></script>
+    <script src="/static/js/work-previews.js"></script>
 </body>
 </html>
