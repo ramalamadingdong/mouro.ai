@@ -25,6 +25,10 @@ export interface Personality {
   counts: boolean;
   /** 0..1: random wobble on the bet size. */
   betJitter: number;
+  /** Most of its stack it will lend you in one go, as a fraction (0 = never lends). */
+  lends: number;
+  /** What it says when it will not lend. */
+  noLoan: string;
 }
 
 export interface Cat {
@@ -42,49 +46,49 @@ export const CATS: readonly Cat[] = [
     name: 'Tiger',
     blurb: 'Grey tabby. Plays the chart, bets a steady slice of the stack.',
     style: 'By the book',
-    personality: { strategy: 'basic', betFraction: 0.05, counts: false, betJitter: 0.2 },
+    personality: { strategy: 'basic', betFraction: 0.05, counts: false, betJitter: 0.2, lends: 0.25, noLoan: 'Not that much. Ask for less.' },
   },
   {
     id: 'marmalade',
     name: 'Marmalade',
     blurb: 'Orange tabby. Big bets, and she doubles anything that looks lucky.',
     style: 'Reckless',
-    personality: { strategy: 'hunch', betFraction: 0.15, counts: false, betJitter: 0.5 },
+    personality: { strategy: 'hunch', betFraction: 0.15, counts: false, betJitter: 0.5, lends: 0.6, noLoan: "I'd love to, but I just bet it all." },
   },
   {
     id: 'professor',
     name: 'Professor',
     blurb: 'Tuxedo cat with glasses. Counts every card, bets up when the shoe is hot.',
     style: 'Card counter',
-    personality: { strategy: 'basic', betFraction: 0, counts: true, betJitter: 0 },
+    personality: { strategy: 'basic', betFraction: 0, counts: true, betJitter: 0, lends: 0, noLoan: "Statistically, you won't pay me back." },
   },
   {
     id: 'patches',
     name: 'Patches',
     blurb: 'Calico. Hates going bust so much she stands on twelve.',
     style: 'Never busts',
-    personality: { strategy: 'never-bust', betFraction: 0.04, counts: false, betJitter: 0.3 },
+    personality: { strategy: 'never-bust', betFraction: 0.04, counts: false, betJitter: 0.3, lends: 0.2, noLoan: "That's too much for me to risk!" },
   },
   {
     id: 'shadow',
     name: 'Shadow',
     blurb: 'Black cat. Minimum bet, perfect play, all night long.',
     style: 'Grinder',
-    personality: { strategy: 'basic', betFraction: 0, counts: false, betJitter: 0 },
+    personality: { strategy: 'basic', betFraction: 0, counts: false, betJitter: 0, lends: 0, noLoan: 'No.' },
   },
   {
     id: 'smokey',
     name: 'Smokey',
     blurb: 'Blue-grey cat. Copies the dealer: hits to seventeen, no tricks.',
     style: 'Mimic',
-    personality: { strategy: 'dealer', betFraction: 0.06, counts: false, betJitter: 0.25 },
+    personality: { strategy: 'dealer', betFraction: 0.06, counts: false, betJitter: 0.25, lends: 0.25, noLoan: "The dealer doesn't lend. So I don't either. Mostly." },
   },
   {
     id: 'biscuit',
     name: 'Biscuit',
     blurb: 'Cream cat with dark points. Splits every pair, just in case.',
     style: 'Superstitious',
-    personality: { strategy: 'hunch', betFraction: 0.08, counts: false, betJitter: 0.4 },
+    personality: { strategy: 'hunch', betFraction: 0.08, counts: false, betJitter: 0.4, lends: 0.5, noLoan: 'Not tonight — bad omens.' },
   },
 ];
 

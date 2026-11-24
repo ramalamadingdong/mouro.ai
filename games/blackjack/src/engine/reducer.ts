@@ -82,6 +82,7 @@ export function createGame(options: NewGameOptions): GameState {
     result: null,
     winner: null,
     lastMove: null,
+    debts: [],
   };
 }
 
@@ -177,9 +178,38 @@ export function isGameOver(state: GameState): boolean {
   return !state.players.some((p) => p.isHuman && canBet(state, p));
 }
 
-/** The seat with the most chips (ties go to the lower seat). */
+/**
+ * A player's net worth: chips in hand, plus what others owe them, minus what
+ * they owe. Loans move chips around; this is what a player is really worth.
+ */
+export function netWorth(state: GameState, seat: number): number {
+  let n = state.players[seat].stack;
+  for (const d of state.debts) {
+    if (d.lender === seat) n += d.amount;
+    if (d.borrower === seat) n -= d.amount;
+  }
+  return n;
+}
+
+/** What `borrower` owes `lender` (0 if nothing). */
+export function owed(state: GameState, lender: number, borrower: number): number {
+  return state.debts.find((d) => d.lender === lender && d.borrower === borrower)?.amount ?? 0;
+}
+
+/**
+ * Most a seat can hand over right now (a loan or a repayment). A player on
+ * turn to bet keeps the minimum bet, so a loan can never leave the betting
+ * turn on someone who cannot bet.
+ */
+export function maxTransfer(state: GameState, seat: number): number {
+  const p = state.players[seat];
+  const keep = state.phase === 'betting' && state.toAct === seat ? state.config.minBet : 0;
+  return Math.max(0, p.stack - keep);
+}
+
+/** The seat with the highest net worth (ties go to the lower seat). */
 function leader(state: GameState): number {
-  return state.players.reduce((best, p, i) => (p.stack > state.players[best].stack ? i : best), 0);
+  return state.players.reduce((best, _p, i) => (netWorth(state, i) > netWorth(state, best) ? i : best), 0);
 }
 
 // ── Internals (all mutate a private clone) ─────────────────────────────────
@@ -190,6 +220,7 @@ function clone(state: GameState): GameState {
     players: state.players.map((p) => ({ ...p, hands: p.hands.map((h) => ({ ...h, cards: [...h.cards] })) })),
     shoe: [...state.shoe],
     dealer: [...state.dealer],
+    debts: state.debts.map((d) => ({ ...d })),
     // `config` and `result` are never mutated after creation.
   };
 }
@@ -331,6 +362,7 @@ function rematch(state: GameState, seed: readonly number[]): string | null {
     p.lastAction = null;
   }
   state.house = 0;
+  state.debts = [];
   state.handNo = 0;
   state.shoe = [];
   state.dealer = [];
@@ -504,6 +536,31 @@ function away(state: GameState, senderSeat: number): string | null {
   return error;
 }
 
+/** Lend chips to another seat, or pay back what you owe them. Never moves the turn. */
+function transfer(state: GameState, from: number, move: { kind: 'loan' | 'repay'; to: number; amount: number }): string | null {
+  if (state.phase === 'idle' || state.phase === 'gameover') return 'Loans are for while a game is on.';
+  const { to, amount } = move;
+  if (!Number.isInteger(to) || to < 0 || to >= state.players.length || to === from) return 'Pick another player.';
+  if (!Number.isInteger(amount) || amount < 1) return 'That is not an amount.';
+  if (amount > maxTransfer(state, from)) return 'You do not have that many chips to spare.';
+  const p = state.players[from];
+  const q = state.players[to];
+  if (move.kind === 'repay') {
+    const debt = state.debts.find((d) => d.lender === to && d.borrower === from);
+    if (!debt) return `You do not owe ${q.name} anything.`;
+    if (amount > debt.amount) return `You only owe ${q.name} ${debt.amount}.`;
+    debt.amount -= amount;
+    if (debt.amount === 0) state.debts = state.debts.filter((d) => d !== debt);
+  } else {
+    const debt = state.debts.find((d) => d.lender === from && d.borrower === to);
+    if (debt) debt.amount += amount;
+    else state.debts.push({ lender: from, borrower: to, amount });
+  }
+  p.stack -= amount;
+  q.stack += amount;
+  return null;
+}
+
 // ── Public reducer ─────────────────────────────────────────────────────────
 
 /**
@@ -537,6 +594,10 @@ export function applyMove(state: GameState, move: Move, uid: string): ApplyResul
     case 'surrender':
       error = playerAction(nextState, move, seat);
       if (error === null) nextState.players[seat].sitOut = false;
+      break;
+    case 'loan':
+    case 'repay':
+      error = transfer(nextState, seat, move);
       break;
     case 'away':
       actedOn = state.toAct ?? seat;

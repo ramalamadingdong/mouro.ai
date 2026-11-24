@@ -251,6 +251,19 @@ export const DUCHESS: Voice = {
       "{n} chips. {who}, I'd still beat you, but I'd feel bad about it. For a second.",
       "Oh my. {n}! {who}, if I could deal you a blackjack right now, I would. I can't. But I'd want to.",
     ],
+    loan: [
+      '{who} lends {to} {n}. Charity. How sweet. How pointless.',
+      "{who} bails out {to} with {n}. {to}, that's going straight back to me.",
+      'A loan? {who} to {to}, {n} chips. This table is a soup kitchen now.',
+      '{to} borrows {n} from {who}. Rock bottom has a basement, darling.',
+      '{who} spots {to} {n}. Enabling. I love it. Keep it coming.',
+    ],
+    repay: [
+      '{who} pays {to} back {n}. Honor among thieves.',
+      '{who} repays {n}. Look at you, responsible. Gross.',
+      'Debt paid, {who}. {to}, count it. Twice.',
+      '{who} pays back {n}. Shame, I was enjoying the drama.',
+    ],
     push: [
       'Push. Nobody wins, nobody loses. Just like your personality: nothing happening.',
       "Tie. Your chips stay. I'm unimpressed, and also bored.",
@@ -311,6 +324,8 @@ export const DUCHESS: Voice = {
     "Oh, NOW you're ready. Lovely. Wonderful. Great.",
   ],
   emoji: {
+    loan: ['💸', '🙄', '🏦'],
+    repay: ['💰', '🙄', '🤝'],
     open: ['💅', '👑', '😼'],
     round: ['💅', '🙄', '⏳', '💸', '🎰', '😏'],
     shuffle: ['🔀', '🃏', '💅'],

@@ -190,6 +190,17 @@ export const UNIT9: Voice = {
       'Tip of {n} from {who}. Unit 9 is experiencing… a feeling.',
       '{who}, {n}. You are now my favorite human. Do not tell the others.',
     ],
+    loan: [
+      'Transfer: {who} to {to}, {n} chips. Debt recorded.',
+      'Loan of {n} logged. {to} now owes {who}.',
+      '{who} lends {n} to {to}. Repayment probability: uncertain.',
+      'Credit extended: {n}. Lender {who}. Borrower {to}. Logged forever.',
+    ],
+    repay: [
+      'Repayment: {n} from {who} to {to}. Ledger updated.',
+      '{who} repays {n}. Debt reduced.',
+      'Debt settled, {who}. Trust: restored. Slightly.',
+    ],
     push: [
       'Push. Net change: zero. Efficient.',
       'Tie. Chips returned. Nothing happened. Logged anyway.',
@@ -235,6 +246,8 @@ export const UNIT9: Voice = {
   ],
   finallyEmoji: ['✅', '🤖', '⚙️'],
   emoji: {
+    loan: ['🏦', '📒', '🤖'],
+    repay: ['✅', '📒', '🤖'],
     open: ['🤖', '⚙️', '💾'],
     round: ['🤖', '⚙️', '📊', '🎰'],
     shuffle: ['🔀', '⚙️', '🤖'],

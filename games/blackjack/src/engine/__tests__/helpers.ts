@@ -8,6 +8,7 @@ import {
   freshShoe,
   handValue,
   legalActions,
+  maxTransfer,
   normalize,
   parseCards,
   totalChips,
@@ -107,6 +108,19 @@ export function wireDamage(value: unknown): unknown {
 /** A random move the engine claims is legal for the current state. */
 export function randomLegalMove(s: GameState, rng: () => number): { move: Move; uid: string } {
   const anyone = uidOf(Math.floor(rng() * s.players.length));
+  // Now and then somebody lends or repays, whatever else is going on.
+  if (s.phase !== 'idle' && s.phase !== 'gameover' && s.players.length > 1 && rng() < 0.04) {
+    const from = Math.floor(rng() * s.players.length);
+    const spare = maxTransfer(s, from);
+    const debt = s.debts.find((d) => d.borrower === from);
+    if (debt && spare > 0 && rng() < 0.5) {
+      return { move: { kind: 'repay', to: debt.lender, amount: Math.min(debt.amount, spare, 1 + Math.floor(rng() * 100)) }, uid: uidOf(from) };
+    }
+    if (spare > 0) {
+      const to = (from + 1 + Math.floor(rng() * (s.players.length - 1))) % s.players.length;
+      return { move: { kind: 'loan', to, amount: Math.min(spare, 1 + Math.floor(rng() * 200)) }, uid: uidOf(from) };
+    }
+  }
   if (s.phase === 'gameover') return { move: { kind: 'rematch', seed: [Math.floor(rng() * 1e9)] }, uid: anyone };
   if (s.phase === 'idle' || s.phase === 'settled') {
     return { move: { kind: 'deal', seed: [Math.floor(rng() * 1e9)] }, uid: anyone };
@@ -161,6 +175,9 @@ export function checkInvariants(s: GameState, chips: number, label: string): voi
       if (s.phase === 'playing' || s.phase === 'dealer') check(h.cards.length >= 2, label, 'hand short of cards');
     }
   }
+  // Debts are positive, between two different seats, one entry per pair.
+  for (const d of s.debts) check(d.amount > 0 && d.lender !== d.borrower, label, 'bad debt');
+  check(new Set(s.debts.map((d) => `${d.lender}>${d.borrower}`)).size === s.debts.length, label, 'duplicate debt');
   // No physical card in two places.
   const all = [...s.shoe, ...s.dealer, ...s.players.flatMap((p) => p.hands.flatMap((h) => h.cards))];
   check(new Set(all).size === all.length, label, 'a card is in two places');

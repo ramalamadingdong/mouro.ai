@@ -9,6 +9,7 @@ import {
   handValue,
   holeCardShown,
   legalActions,
+  maxTransfer,
   type Card,
   type GameState,
   type PlayerMove,
@@ -97,6 +98,11 @@ export function decide(
   const p = state.players[seat];
 
   if (legal.kind === 'bet') {
+    // Flush and in debt? Pay it back before betting (one debt per decision).
+    const debt = state.debts.find((d) => d.borrower === seat);
+    if (debt && p.stack - debt.amount >= state.config.startingStack) {
+      return { kind: 'repay', to: debt.lender, amount: Math.min(debt.amount, maxTransfer(state, seat)) };
+    }
     let amount = Math.max(legal.minBet, p.stack * personality.betFraction);
     if (personality.counts) {
       // One unit at a neutral count, ramping to eight as the count climbs.
@@ -143,3 +149,12 @@ export function decide(
   return total >= 21 ? { kind: 'stand' } : { kind: 'hit' };
 }
 
+
+/**
+ * Will this cat lend `amount` when asked? Only up to its personality's share
+ * of its stack, and never so much it could not cover two minimum bets.
+ */
+export function willLend(state: GameState, seat: number, amount: number, personality: Personality): boolean {
+  const p = state.players[seat];
+  return amount <= Math.floor(p.stack * personality.lends) && p.stack - amount >= state.config.minBet * 2 && amount <= maxTransfer(state, seat);
+}

@@ -4,7 +4,7 @@
  * a refresh lands back in the middle of a hand.
  */
 import { useNavigate } from 'react-router-dom';
-import { CATS } from '@/ai';
+import { CATS, catById, willLend } from '@/ai';
 import { Avatar } from '@/components/avatar';
 import { DealerPicker } from '@/components/dealer-picker';
 import { Segmented } from '@/components/segmented';
@@ -163,6 +163,13 @@ function SoloTable() {
       onDismissError={clearError}
       onSkipAhead={skipAhead ? null : () => setSkipAhead(true)}
       onMove={(move) => send(move, SOLO_UID)}
+      onAskLoan={(seat, amount) => {
+        const cat = catById(game.players[seat].uid.slice('cat-'.length));
+        if (!cat) return 'Meow?';
+        if (!willLend(game, seat, amount, cat.personality)) return cat.personality.noLoan;
+        send({ kind: 'loan', to: 0, amount }, game.players[seat].uid);
+        return null;
+      }}
       onDeal={() => send({ kind: 'deal', seed: randomSeed() }, SOLO_UID)}
       onRematch={() => send({ kind: 'rematch', seed: randomSeed() }, SOLO_UID)}
       // Back to the setup form, not the home screen: "new game" is the usual

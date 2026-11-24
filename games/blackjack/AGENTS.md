@@ -152,6 +152,20 @@ finished.
 Online there are no cats: only the dealer pause before each `next` and the
 held result.
 
+## Loans between players
+
+The owner asked for "players loaning other players money". `loan {to,
+amount}` and `repay {to, amount}` are moves ANY seated player may send at any
+time in a game (not idle, not gameover) — they never move the turn, and only
+ever spend the SENDER's chips (`maxTransfer`: a player on turn to bet keeps
+the minimum bet). `state.debts` holds one `{lender, borrower, amount}` per
+pair; repaying in full removes it. The final standings and the winner use
+`netWorth` (chips + owed to you − you owe). Offline you can also ASK a cat
+(`willLend`, by its `lends` share; Shadow and the Professor never), and a cat
+in debt repays on its betting turn once it is flush (`decide`). The rules let
+any seated writer stamp `lastMove.kind` `loan`/`repay` as themselves — the
+same label-not-diff trust as `next`/`away` (RULES.md). UI: tap a seat.
+
 ## Four dealers, voted for
 
 The owner asked for "multiple dealers, let us vote on one". `src/dealers/`

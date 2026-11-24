@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CATS, SKILL, basicStrategy, decide, trueCount, type Difficulty } from '@/ai';
+import { CATS, SKILL, basicStrategy, decide, trueCount, willLend, type Difficulty } from '@/ai';
 import { applyMove, legalActions, makeRng, parseCards, totalChips, type GameState, type Move } from '@/engine';
 import { betAll, checkInvariants, deal, newGame, next, stack, uidOf } from '@/engine/__tests__/helpers';
 
@@ -96,6 +96,25 @@ describe('decide', () => {
     const patches = CATS.find((c) => c.id === 'patches')!;
     const s = next(stack(betAll(deal(newGame(1)), 10), 'Tc Th 2d 7c'));
     expect(decide(s, 0, patches.personality, SKILL.hard, Math.random)).toEqual({ kind: 'stand' });
+  });
+
+  it('a cat in debt pays it back once it is flush, before betting', () => {
+    const tiger = CATS.find((c) => c.id === 'tiger')!;
+    let s = deal(newGame(2, 1000));
+    const lent = applyMove(s, { kind: 'loan', to: 0, amount: 200 }, uidOf(1)); // seat 1 lends seat 0
+    if (!lent.ok) throw new Error(lent.error);
+    s = lent.state;
+    s = { ...s, players: s.players.map((p, i) => (i === 0 ? { ...p, stack: 1500 } : { ...p, stack: 500 })), house: 200 - 500 + 200 } as GameState;
+    expect(decide(s, 0, tiger.personality, SKILL.hard, makeRng([1]))).toEqual({ kind: 'repay', to: 1, amount: 200 });
+  });
+
+  it('cats lend in character: Shadow never, Marmalade generously', () => {
+    const s = deal(newGame(3, 1000));
+    const shadow = CATS.find((c) => c.id === 'shadow')!;
+    const marm = CATS.find((c) => c.id === 'marmalade')!;
+    expect(willLend(s, 1, 50, shadow.personality)).toBe(false);
+    expect(willLend(s, 1, 500, marm.personality)).toBe(true);
+    expect(willLend(s, 1, 990, marm.personality)).toBe(false);
   });
 
   it('bets are legal: on the step, inside the limits', () => {

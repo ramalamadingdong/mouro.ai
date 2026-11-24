@@ -175,6 +175,17 @@ export interface GameState {
   /** Set in 'gameover': the seat holding the most chips. */
   winner: number | null;
   lastMove: LastMove | null;
+  /**
+   * Loans between players: who lent whom how much, still unpaid. At most one
+   * entry per (lender, borrower) pair; an entry disappears when repaid.
+   */
+  debts: Debt[];
+}
+
+export interface Debt {
+  lender: number;
+  borrower: number;
+  amount: number;
 }
 
 /**
@@ -189,6 +200,9 @@ export interface GameState {
  *
  * Player moves — only from the seat in `toAct`:
  *   bet      while betting. `amount` 0 sits this round out.
+ *   loan     any seated player, any time in a game: lend chips to another seat.
+ *   repay    pay back (some of) what you owe another seat.
+ *            Neither moves the turn; both are the SENDER's own chips.
  *   tip      while it is your turn to bet: give the dealer chips (they go to
  *            the house). Does not end your turn; any number of times.
  *   hit / stand / double / split / surrender   while playing, on the active hand.
@@ -204,6 +218,8 @@ export type Move =
   | { kind: 'rematch'; seed: number[] }
   | { kind: 'bet'; amount: number }
   | { kind: 'tip'; amount: number }
+  | { kind: 'loan'; to: number; amount: number }
+  | { kind: 'repay'; to: number; amount: number }
   | { kind: 'hit' }
   | { kind: 'stand' }
   | { kind: 'double' }
@@ -212,7 +228,7 @@ export type Move =
   | { kind: 'away' };
 
 /** The moves a player makes on their own turn. */
-export type PlayerMove = Extract<Move, { kind: 'bet' | 'tip' | 'hit' | 'stand' | 'double' | 'split' | 'surrender' }>;
+export type PlayerMove = Extract<Move, { kind: 'bet' | 'tip' | 'loan' | 'repay' | 'hit' | 'stand' | 'double' | 'split' | 'surrender' }>;
 
 export type ApplyResult = { ok: true; state: GameState } | { ok: false; error: string };
 

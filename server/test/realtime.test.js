@@ -413,6 +413,22 @@ describe('blackjack rules', () => {
     await set(state(host), tipped);
   });
 
+  test('loans: any seated player may lend or repay at any time, as themselves', async () => {
+    const { players: [host, a, b], uids, state } = await table('BJH99');
+    await set(state(host), bjState(uids, { version: 1, toAct: 0, by: host.uid, kind: 'deal' }));
+    // Seat 2 is not on turn, but may lend — stamped as themselves.
+    const lent = { ...bjState(uids, { version: 2, toAct: 0, by: b.uid, kind: 'loan' }), debts: [{ lender: 2, borrower: 1, amount: 100 }] };
+    await denied(set(state(b), { ...lent, lastMove: { by: a.uid, kind: 'loan', seat: 2 } }));
+    await denied(set(state(b), { ...lent, debts: [{ lender: 2, borrower: 1, amount: 0 }] }));
+    await denied(set(state(b), { ...lent, debts: [{ lender: 2, borrower: 1, amount: 100, junk: 1 }] }));
+    await set(state(b), lent);
+    await set(state(a), { ...bjState(uids, { version: 3, toAct: 0, by: a.uid, kind: 'repay' }), debts: [] });
+    // ...but not a game move out of turn.
+    await denied(set(state(b), bjState(uids, { version: 4, toAct: 1, by: b.uid, kind: 'hit' })));
+    const outsider = await player('blackjack');
+    await denied(set(state(outsider), { ...bjState(uids, { version: 4, toAct: 0, by: outsider.uid, kind: 'loan' }) }));
+  });
+
   test('dealer votes: each seated player writes only their own vote, a dealer id, while waiting', async () => {
     const { players: [host, a], uids, state } = await table('BJG88', 2);
     const vote = (p, uid = p.uid) => ref(p.db, `rooms/BJG88/votes/${uid}`);

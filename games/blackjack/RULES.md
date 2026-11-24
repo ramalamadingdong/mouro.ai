@@ -53,6 +53,8 @@ All of these must hold (all in the `.write`, so a deep write cannot dodge them):
    - the writer is one of `data.players[0..7].uid` and `data.turnUid === '*'`
      and the move is a dealer move (`deal | next | rematch`) — **any seated
      player may be the dealer**; or
+   - the writer is one of `data.players[0..7].uid` and the move is a `loan`
+     or `repay` — **any seated player may lend or pay back, any time**; or
    - the writer is one of `data.players[0..7].uid`, the move is `away`,
      somebody is on turn, and **`presence/<data.turnUid>` does not exist**.
 5. **`lastMove.by === auth.uid`**.
@@ -69,6 +71,7 @@ refused. Nodes the wire prunes (`toAct`, `result`, `winner`, `hands`,
 | **Secrecy of the hole card and the shoe between seated players.** | By design: client-authoritative. |
 | **Blackjack.** | The rules bound shape and authority, never legality. The defence is `normalize()` on every other client, which rejects a state whose chips (with the house's bank) do not add up to `players × startingStack`, or that holds any card twice. Anything subtler (re-ordering the shoe in your favour) is undetectable. Casual play between friends. |
 | **What a dealer or `away` write actually changes.** | Rule 4 checks the *label* (`lastMove.kind`), not the diff. |
+| **What a `loan`/`repay` write moves.** | Like `next` and `away`, the rules check the label, not the diff: a hostile client could stamp a "loan" that takes chips from someone else. `normalize()` still rejects conjured chips. Casual play between friends. |
 | **The 30-second grace before `away`.** | The rules can see that a presence node is absent, not for how long. |
 | **The 8-player cap.** | Rules cannot count children; `joinRoom()` checks it. Extra seats are simply not dealt in (`seatOrder` truncates). |
 | **Rate limiting, `updatedAt` honesty, host abandonment.** | As in yahtzee: the host can close a waiting room, and a room nobody touches is reaped after 24h. |
