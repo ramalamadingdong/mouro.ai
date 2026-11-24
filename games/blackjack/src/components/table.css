@@ -685,3 +685,77 @@
     bottom: 8rem;
   }
 }
+
+/* ── Betting spot (while you build a bet) ──────────────────────────────── */
+
+.bet-spot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.2rem;
+  min-width: calc(8rem * var(--card-scale, 1));
+  min-height: calc(6.5rem * var(--card-scale, 1));
+  padding: 0.5rem 1.1rem 0.8rem;
+  border-radius: 50%;
+  border: 2px solid var(--accent-dim);
+  background: rgb(0 0 0 / 0.22);
+}
+.bet-spot[data-empty='true'] {
+  justify-content: center;
+  border-style: dashed;
+}
+
+.bet-spot__stacks {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.35rem;
+}
+
+.bet-spot__stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+}
+
+/* One stack per chip value, the newest chip on top. */
+.bet-spot__chips {
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+}
+.bet-spot__chips .bet-chip + .bet-chip {
+  margin-bottom: -1.3rem;
+}
+.bet-spot__chips .bet-chip {
+  animation: chip-drop var(--dur-base) var(--ease) both;
+}
+
+@keyframes chip-drop {
+  from {
+    opacity: 0;
+    transform: translateY(-0.8rem);
+  }
+}
+
+.bet-spot__count {
+  font-size: var(--size-xs);
+  font-weight: var(--weight-bold);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.bet-spot__total {
+  font-size: var(--size-lg);
+  font-weight: var(--weight-heavy);
+  color: var(--accent-bright);
+  line-height: 1.1;
+}
+.bet-spot[data-empty='true'] .bet-spot__total {
+  font-size: var(--size-sm);
+  font-weight: var(--weight-medium);
+  color: var(--text-hint);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}

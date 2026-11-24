@@ -4,15 +4,18 @@
  * comes from `legalActions` — the bar never works out legality itself, so it
  * cannot disagree with the engine.
  */
-import { useState } from 'react';
 import type { LegalActions, PlayerMove } from '@/engine';
+import { CHIPS } from '@/components/chips';
 import './action-bar.css';
 
 export interface ActionBarProps {
   /** Non-null exactly when it is this player's turn. */
   legal: LegalActions | null;
-  /** The bet the slider starts at (the player's last bet, else the minimum). */
-  defaultBet: number;
+  /** Chips pushed into the betting spot so far this round (held by the table). */
+  pushed: readonly number[];
+  onPush: (value: number) => void;
+  onUndo: () => void;
+  onClear: () => void;
   /** Shown in place of the controls when it is not this player's turn. */
   status: string;
   /** A move is in flight (online): keep the buttons from being pressed twice. */
@@ -24,24 +27,26 @@ export interface ActionBarProps {
 
 const chips = (n: number): string => n.toLocaleString('en-US');
 
-/** The betting chips. Each tap adds its value to the bet. */
-const CHIPS = [10, 25, 50, 100] as const;
 
 function BetControls({
   legal,
-  defaultBet,
+  pushed,
   busy,
+  onPush,
+  onUndo,
+  onClear,
   onMove,
 }: {
   legal: Extract<LegalActions, { kind: 'bet' }>;
-  defaultBet: number;
+  pushed: readonly number[];
   busy: boolean;
+  onPush: (value: number) => void;
+  onUndo: () => void;
+  onClear: () => void;
   onMove: (move: PlayerMove) => void;
 }) {
   const { minBet: min, maxBet: max } = legal;
-  // Starts at the last bet (so repeating it is one tap). The table remounts
-  // this component (via `key`) for each new round, so it is never stale.
-  const [bet, setBet] = useState(() => (defaultBet >= min && defaultBet <= max ? defaultBet : 0));
+  const bet = pushed.reduce((a, b) => a + b, 0);
   const short = bet < min;
 
   return (
@@ -56,23 +61,25 @@ function BetControls({
               data-value={value}
               disabled={busy || bet + value > max}
               aria-label={`Add ${value}`}
-              onClick={() => setBet(bet + value)}
+              onClick={() => onPush(value)}
             >
               {value}
             </button>
           ))}
-          <button
-            type="button"
-            className="bet-chips__clear"
-            disabled={busy || bet === 0}
-            onClick={() => setBet(0)}
-          >
+        </div>
+        <div className="bet-chips__row">
+          <button type="button" className="bet-chips__edit" disabled={busy || pushed.length === 0} onClick={onUndo}>
+            Undo
+          </button>
+          <p className="bet-chips__hint" aria-live="polite">
+            {pushed.length === 0
+              ? `Tap chips to bet · ${chips(min)}–${chips(max)}`
+              : `${pushed.length} ${pushed.length === 1 ? 'chip' : 'chips'} · ${chips(bet)}${short ? ` (min ${chips(min)})` : ''}`}
+          </p>
+          <button type="button" className="bet-chips__edit" disabled={busy || pushed.length === 0} onClick={onClear}>
             Clear
           </button>
         </div>
-        <p className="bet-chips__hint" aria-live="polite">
-          {short ? `Tap chips to bet — ${chips(min)} to ${chips(max)}` : `Betting ${chips(bet)} of ${chips(max)} max`}
-        </p>
       </div>
       <div className="actions__buttons">
         <button
@@ -89,15 +96,27 @@ function BetControls({
           disabled={busy || short}
           onClick={() => onMove({ kind: 'bet', amount: bet })}
         >
-          {short ? 'Add chips' : `Bet ${chips(bet)}`}
+          {bet === 0 ? 'Add chips' : short ? `Bet ${chips(bet)} — min ${chips(min)}` : `Bet ${chips(bet)}`}
         </button>
       </div>
     </section>
   );
 }
 
-export function ActionBar({ legal, defaultBet, status, busy = false, extra, onMove }: ActionBarProps) {
-  if (legal?.kind === 'bet') return <BetControls legal={legal} defaultBet={defaultBet} busy={busy} onMove={onMove} />;
+export function ActionBar({ legal, pushed, onPush, onUndo, onClear, status, busy = false, extra, onMove }: ActionBarProps) {
+  if (legal?.kind === 'bet') {
+    return (
+      <BetControls
+        legal={legal}
+        pushed={pushed}
+        busy={busy}
+        onPush={onPush}
+        onUndo={onUndo}
+        onClear={onClear}
+        onMove={onMove}
+      />
+    );
+  }
 
   const play = legal?.kind === 'play' ? legal : null;
   const disabled = !play || busy;
