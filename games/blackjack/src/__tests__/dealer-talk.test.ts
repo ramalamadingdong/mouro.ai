@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { dealerLine, openingLine } from '@/dealer-talk';
+import { NAG_AFTER, dealerLine, impatienceLine, openingLine } from '@/dealer-talk';
 import { RULES, type GameState } from '@/engine';
 import { act, betAll, deal, newGame, next, stack } from '@/engine/__tests__/helpers';
 
-const say = (prev: GameState, s: GameState): string | null => dealerLine(prev, s, (seat) => `P${seat}`);
+const say = (prev: GameState, s: GameState): string | null => dealerLine(prev, s, (seat) => `P${seat}`)?.text ?? null;
 
 describe('Duchess', () => {
   it('opens with the house rules', () => {
@@ -58,6 +58,22 @@ describe('Duchess', () => {
     const s = deal(newGame(1));
     expect(say(s, act(s, { kind: 'tip', amount: 5 }))).toMatch(/5/);
     expect(say(s, act(s, { kind: 'tip', amount: 100 }))).toMatch(/100/);
+  });
+
+  it('sends an emoji with every line', () => {
+    const s0 = newGame(2);
+    expect(dealerLine(s0, deal(s0), (seat) => `P${seat}`)?.emoji).toBeTruthy();
+  });
+
+  it('gets ruder the longer someone takes, and nags for the next deal', () => {
+    expect(NAG_AFTER).toHaveLength(5);
+    const levels = [1, 2, 3, 4, 5].map((l) => impatienceLine(l, 'Rami', 7));
+    for (const l of levels) {
+      expect(l.text).toMatch(/Rami/);
+      expect(l.emoji).toBeTruthy();
+    }
+    expect(new Set(levels.map((l) => l.emoji)).size).toBe(5);
+    expect(impatienceLine(2, null, 7).text).not.toMatch(/Rami/);
   });
 
   it('names a bust', () => {

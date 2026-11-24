@@ -9,9 +9,9 @@
  * face down until `holeCardShown` (online, it IS in the state each client
  * receives — see AGENTS.md — so this component is what keeps it hidden).
  */
-import { useState, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 import { DEALER } from '@/ai';
-import { CUT_FRACTION, ambientLine, dealerLine } from '@/dealer-talk';
+import { CUT_FRACTION, NAG_AFTER, ambientLine, dealerLine, finallyLine, impatienceLine, type Talk } from '@/dealer-talk';
 import {
   chipsInPlay,
   handValue,
@@ -216,17 +216,43 @@ export function Table(props: TableProps) {
   // Re-derived on each new state (adjusting state during render, React's
   // sanctioned way to follow a prop). A move she has nothing to say about
   // keeps her last line up.
-  const [talk, setTalk] = useState<{ version: number; prev: GameState; line: string }>(() => ({
+  const [talk, setTalk] = useState<{ version: number; prev: GameState; line: Talk }>(() => ({
     version: state.version,
     prev: state,
     line: ambientLine(state),
   }));
+  // She calls players by name ("Sugar" for an unnamed "You").
+  const talkName = (seat: number): string => (state.players[seat].name === 'You' ? 'Sugar' : state.players[seat].name);
+  // (Declared before the talk update below, which reads it.)
+  const [nag, setNag] = useState<{ version: number; level: number }>({ version: state.version, level: 0 });
   if (talk.version !== state.version) {
-    // She calls players by name ("Sugar" for an unnamed "You").
-    const talkName = (seat: number): string => (state.players[seat].name === 'You' ? 'Sugar' : state.players[seat].name);
-    const line = dealerLine(talk.prev, state, talkName) ?? talk.line;
+    // If she was nagging about the last state, a move she has nothing else
+    // to say about gets a "Finally." instead of her old line coming back.
+    const wasNagging = nag.version === talk.version && nag.level > 0;
+    const line = dealerLine(talk.prev, state, talkName) ?? (wasNagging ? finallyLine(state.version) : talk.line);
     setTalk({ version: state.version, prev: state, line });
   }
+
+  // The longer a PERSON takes, the worse she gets: a step up at each of
+  // NAG_AFTER seconds with nothing happening. Cats are never slow, so only
+  // humans are nagged; once a round is paid and nobody deals the next one,
+  // she nags the whole table. Any move resets her (the timers are keyed on
+  // the state version).
+  const waitSeat =
+    (state.phase === 'betting' || state.phase === 'playing') && state.toAct !== null && state.players[state.toAct].isHuman
+      ? state.toAct
+      : settled
+        ? -1
+        : null;
+  useEffect(() => {
+    if (waitSeat === null) return;
+    const v = state.version;
+    const timers = NAG_AFTER.map((sec, i) => setTimeout(() => setNag({ version: v, level: i + 1 }), sec * 1000));
+    return () => timers.forEach(clearTimeout);
+  }, [state.version, waitSeat]);
+  const nagLevel = nag.version === state.version && waitSeat !== null ? nag.level : 0;
+  const said: Talk =
+    nagLevel > 0 ? impatienceLine(nagLevel, waitSeat === -1 || waitSeat === null ? null : talkName(waitSeat), state.version) : talk.line;
   const shoeLeft = state.shoe.length / SHOE_SIZE;
 
   function handView(p: PlayerState, hand: Hand, i: number, size: 'sm' | 'md' | 'lg', active: boolean): ReactNode {
@@ -379,8 +405,8 @@ export function Table(props: TableProps) {
         <span className="talk__avatar" aria-hidden="true">
           <Avatar uid={DEALER.uid} name={DEALER.name} />
         </span>
-        <p className="talk__line" aria-live="polite" key={talk.line} data-long={talk.line.length > 90 ? 'true' : undefined}>
-          “{talk.line}”
+        <p className="talk__line" aria-live="polite" key={said.text} data-long={said.text.length > 90 ? 'true' : undefined}>
+          “{said.text}” <span className="talk__emoji">{said.emoji}</span>
         </p>
         <span
           className="shoe"
@@ -401,6 +427,10 @@ export function Table(props: TableProps) {
             <div className="dealer__who">
               <span className="dealer__avatar">
                 <Avatar uid={DEALER.uid} name={DEALER.name} />
+                {/* The emoji she just sent, popping up beside her. Re-keyed so it pops each time. */}
+                <span className="dealer__emoji" key={`${said.text}|${said.emoji}`} aria-hidden="true" data-mad={nagLevel >= 3 ? 'true' : undefined}>
+                  {said.emoji}
+                </span>
               </span>
               <span className="dealer__name">{DEALER.name}</span>
             </div>
