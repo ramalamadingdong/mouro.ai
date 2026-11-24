@@ -260,6 +260,32 @@ describe('the dealer', () => {
   });
 });
 
+describe('tipping the dealer', () => {
+  it('goes to the house, keeps your turn, and is counted', () => {
+    let s = deal(newGame(2));
+    s = act(s, { kind: 'tip', amount: 25 });
+    expect(s.toAct).toBe(0);
+    expect(s.players[0].stack).toBe(975);
+    expect(s.players[0].tipped).toBe(25);
+    expect(s.house).toBe(25);
+    expect(totalChips(s)).toBe(2000);
+    s = act(s, { kind: 'tip', amount: 5 });
+    expect(s.players[0].tipped).toBe(30);
+    s = act(s, { kind: 'bet', amount: 10 });
+    expect(s.toAct).toBe(1);
+  });
+
+  it('only on your betting turn, and never more than you have', () => {
+    const s = deal(newGame(2));
+    expect(applyMove(s, { kind: 'tip', amount: 5 }, uidOf(1)).ok).toBe(false);
+    expect(applyMove(s, { kind: 'tip', amount: 991 }, uidOf(0)).ok).toBe(false); // must keep the 10 minimum
+    expect(applyMove(s, { kind: 'tip', amount: 990 }, uidOf(0)).ok).toBe(true);
+    expect(applyMove(s, { kind: 'tip', amount: 0 }, uidOf(0)).ok).toBe(false);
+    const playing = next(stack(betAll(s, 10), 'Tc 9c 6d 7d 8h 2s'));
+    expect(applyMove(playing, { kind: 'tip', amount: 5 }, uidOf(playing.toAct!)).ok).toBe(false);
+  });
+});
+
 describe('late surrender', () => {
   it('gives back half the bet on the first two cards only', () => {
     let s = round(1, 'Tc 9c 6d Kd 2h');

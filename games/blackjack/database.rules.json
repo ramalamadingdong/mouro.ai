@@ -238,7 +238,7 @@
               "lastAction": {
                 ".validate": "newData.hasChildren(['kind', 'amount'])",
                 "kind": {
-                  ".validate": "newData.isString() && (newData.val() === 'bet' || newData.val() === 'sitout' || newData.val() === 'hit' || newData.val() === 'stand' || newData.val() === 'double' || newData.val() === 'split' || newData.val() === 'surrender' || newData.val() === 'blackjack' || newData.val() === 'bust')",
+                  ".validate": "newData.isString() && (newData.val() === 'bet' || newData.val() === 'sitout' || newData.val() === 'tip' || newData.val() === 'hit' || newData.val() === 'stand' || newData.val() === 'double' || newData.val() === 'split' || newData.val() === 'surrender' || newData.val() === 'blackjack' || newData.val() === 'bust')",
                   "$deep": {
                     ".validate": false
                   }
@@ -250,6 +250,12 @@
                   }
                 },
                 "$other": {
+                  ".validate": false
+                }
+              },
+              "tipped": {
+                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10000000",
+                "$deep": {
                   ".validate": false
                 }
               },
@@ -294,7 +300,7 @@
               }
             },
             "kind": {
-              ".validate": "newData.isString() && (newData.val() === 'deal' || newData.val() === 'next' || newData.val() === 'rematch' || newData.val() === 'bet' || newData.val() === 'hit' || newData.val() === 'stand' || newData.val() === 'double' || newData.val() === 'split' || newData.val() === 'surrender' || newData.val() === 'away')",
+              ".validate": "newData.isString() && (newData.val() === 'deal' || newData.val() === 'next' || newData.val() === 'rematch' || newData.val() === 'bet' || newData.val() === 'tip' || newData.val() === 'hit' || newData.val() === 'stand' || newData.val() === 'double' || newData.val() === 'split' || newData.val() === 'surrender' || newData.val() === 'away')",
               "$deep": {
                 ".validate": false
               }

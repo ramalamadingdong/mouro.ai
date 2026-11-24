@@ -36,6 +36,7 @@ const PHASES: readonly Phase[] = ['idle', 'betting', 'playing', 'dealer', 'settl
 const ACTION_KINDS: readonly LastAction['kind'][] = [
   'bet',
   'sitout',
+  'tip',
   'hit',
   'stand',
   'double',
@@ -49,6 +50,7 @@ const MOVE_KINDS: readonly LastMove['kind'][] = [
   'next',
   'rematch',
   'bet',
+  'tip',
   'hit',
   'stand',
   'double',
@@ -148,6 +150,8 @@ function decodePlayer(v: unknown): PlayerState {
     stack: chips(v.stack, 'stack'),
     hands,
     active,
+    // Absent in states written before tipping existed.
+    tipped: v.tipped === undefined ? 0 : chips(v.tipped, 'tipped'),
     sitOut: bool(v.sitOut, 'sitOut'),
     lastAction,
   };

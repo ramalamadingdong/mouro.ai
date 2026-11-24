@@ -52,7 +52,8 @@ export function HelpModal({ open, onClose }: { open: boolean; onClose: () => voi
           every bet that is not a blackjack. There is no insurance at this table.
         </p>
         <p>
-          The game lasts a set number of rounds. Whoever has the most chips at the end wins; run out and you are done.
+          While you bet you can <strong>tip Duchess</strong> (5 to 100 chips) — it goes to the house, never below your
+          minimum bet, and she will have something to say about it. The game lasts a set number of rounds. Whoever has the most chips at the end wins; run out and you are done.
         </p>
 
         <h3 className="help__heading">Hands to know</h3>

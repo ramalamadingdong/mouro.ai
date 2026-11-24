@@ -60,6 +60,7 @@ export type Phase = 'idle' | 'betting' | 'playing' | 'dealer' | 'settled' | 'gam
 export type LastActionKind =
   | 'bet'
   | 'sitout'
+  | 'tip'
   | 'hit'
   | 'stand'
   | 'double'
@@ -104,6 +105,8 @@ export interface PlayerState {
   hands: Hand[];
   /** Index into `hands` of the hand being played. */
   active: number;
+  /** Chips this player has tipped the dealer over the game (they go to the house). */
+  tipped: number;
   /**
    * Online only: somebody had to act for this player because they were away.
    * Cleared by the player's own next action. Clients use it to skip the grace
@@ -184,6 +187,8 @@ export interface GameState {
  *
  * Player moves — only from the seat in `toAct`:
  *   bet      while betting. `amount` 0 sits this round out.
+ *   tip      while it is your turn to bet: give the dealer chips (they go to
+ *            the house). Does not end your turn; any number of times.
  *   hit / stand / double / split / surrender   while playing, on the active hand.
  *
  * away — sent by any OTHER player for the seat in `toAct` when that player has
@@ -196,6 +201,7 @@ export type Move =
   | { kind: 'next'; from: Phase; dealerCards: number }
   | { kind: 'rematch'; seed: number[] }
   | { kind: 'bet'; amount: number }
+  | { kind: 'tip'; amount: number }
   | { kind: 'hit' }
   | { kind: 'stand' }
   | { kind: 'double' }
@@ -204,7 +210,7 @@ export type Move =
   | { kind: 'away' };
 
 /** The moves a player makes on their own turn. */
-export type PlayerMove = Extract<Move, { kind: 'bet' | 'hit' | 'stand' | 'double' | 'split' | 'surrender' }>;
+export type PlayerMove = Extract<Move, { kind: 'bet' | 'tip' | 'hit' | 'stand' | 'double' | 'split' | 'surrender' }>;
 
 export type ApplyResult = { ok: true; state: GameState } | { ok: false; error: string };
 

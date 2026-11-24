@@ -64,6 +64,7 @@ export function createGame(options: NewGameOptions): GameState {
       stack: startingStack,
       hands: [],
       active: 0,
+      tipped: 0,
       sitOut: false,
       lastAction: null,
     })),
@@ -88,6 +89,11 @@ const canBet = (state: GameState, p: PlayerState): boolean => p.stack >= state.c
 /** A hand that counts as a blackjack (two-card 21, not made by splitting). */
 export function isBlackjack(hand: Hand): boolean {
   return !hand.split && isNatural(hand.cards);
+}
+
+/** Most a player may tip right now: everything above the minimum bet. */
+export function maxTip(state: GameState, p: PlayerState): number {
+  return Math.max(0, p.stack - state.config.minBet);
 }
 
 /** Chips riding on the table right now (0 once the round is settled). */
@@ -315,6 +321,7 @@ function rematch(state: GameState, seed: readonly number[]): string | null {
   if (state.phase !== 'gameover') return 'The game is not over yet.';
   for (const p of state.players) {
     p.stack = state.config.startingStack;
+    p.tipped = 0;
     p.hands = [];
     p.active = 0;
     p.sitOut = false;
@@ -394,6 +401,20 @@ function playerAction(state: GameState, action: PlayerMove, seat: number): strin
   if (seat !== legal.seat) return 'It is not your turn.';
   const p = state.players[seat];
 
+  if (legal.kind === 'bet' && action.kind === 'tip') {
+    // A tip goes straight to the house. The turn does not move: tip, then bet.
+    const amount = action.amount;
+    // Never tip away the chips you need for the minimum bet.
+    if (!Number.isInteger(amount) || amount < 1 || amount > maxTip(state, p)) {
+      return 'Keep enough for the minimum bet — tip less.';
+    }
+    p.stack -= amount;
+    p.tipped += amount;
+    state.house += amount;
+    p.lastAction = { kind: 'tip', amount };
+    return null;
+  }
+
   if (legal.kind === 'bet') {
     if (action.kind !== 'bet') return 'Place a bet first.';
     const amount = action.amount;
@@ -415,6 +436,8 @@ function playerAction(state: GameState, action: PlayerMove, seat: number): strin
   switch (action.kind) {
     case 'bet':
       return 'The bets are already in.';
+    case 'tip':
+      return 'Tip while it is your turn to bet.';
     case 'surrender':
       if (!legal.canSurrender) return 'You can only surrender your first two cards.';
       hand.done = true;
@@ -503,6 +526,7 @@ export function applyMove(state: GameState, move: Move, uid: string): ApplyResul
       error = next(nextState, move.from, move.dealerCards);
       break;
     case 'bet':
+    case 'tip':
     case 'hit':
     case 'stand':
     case 'double':

@@ -26,6 +26,7 @@ export {
   isBlackjack,
   isGameOver,
   legalActions,
+  maxTip,
   totalChips,
 } from './reducer';
 export { normalize } from './serialize';

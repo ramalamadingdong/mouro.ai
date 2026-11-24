@@ -19,6 +19,7 @@ import {
   isBlackjack,
   isGameOver,
   legalActions,
+  maxTip,
   type Card,
   type GameState,
   type Hand,
@@ -67,6 +68,7 @@ const signed = (n: number): string => (n > 0 ? `+${chips(n)}` : n < 0 ? `−${ch
 const ACTION_LABELS: Record<string, string> = {
   bet: 'Bet',
   sitout: 'Sitting out',
+  tip: 'Tipped!',
   surrender: 'Surrender',
   hit: 'Hit',
   stand: 'Stand',
@@ -147,6 +149,7 @@ export function Table(props: TableProps) {
   const { state, mySeat, thinkingSeat = null, away, busy = false, error, onMove } = props;
   const [menuOpen, setMenuOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [tipOpen, setTipOpen] = useState(false);
   const vibrate = useSettingsStore((s) => s.vibrate);
   const setVibrate = useSettingsStore((s) => s.setVibrate);
   const chime = useSettingsStore((s) => s.chime);
@@ -205,7 +208,7 @@ export function Table(props: TableProps) {
   const heroDone =
     mySeat !== null &&
     (state.phase === 'betting'
-      ? hero.lastAction !== null || hero.stack < state.config.minBet
+      ? hero.lastAction?.kind === 'bet' || hero.lastAction?.kind === 'sitout' || hero.stack < state.config.minBet
       : hero.hands.every((h) => h.done));
   const inRound = state.phase === 'betting' || state.phase === 'playing' || state.phase === 'dealer';
 
@@ -490,6 +493,7 @@ export function Table(props: TableProps) {
             onPush={(value) => setPushed([...pushed, value])}
             onUndo={() => setPushed(pushed.slice(0, -1))}
             onClear={() => setPushed([])}
+            onTip={() => setTipOpen(true)}
             status={status}
             busy={busy}
             onMove={move}
@@ -533,7 +537,10 @@ export function Table(props: TableProps) {
             .sort((a, b) => b.p.stack - a.p.stack)
             .map(({ p, seat }) => (
               <li key={p.uid}>
-                <span>{nameOf(seat)}</span>
+                <span>
+                  {nameOf(seat)}
+                  {p.tipped > 0 && <span className="standings__tips"> · tipped {chips(p.tipped)}</span>}
+                </span>
                 <span>{chips(p.stack)}</span>
               </li>
             ))}
@@ -542,6 +549,36 @@ export function Table(props: TableProps) {
             <span>{state.house >= 0 ? `+${chips(state.house)}` : `−${chips(-state.house)}`}</span>
           </li>
         </ol>
+      </Modal>
+
+      <Modal open={tipOpen && legal?.kind === 'bet'} title={`Tip ${DEALER.name}`} onClose={() => setTipOpen(false)}>
+        <div className="stack">
+          <p className="tip__note">
+            Tips go to the house. {DEALER.name} notices.
+            {hero.tipped > 0 && ` You've tipped ${chips(hero.tipped)} so far.`}
+          </p>
+          <div className="tip__options">
+            {[5, 10, 25, 50, 100].map((amount) => (
+              <button
+                key={amount}
+                type="button"
+                className="bet-chip tip__chip"
+                data-value={amount >= 100 ? 100 : amount >= 50 ? 50 : amount >= 25 ? 25 : 10}
+                disabled={busy || amount > maxTip(state, hero)}
+                onClick={() => {
+                  setTipOpen(false);
+                  onMove({ kind: 'tip', amount });
+                }}
+              >
+                {amount}
+              </button>
+            ))}
+          </div>
+          {maxTip(state, hero) < 5 && <p className="tip__note">You need to keep the minimum bet — nothing to spare.</p>}
+          <button type="button" className="btn btn--ghost btn--block" onClick={() => setTipOpen(false)}>
+            Not now
+          </button>
+        </div>
       </Modal>
 
       <Modal open={menuOpen} title="Menu" onClose={() => setMenuOpen(false)}>
