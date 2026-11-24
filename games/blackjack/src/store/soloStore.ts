@@ -48,7 +48,8 @@ export const useSoloStore = create<SoloStore>()(
       error: null,
 
       start: (name, options) => {
-        const opponents = CATS.slice(0, Math.min(Math.max(options.opponents, 0), CATS.length));
+        // In the cats' own order, so seats are stable whatever order they were picked in.
+        const opponents = CATS.filter((cat) => options.cats.includes(cat.id));
         const fresh = createGame({
           players: [
             { uid: SOLO_UID, name: name.trim() || 'You', isHuman: true },

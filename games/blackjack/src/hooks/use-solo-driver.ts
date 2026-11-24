@@ -19,7 +19,7 @@ import { legalActions } from '@/engine';
 import { CPU_PACE, dealerDelay, thinkDelay } from '@/pace';
 import { SOLO_UID, useSoloStore } from '@/store/soloStore';
 
-const DEALER_PHASES = new Set(['betting', 'playing', 'dealer']);
+const DEALER_PHASES = new Set(['betting', 'insurance', 'playing', 'dealer']);
 
 export function useSoloDriver(): void {
   const game = useSoloStore((s) => s.game);

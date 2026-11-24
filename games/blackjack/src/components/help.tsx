@@ -38,12 +38,20 @@ export function HelpModal({ open, onClose }: { open: boolean; onClose: () => voi
             <strong>Split</strong> — two cards of the same value: put up a second bet and play them as two hands (up to
             four). Split Aces get one card each.
           </li>
+          <li>
+            <strong>Surrender</strong> — on your first two cards only: give up the hand and get half your bet back.
+          </li>
         </ul>
         <p>
-          Then the dealer turns the hidden card and <strong>must draw to 17</strong>, standing on every 17. Beat the
-          dealer and you win your bet back plus the same again; a tie (a <em>push</em>) returns your bet. If the dealer
-          shows an Ace or a ten, they check for blackjack straight away, and a dealer blackjack takes every bet that
-          is not a blackjack too.
+          Then the dealer turns the hidden card and <strong>must draw to 17</strong> — and, Vegas style,{' '}
+          <strong>hits a soft 17</strong> (an Ace and a 6). Beat the dealer and you win your bet back plus the same
+          again; a tie (a <em>push</em>) returns your bet.
+        </p>
+        <p>
+          If the dealer shows a ten, she checks for blackjack straight away. If she shows an <strong>Ace</strong>, she
+          first offers <strong>insurance</strong>: a side bet of half your bet that she has blackjack, paid 2 to 1. With
+          a blackjack of your own it is called <strong>even money</strong> — you are paid 1 to 1 whatever she has. Then
+          she peeks; a dealer blackjack takes every bet that is not a blackjack.
         </p>
         <p>
           The game lasts a set number of rounds. Whoever has the most chips at the end wins; run out and you are done.
@@ -65,7 +73,15 @@ export function HelpModal({ open, onClose }: { open: boolean; onClose: () => voi
             </li>
           ))}
         </ol>
-        <p className="help__foot">Six decks, shuffled when the cut card comes out. No insurance, no surrender.</p>
+        <h3 className="help__heading">House rules (Las Vegas Strip)</h3>
+        <ul className="help__list">
+          <li>Six decks; reshuffled when the cut card comes out (the shoe gauge by Duchess shows how close it is).</li>
+          <li>Dealer hits soft 17 and peeks for blackjack under an Ace or a ten.</li>
+          <li>Blackjack pays 3 to 2; insurance pays 2 to 1; late surrender returns half.</li>
+          <li>Double on any two cards, also after a split. Split to four hands; split Aces get one card.</li>
+          <li>Payouts that would make half a chip are rounded down.</li>
+        </ul>
+        <p className="help__foot">Duchess calls every change at the table as it happens — read her line under the menu.</p>
       </div>
     </Modal>
   );

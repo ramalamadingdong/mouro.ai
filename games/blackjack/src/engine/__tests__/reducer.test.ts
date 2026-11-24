@@ -100,16 +100,55 @@ describe('the deal', () => {
     expect(s.players[0].stack).toBe(1037);
   });
 
-  it('the dealer peeks under an Ace and settles at once', () => {
-    const s = round(2, '9c Tc As 9d Td Kh');
+  it('the dealer peeks under a ten and settles at once', () => {
+    const s = round(2, '9c Tc Ks 9d Td Ah');
     expect(s.phase).toBe('settled');
     expect(s.result!.dealerBlackjack).toBe(true);
     expect(s.result!.net).toEqual([-100, -100]);
     expect(s.house).toBe(200);
   });
 
+  it('under an Ace: insurance first, in seat order, then the peek', () => {
+    let s = round(2, '9c Tc As 9d Td Kh');
+    expect(s.phase).toBe('insurance');
+    expect(legalActions(s)).toMatchObject({ kind: 'insurance', seat: 0, cost: 50, evenMoney: false });
+    expect(applyMove(s, { kind: 'hit' }, uidOf(0)).ok).toBe(false);
+    s = act(s, { kind: 'insure', take: true });
+    expect(s.players[0].stack).toBe(850);
+    expect(totalChips(s)).toBe(2000);
+    s = act(s, { kind: 'insure', take: false });
+    expect(s.toAct).toBeNull();
+    s = next(s); // the peek: blackjack
+    expect(s.phase).toBe('settled');
+    // seat 0 loses 100 on the hand, wins 100 (2:1 on 50) on insurance
+    expect(s.result!.net).toEqual([0, -100]);
+    expect(s.players[0].stack).toBe(1000);
+    expect(totalChips(s)).toBe(2000);
+  });
+
+  it('insurance is lost when the dealer has no blackjack, and play goes on', () => {
+    let s = round(1, 'Tc As 9d 7h 2c');
+    s = act(s, { kind: 'insure', take: true });
+    s = next(s);
+    expect(s.phase).toBe('playing');
+    expect(s.house).toBe(50);
+    s = finish(s); // 19 vs A7 = soft 18: dealer stands
+    expect(s.result!.net[0]).toBe(100 - 50);
+    expect(s.players[0].stack).toBe(1050);
+    expect(totalChips(s)).toBe(1000);
+  });
+
+  it('even money: a blackjack insured against an Ace is paid 1:1 either way', () => {
+    let s = round(1, 'As Ac Kd Kh');
+    expect(legalActions(s)).toMatchObject({ kind: 'insurance', evenMoney: true });
+    s = finish(next(act(s, { kind: 'insure', take: true })));
+    expect(s.players[0].hands[0].outcome).toBe('push');
+    expect(s.result!.net[0]).toBe(100);
+  });
+
   it('blackjack against a dealer blackjack is a push', () => {
-    const s = round(1, 'As Ac Kd Kh');
+    let s = round(1, 'As Ac Kd Kh');
+    s = next(act(s, { kind: 'insure', take: false }));
     expect(s.players[0].hands[0].outcome).toBe('push');
     expect(s.players[0].stack).toBe(1000);
   });
@@ -215,8 +254,18 @@ describe('the dealer', () => {
     expect(handValue(s.dealer).total).toBe(14);
   });
 
-  it('stands on soft 17', () => {
-    let s = round(1, 'Tc Ac Td 6d');
+  it('hits soft 17 (Vegas rules)', () => {
+    let s = round(1, 'Tc 6c Td Ac 2c');
+    s = act(s, { kind: 'stand' });
+    s = next(next(s)); // hole card, then the soft 17 must draw
+    expect(s.dealer).toHaveLength(3);
+    s = next(s);
+    expect(s.result!.dealerTotal).toBe(19);
+    expect(s.result!.net[0]).toBe(100); // our 20 still beats it
+  });
+
+  it('stands on hard 17', () => {
+    let s = round(1, 'Tc Tc#1 Td 7d');
     s = act(s, { kind: 'stand' });
     s = next(next(s));
     expect(s.phase).toBe('settled');
@@ -241,6 +290,31 @@ describe('the dealer', () => {
     s = must(s, stale, uidOf(0));
     expect(applyMove(s, stale, uidOf(0)).ok).toBe(false);
     expect(applyMove(s, { kind: 'next', from: 'playing', dealerCards: 3 }, uidOf(0)).ok).toBe(false);
+  });
+});
+
+describe('late surrender', () => {
+  it('gives back half the bet on the first two cards only', () => {
+    let s = round(1, 'Tc 9c 6d Kd 2h');
+    expect(legalActions(s)).toMatchObject({ canSurrender: true });
+    s = act(s, { kind: 'surrender' });
+    expect(s.players[0].hands[0].outcome).toBe('surrender');
+    s = finish(s);
+    expect(s.players[0].hands[0].outcome).toBe('surrender');
+    expect(s.result!.net[0]).toBe(-50);
+    // nobody left to play for: the dealer does not draw
+    expect(s.dealer).toHaveLength(2);
+    expect(totalChips(s)).toBe(1000);
+  });
+
+  it('not after a hit or a split', () => {
+    let s = round(1, '8c 9c 8d Td 2h 3h');
+    s = act(s, { kind: 'split' });
+    expect(legalActions(s)).toMatchObject({ canSurrender: false });
+    s = round(1, '5c 9c 5d Td 2h');
+    s = act(s, { kind: 'hit' });
+    expect(legalActions(s)).toMatchObject({ canSurrender: false });
+    expect(applyMove(s, { kind: 'surrender' }, uidOf(0)).ok).toBe(false);
   });
 });
 

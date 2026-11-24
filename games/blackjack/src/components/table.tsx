@@ -11,6 +11,7 @@
  */
 import { useState, type CSSProperties, type ReactNode } from 'react';
 import { DEALER } from '@/ai';
+import { CUT_FRACTION, ambientLine, dealerLine } from '@/dealer-talk';
 import {
   chipsInPlay,
   handValue,
@@ -23,6 +24,8 @@ import {
   type Hand,
   type PlayerMove,
   type PlayerState,
+  RULES,
+  SHOE_SIZE,
 } from '@/engine';
 import { ActionBar } from '@/components/action-bar';
 import { CHIPS } from '@/components/chips';
@@ -30,7 +33,7 @@ import { Avatar } from '@/components/avatar';
 import { CardView } from '@/components/card';
 import { HelpModal } from '@/components/help';
 import { Modal } from '@/components/modal';
-import { canVibrate, useTurnBuzz } from '@/hooks/use-turn-buzz';
+import { canVibrate, playChime, useTurnBuzz } from '@/hooks/use-turn-buzz';
 import { useSettingsStore } from '@/store/settingsStore';
 import './table.css';
 
@@ -64,6 +67,9 @@ const signed = (n: number): string => (n > 0 ? `+${chips(n)}` : n < 0 ? `−${ch
 const ACTION_LABELS: Record<string, string> = {
   bet: 'Bet',
   sitout: 'Sitting out',
+  insure: 'Insured',
+  noinsure: 'Pass',
+  surrender: 'Surrender',
   hit: 'Hit',
   stand: 'Stand',
   double: 'Double',
@@ -78,6 +84,7 @@ const OUTCOME_LABELS: Record<string, string> = {
   push: 'Push',
   lose: 'Lose',
   bust: 'Bust',
+  surrender: 'Surrendered',
 };
 
 /** "17", "Soft 17", "Blackjack", "Bust 24". */
@@ -144,6 +151,8 @@ export function Table(props: TableProps) {
   const [helpOpen, setHelpOpen] = useState(false);
   const vibrate = useSettingsStore((s) => s.vibrate);
   const setVibrate = useSettingsStore((s) => s.setVibrate);
+  const chime = useSettingsStore((s) => s.chime);
+  const setChime = useSettingsStore((s) => s.setChime);
   useTurnBuzz(state, mySeat);
 
   const n = state.players.length;
@@ -190,6 +199,7 @@ export function Table(props: TableProps) {
     return `Waiting for ${toActName} to ${verb}…`;
   };
   if (state.phase === 'betting') status = state.toAct === null ? 'Dealing…' : waitingOn('bet');
+  else if (state.phase === 'insurance') status = state.toAct === null ? `${DEALER.name} peeks…` : waitingOn('decide on insurance');
   else if (state.phase === 'playing') status = state.toAct === null ? `${DEALER.name} turns her card…` : waitingOn('play');
   else if (state.phase === 'dealer') {
     const { total } = handValue(state.dealer);
@@ -197,8 +207,29 @@ export function Table(props: TableProps) {
   }
   const heroDone =
     mySeat !== null &&
-    (state.phase === 'betting' ? hero.lastAction !== null || hero.stack < state.config.minBet : hero.hands.every((h) => h.done));
-  const inRound = state.phase === 'betting' || state.phase === 'playing' || state.phase === 'dealer';
+    (state.phase === 'betting'
+      ? hero.lastAction !== null || hero.stack < state.config.minBet
+      : state.phase === 'insurance'
+        ? hero.lastAction?.kind === 'insure' || hero.lastAction?.kind === 'noinsure' || hero.hands.length === 0
+        : hero.hands.every((h) => h.done));
+  const inRound = state.phase === 'betting' || state.phase === 'insurance' || state.phase === 'playing' || state.phase === 'dealer';
+
+  // ── Duchess calls the game ───────────────────────────────────────────────
+  // Re-derived on each new state (adjusting state during render, React's
+  // sanctioned way to follow a prop). A move she has nothing to say about
+  // keeps her last line up.
+  const [talk, setTalk] = useState<{ version: number; prev: GameState; line: string }>(() => ({
+    version: state.version,
+    prev: state,
+    line: ambientLine(state),
+  }));
+  if (talk.version !== state.version) {
+    // She calls players by name ("Sugar" for an unnamed "You").
+    const talkName = (seat: number): string => (state.players[seat].name === 'You' ? 'Sugar' : state.players[seat].name);
+    const line = dealerLine(talk.prev, state, talkName) ?? talk.line;
+    setTalk({ version: state.version, prev: state, line });
+  }
+  const shoeLeft = state.shoe.length / SHOE_SIZE;
 
   function handView(p: PlayerState, hand: Hand, i: number, size: 'sm' | 'md' | 'lg', active: boolean): ReactNode {
     const bj = isBlackjack(hand);
@@ -345,6 +376,26 @@ export function Table(props: TableProps) {
         </p>
         {props.tag && <span className="table__tag code-text">{props.tag}</span>}
       </header>
+
+      <div className="talk">
+        <span className="talk__avatar" aria-hidden="true">
+          <Avatar uid={DEALER.uid} name={DEALER.name} />
+        </span>
+        <p className="talk__line" aria-live="polite" key={talk.line}>
+          “{talk.line}”
+        </p>
+        <span
+          className="shoe"
+          title={`Shoe: ${state.shoe.length} cards left — reshuffle below ${RULES.CUT}`}
+          aria-label={`Shoe: ${state.shoe.length} cards left, reshuffle below ${RULES.CUT}`}
+        >
+          <span className="shoe__label">Shoe</span>
+          <span className="shoe__bar">
+            <i className="shoe__fill" style={{ width: `${shoeLeft * 100}%` }} data-low={state.shoe.length < RULES.CUT ? 'true' : undefined} />
+            <i className="shoe__cut" style={{ left: `${CUT_FRACTION * 100}%` }} />
+          </span>
+        </span>
+      </div>
 
       <div className="felt-wrap">
         <div className="felt">
@@ -509,6 +560,19 @@ export function Table(props: TableProps) {
             }}
           >
             How to play
+          </button>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={chime}
+            className="btn btn--secondary btn--block"
+            onClick={() => {
+              setChime(!chime);
+              // Turning it on plays it once, so you know what to listen for.
+              if (!chime) playChime();
+            }}
+          >
+            Chime on my turn: {chime ? 'On' : 'Off'}
           </button>
           {canVibrate() && (
             <button
