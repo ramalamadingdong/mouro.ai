@@ -55,19 +55,49 @@ are working in — those hold each project's non-negotiables.
   every realtime room. The `road-trip` realtime namespace (rules in
   `games/road-trip/`) is for the Categories word game only; its rules reject
   any other field.
-- **Analytics.** Every page loads `site/static/js/analytics.js` by its absolute
-  address (`https://mouro.ai/static/js/analytics.js`, which works from any app's
-  base path). It loads the self-hosted Umami at `/stats` (systemd
-  `mouro-umami`, set up by `infra/umami-setup.sh`), counts only the live
-  domain, drops query strings and replaces room codes with `:code`. A new page
-  or game adds the same one-line tag. Never send location, room codes or
-  anything a player typed in an event.
+- **Every new page and game gets the analytics tag.** See "Analytics" below;
+  `scripts/check-analytics.mjs` fails CI if a page is missing it.
 - Don't commit `.env` files, `server/data/`, or build output.
+
+## Analytics (required on every new page and game)
+
+The site and every game are tracked by a self-hosted Umami at
+https://mouro.ai/stats (systemd `mouro-umami` on 127.0.0.1:3100, Caddy route
+`/stats/*`, installed and upgraded with `infra/umami-setup.sh`). All tracking
+goes through one file, `site/static/js/analytics.js`, which holds the website
+ID, counts only the live `mouro.ai` hostname, never sends query strings, and
+rewrites room codes (`/join|lobby|game/XXXXX`) to `:code`.
+
+**When you add a page or a game, add this tag before `</head>`:**
+
+| Kind | File | Tag |
+|---|---|---|
+| Static page in `site/` | the page's `.html` | `<script defer src="https://mouro.ai/static/js/analytics.js"></script>` |
+| Vite game | `games/<game>/index.html` | same tag as above |
+| Expo game | `games/<game>/src/app/+html.tsx` | `<script defer src="https://mouro.ai/static/js/analytics.js" />` |
+
+- Always use the **absolute** address. Vite rewrites root-relative paths in
+  `index.html` with its `base` (`/holdem/static/...` would 404), and the
+  absolute URL also works from `404.html` at any path.
+- Don't paste the Umami `script.js` tag or the website ID into a page; only
+  `analytics.js` knows them.
+- Instant-redirect pages are skipped on purpose (`site/projects/<id>/` share
+  addresses, `site/games/road-trip/index.html`). Add any new one to `SKIP` in
+  `scripts/check-analytics.mjs`, with the reason.
+- A game whose URLs carry something private other than a room code must
+  extend the clean-up in `analytics.js` first.
+- **Custom events** (`window.umami?.track('name', { ... })`, always with `?.`
+  because blockers and dev builds have no tracker): only coarse, anonymous
+  facts, e.g. a mode or a player count. Never location, room codes, names,
+  chat or anything a player typed.
+- A page that touches location must say in its privacy note that visits are
+  counted (see the road trip trivia and photo footers).
+- Check with `node scripts/check-analytics.mjs`; it runs in CI.
 
 ## Verify before finishing
 
 ```bash
-npm run typecheck && npm test        # from the repo root
+npm run typecheck && npm test        # from the repo root (includes the analytics check)
 ```
 
 For UI changes, also `npm run build && npm run preview` and try it at

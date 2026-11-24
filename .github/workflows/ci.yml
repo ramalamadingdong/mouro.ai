@@ -21,6 +21,7 @@ jobs:
           node-version: 24
           cache: npm
           cache-dependency-path: server/package-lock.json
+      - run: node scripts/check-analytics.mjs
       - run: npm ci --prefix server
       - run: npx -y -p typescript@5.9 tsc -p packages/realtime
       # End-to-end against a live server, using every game's real rules file.

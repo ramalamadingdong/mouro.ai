@@ -5,6 +5,9 @@ A no-signup online Yahtzee, shipped as a static PWA at
 
 ## Non-negotiable project constraints
 
+- **Analytics tag stays in the page head** (`index.html`, or `src/app/+html.tsx` for
+  Expo): `https://mouro.ai/static/js/analytics.js`. See "Analytics" in the root
+  `CLAUDE.md`; CI fails without it.
 - **Web only.** Vite + React 19 + TypeScript (strict). There is no native app,
   no Expo, no React Native, and no react-native-web. Use real DOM and real CSS.
 - **React Router v7** with `basename: '/yahtzee'`. Vite's `base` is

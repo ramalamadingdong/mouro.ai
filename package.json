@@ -15,7 +15,7 @@
     "build:tabby-eights": "npm run build --prefix games/tabby-eights",
     "build:mahjong": "npm run build --prefix games/mahjong",
     "typecheck": "npx -y -p typescript@5.9 tsc -p packages/realtime && npm run typecheck --prefix games/backgammon && npm run typecheck --prefix games/gin-rummy && npm run typecheck --prefix games/yahtzee && npm run typecheck --prefix games/holdem && npm run typecheck --prefix games/blackjack && npm run typecheck --prefix games/dots && npm run typecheck --prefix games/pawprints && npm run typecheck --prefix games/tabby-eights && npm run typecheck --prefix games/mahjong",
-    "test": "npm test --prefix server && npm test --prefix games/backgammon && npm test --prefix games/gin-rummy && npm test --prefix games/yahtzee && npm test --prefix games/holdem && npm test --prefix games/blackjack && npm test --prefix games/dots && npm test --prefix games/pawprints && npm test --prefix games/tabby-eights && npm test --prefix games/mahjong",
+    "test": "node scripts/check-analytics.mjs && npm test --prefix server && npm test --prefix games/backgammon && npm test --prefix games/gin-rummy && npm test --prefix games/yahtzee && npm test --prefix games/holdem && npm test --prefix games/blackjack && npm test --prefix games/dots && npm test --prefix games/pawprints && npm test --prefix games/tabby-eights && npm test --prefix games/mahjong",
     "preview": "node --disable-warning=ExperimentalWarning scripts/preview.mjs",
     "server": "npm start --prefix server"
   },
