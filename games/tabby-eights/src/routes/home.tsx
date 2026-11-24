@@ -11,6 +11,7 @@ import { useSoloStore } from '@/store/soloStore';
 import { HelpModal } from '@/components/help';
 import { MAX_NAME_LENGTH } from '@/util/seat';
 import { isInstalledApp } from '@/util/app-hop';
+import { NearbyRooms } from '@/components/nearby-rooms';
 import { CODE_LENGTH, extractRoomCode } from '@/util/seed';
 import './screen.css';
 import './home.css';
@@ -115,6 +116,8 @@ export function HomeRoute() {
             </div>
           </div>
         )}
+
+        <NearbyRooms enabled={onlineReady} onJoin={(code) => navigate(`/join/${code}`, { state: { inside: true } })} />
 
         <div className="stack home__actions">
           <button type="button" className="btn btn--primary btn--block" onClick={() => navigate('/solo')}>

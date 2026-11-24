@@ -38,6 +38,8 @@ interface SettingsStore {
    * once committed.
    */
   autoConfirm: boolean;
+  /** Host's switch: list a waiting room to players on the same Wi-Fi (web only). */
+  showNearby: boolean;
   setPlayerName: (name: string) => void;
   setLastRoom: (room: LastRoom | null) => void;
   setCpuDifficulty: (difficulty: Difficulty) => void;
@@ -46,6 +48,7 @@ interface SettingsStore {
   setHighlightLegal: (on: boolean) => void;
   setTapToMoveFast: (on: boolean) => void;
   setAutoConfirm: (on: boolean) => void;
+  setShowNearby: (on: boolean) => void;
 }
 
 export const useSettingsStore = create<SettingsStore>()(
@@ -59,6 +62,7 @@ export const useSettingsStore = create<SettingsStore>()(
       highlightLegal: true,
       tapToMoveFast: true,
       autoConfirm: false,
+      showNearby: true,
       setPlayerName: (playerName) => set({ playerName }),
       setLastRoom: (lastRoom) => set({ lastRoom }),
       setCpuDifficulty: (cpuDifficulty) => set({ cpuDifficulty }),
@@ -67,6 +71,7 @@ export const useSettingsStore = create<SettingsStore>()(
       setHighlightLegal: (highlightLegal) => set({ highlightLegal }),
       setTapToMoveFast: (tapToMoveFast) => set({ tapToMoveFast }),
       setAutoConfirm: (autoConfirm) => set({ autoConfirm }),
+      setShowNearby: (showNearby) => set({ showNearby }),
     }),
     {
       name: 'bg-settings',

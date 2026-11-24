@@ -5,6 +5,7 @@ import {
   Pressable,
   Share,
   StyleSheet,
+  Switch,
   Text,
   View,
 } from 'react-native';
@@ -14,6 +15,7 @@ import { TargetPicker, DEFAULT_TARGET } from '@/components/target-picker';
 import { Button } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
 import { getCurrentUid } from '@/net/auth';
+import { nearbySupported, useAnnounceRoom } from '@/net/nearby';
 import { useGameStore } from '@/store/gameStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { accent, felt, text } from '@/theme/colors';
@@ -93,6 +95,17 @@ export default function LobbyScreen() {
   useEffect(() => {
     if (isHost && meta && meta.target === undefined) setTarget(matchTarget);
   }, [isHost, meta, matchTarget, setTarget]);
+
+  // "On your Wi-Fi": while the host waits here with the guest seat free,
+  // players on the same network see this room on their home and join screens
+  // (net/nearby.ts). Withdrawn as soon as someone joins or the host leaves.
+  const showNearby = useSettingsStore((s) => s.showNearby);
+  const setShowNearby = useSettingsStore((s) => s.setShowNearby);
+  useAnnounceRoom(
+    isHost && showNearby && code && meta?.status === 'waiting' && !meta.guest
+      ? { code, name: meta.hostName, players: 1 }
+      : null,
+  );
 
   const handleTarget = (t: number) => {
     setMatchTarget(t); // remember the preference for next time
@@ -266,6 +279,19 @@ export default function LobbyScreen() {
         </View>
       )}
 
+      {isHost && !meta.guest && nearbySupported() && (
+        <View style={styles.nearbyRow}>
+          <Text style={styles.nearbyLabel}>Show this room to players on my Wi-Fi</Text>
+          <Switch
+            value={showNearby}
+            onValueChange={setShowNearby}
+            trackColor={{ false: felt.tableDeep, true: accent.goldDim }}
+            thumbColor={showNearby ? accent.gold : text.faint}
+            accessibilityLabel="Show this room to players on my Wi-Fi"
+          />
+        </View>
+      )}
+
       <Button
         title="Leave"
         onPress={leaveHome}
@@ -277,6 +303,17 @@ export default function LobbyScreen() {
 }
 
 const styles = StyleSheet.create({
+  nearbyRow: {
+    width: '100%',
+    maxWidth: 340,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginTop: 20,
+  },
+  nearbyLabel: { color: text.muted, fontSize: 14, flex: 1 },
   title: {
     color: accent.gold,
     fontSize: 30,

@@ -18,6 +18,7 @@ import { createRoom } from '@/net/rooms';
 import { useSettingsStore } from '@/store/settingsStore';
 import { InstallPrompt } from '@/components/install-prompt';
 import { isInstalledApp } from '@/util/app-hop';
+import { NearbyRooms } from '@/components/nearby-rooms';
 import { CODE_LENGTH, extractRoomCode } from '@/util/seed';
 import './screen.css';
 import './home.css';
@@ -154,6 +155,8 @@ export function HomeRoute() {
             </div>
           </div>
         )}
+
+        <NearbyRooms enabled={onlineReady} onJoin={(code) => navigate(`/join/${code}`, { state: { inside: true } })} />
 
         <div className="stack home__actions">
           <button
