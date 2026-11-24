@@ -1,5 +1,5 @@
-// Plays the small preview drawings on the home page's project cards when a
-// card scrolls into view, and again each time it comes back. The drawings are
+// Plays the small preview drawings on the home page's project cards on a
+// loop while they are on screen. The drawings are
 // complete and still without this script or under reduced motion; the CSS
 // animates only inside .preview.play.
 (() => {
@@ -57,18 +57,31 @@
         if (field && field.dataset.text) field.textContent = field.dataset.text;
     }
 
+    // Each preview loops: play, hold the finished drawing, start again.
+    // Off screen it waits, so nothing runs where no one can see it.
+    const CYCLE = 5500;
     const running = new Map();
+    function loop(preview) {
+        let stop = play(preview);
+        const timer = setInterval(() => {
+            stop();
+            reset(preview);
+            void preview.offsetWidth; // restart the CSS animations
+            stop = play(preview);
+        }, CYCLE);
+        return () => { clearInterval(timer); stop(); };
+    }
     const seen = new IntersectionObserver((entries) => {
         for (const { target, isIntersecting } of entries) {
             if (isIntersecting && !running.has(target)) {
-                running.set(target, play(target));
+                running.set(target, loop(target));
             } else if (!isIntersecting && running.has(target)) {
                 running.get(target)();
                 running.delete(target);
                 reset(target);
             }
         }
-    }, { threshold: 0.6 });
+    }, { threshold: 0.2 });
     previews.forEach((preview) => {
         preview.classList.add('animated');
         seen.observe(preview);
