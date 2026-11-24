@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Mouro Games — family game night</title>
-<meta name="description" content="Mahjong, Texas Hold’em, blackjack, backgammon (Tawleh), gin rummy, Yahtzee, Sudoku and Cat Café to play with family and friends, plus road trip games for the car. No accounts, no ads — share a code and play.">
+<meta name="description" content="Mahjong, Texas Hold’em, blackjack, backgammon (Tawleh), gin rummy, Yahtzee, Sudoku and Cat Café to play with family and friends, plus road trip games for the car.">
 <meta property="og:title" content="Mouro Games — family game night">
-<meta property="og:description" content="Backgammon (Tawleh), gin rummy, Yahtzee, Sudoku and Cat Café to play with family and friends, plus road trip games for the car. No accounts, no ads — share a code and play.">
+<meta property="og:description" content="Backgammon (Tawleh), gin rummy, Yahtzee, Sudoku and Cat Café to play with family and friends, plus road trip games for the car.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://mouro.ai/games/">
 <meta property="og:image" content="https://mouro.ai/static/share/games.png">
@@ -219,7 +219,7 @@
 
     <section class="intro">
       <h1>Game night, <em>anywhere.</em></h1>
-      <p id="intro-text">Games for family and friends. No accounts, no ads — share a code and play.</p>
+      <p id="intro-text" hidden></p>
       <p class="ios-hint label" id="ios-hint" hidden>Tip: tap Share, then “Add to Home Screen” to install</p>
     </section>
 
@@ -397,7 +397,6 @@
 
   <footer class="foot">
     <span>Made for family game night by <a href="/">Rami Mouro</a></span>
-    <span>No accounts · no ads · no tracking</span>
   </footer>
 </div>
 <script>
@@ -431,7 +430,7 @@
     const tabs = { mobile: document.getElementById("tab-mobile"), road: document.getElementById("tab-road") };
     const panels = { mobile: document.getElementById("panel-mobile"), road: document.getElementById("panel-road") };
     const intro = {
-      mobile: "Games for family and friends. No accounts, no ads — share a code and play.",
+      mobile: "",
       road: "Games for the car. Passengers play on their phones, and Categories can put one phone on the console as a shared screen.",
     };
     function show(which, focus = false) {
@@ -441,7 +440,9 @@
         tabs[k].tabIndex = on ? 0 : -1;
         panels[k].hidden = !on;
       }
-      document.getElementById("intro-text").textContent = intro[which];
+      const introText = document.getElementById("intro-text");
+      introText.textContent = intro[which];
+      introText.hidden = !intro[which];
       if (focus) tabs[which].focus();
     }
     const fromHash = () => show(location.hash === "#road-trip" ? "road" : "mobile");

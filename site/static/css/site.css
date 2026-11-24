@@ -2662,3 +2662,37 @@ details.more > summary {
         stroke-dashoffset: -8;
     }
 }
+
+/* ── Whole work card is a link ──────────────────────────────────────────── */
+/* The title link stretches over its card; links in the card text sit above
+   it and still go to their own places. */
+.work-item {
+    position: relative;
+    cursor: pointer;
+}
+
+.work-item h3 a::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+}
+
+.work-item h3 a:focus-visible {
+    outline: none;
+}
+
+.work-item h3 a:focus-visible::after {
+    outline: 3px solid var(--yellow);
+    outline-offset: 2px;
+}
+
+.work-item p a {
+    position: relative;
+    z-index: 2;
+}
+
+.work-item:hover h3 a {
+    background-size: 100% 100%;
+    color: var(--on-yellow);
+}
