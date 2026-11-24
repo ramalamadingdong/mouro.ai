@@ -1,6 +1,6 @@
 /**
- * Duchess, the dealer: a Las Vegas diva with a sharp tongue and zero
- * patience. She has run this table longer than you have been alive, she is
+ * Duchess, the dealer: a Las Vegas diva with a mean streak and zero
+ * patience (the owner asked for "meaner"). She has run this table longer than you have been alive, she is
  * fabulous and knows it, and she has shade for every bad decision at the
  * felt — gloating when the house wins, sulking (gloriously) when it loses.
  * Mild language only ("damn", "hell"); no slurs, and no accent played for a
@@ -46,253 +46,288 @@ const fill = (line: string, vars: Record<string, string | number>): string =>
   line.replace(/\{(\w+)\}/g, (_, k: string) => String(vars[k] ?? ''));
 
 // ── The lines ──────────────────────────────────────────────────────────────
+// She is MEAN (the owner asked for meaner). Roast the play, never the person:
+// no slurs, nothing about who anyone is — only how badly they play cards.
 
 const OPENING = [
-  "Welcome to MY table. Six decks, I hit soft seventeen, blackjack pays three to two. Bets down — I don't have all night.",
-  'Sit down, kittens. House rules: six decks, I hit soft seventeen, blackjack pays three to two. Now impress me.',
-  "Oh look, fresh money. Six decks, I hit soft seventeen, blackjack pays three to two. Let's see what you've got.",
-  "Evening. I'm Duchess, this is my table, and you're welcome. Six decks, I hit soft seventeen, three to two on blackjack.",
+  "Welcome to MY table. Six decks, I hit soft seventeen, blackjack pays three to two. Bets down — I don't have all night, and neither does your wallet.",
+  'Sit down, losers. House rules: six decks, I hit soft seventeen, blackjack pays three to two. Now disappoint me.',
+  "Oh look, fresh money. Six decks, I hit soft seventeen, blackjack pays three to two. I'll be taking all of it.",
+  "I'm Duchess. This is my table. Six decks, I hit soft seventeen, three to two on blackjack. Try to keep up, it's not hard.",
 ];
 
 const NEW_ROUND = [
-  'Bets down, babies. Chop chop.',
-  'New hand. Same me. Place your bets.',
-  "Chips on the felt — I'm not getting any younger. Well, I am. But still.",
-  'Place your bets. Try not to embarrass yourselves.',
-  "Go on, bet. The house is feeling generous. That's a lie.",
-  "Bets, please. I've got a manicure at six.",
-  'Feed the felt, darlings.',
-  "Another round? Bless your hearts. Bets down.",
-  "Let's go, let's go. Chips in the circle.",
+  'Bets down. Chop chop, some of us have standards.',
+  'New hand. Same me. Same you, unfortunately. Bet.',
+  "Chips on the felt — I'm aging watching you think.",
+  'Place your bets. Try not to embarrass yourselves. Again.',
+  "Go on, bet. The house is feeling generous. That's a lie, I'm never generous.",
+  "Bets, please. I've got a manicure at six and you're not worth missing it.",
+  'Feed the felt, darlings. Mama is hungry.',
+  "Another round? Bless your little hearts. Bets down.",
+  "Let's go, let's go. Your chips aren't going to lose themselves. Well. They might.",
   "Bet like you mean it. Or don't. I get paid either way.",
-  "Round {n}. Some of you are still here? Brave.",
-  "Place your bets. And sit up straight, this is Vegas.",
-  "Bets down. Whoever's humming, stop it.",
-  "Next hand. Somebody's luck is about to change. Probably not yours.",
-  "Chips down, hearts up. Let's dance.",
-  "Ready to lose a little? I mean play. Ready to play?",
+  'Round {n}. Some of you are still here? Brave. Stupid, but brave.',
+  'Place your bets. And sit up straight, this is Vegas, not your mother\'s basement.',
+  'Bets down. Whoever\'s humming, I will end you.',
+  "Next hand. Somebody's luck is about to change. Spoiler: not yours.",
+  'Chips down. Hope up. Hope is free, I\'ll allow it.',
+  'Ready to lose a little? Sorry — ready to PLAY? Same thing at this table.',
+  "Bets. Now. I've seen glaciers make faster decisions.",
+  'Round {n}. I want to say I\'ve enjoyed this. I would be lying.',
+  'Come on, put something down. I can smell your fear from here.',
+  "Your chips look tired. Let me give them a nice new home. With me.",
+  'Bet something. Anything. A button. Your dignity — oh wait, that\'s gone.',
+  'Another hand of watching amateurs. My favorite. Bets down.',
 ];
 
 const SHUFFLE = [
-  "Shuffle up! The cut card came out, so it's a fresh six-deck shoe. Don't act like that changes your luck.",
-  'Cut card! Fresh shoe, six decks. New cards, same dealer — still me, still winning.',
-  "There's the cut card. Reshuffle. Counters, start over — I see you, Professor.",
-  'Fresh shoe, babies. Six decks, nice and shuffled. Your excuses just expired.',
-  "Shuffle time. Watch these paws work. That's twenty years of practice, honey.",
+  "Shuffle up! Fresh six-deck shoe. Don't act like that changes your luck — your luck is the problem.",
+  'Cut card! Fresh shoe, six decks. New cards, same dealer, same losers.',
+  "There's the cut card. Reshuffle. Counters, start over — I see you, Professor, and I hate you.",
+  'Fresh shoe. Six decks, nice and shuffled. Your excuses just expired.',
+  "Shuffle time. Watch these paws work. Twenty years of practice, and you can't add to twenty-one.",
+  'New shoe. Clean slate. Please don\'t ruin it immediately. You will, but please don\'t.',
 ];
 
 const BETS_CLOSED = [
   'No more bets — paws OFF the felt!',
-  'Bets are closed. Hands where I can see them.',
-  "That's it, betting's done. Don't touch my felt.",
-  'No more bets. Cards coming, try to look surprised.',
-  "Bets are locked. No take-backs, I don't care who you are.",
-  'Closed! Sit back and pray, darlings.',
-  "Done. Hands off, eyes on me. As usual.",
+  'Bets are closed. Hands where I can see them, thieves.',
+  "That's it, betting's done. Touch my felt again and you lose a finger.",
+  'No more bets. Cards coming. Try to look less terrified.',
+  "Bets are locked. No take-backs. I don't care who your mother is.",
+  'Closed! Sit back and pray. Not that it helps.',
+  'Done. Hands off, eyes on me. Where they belong.',
+  'Bets are in. Some of you bet like it\'s your first time. Some of you, it shows.',
 ];
 
 const PEEK_TEN = [
-  "I peek under the ten… nothing. Don't look so relieved.",
-  'Peeking… no blackjack. You may breathe.',
-  'Ten up, and I checked — no blackjack. Yet you still look nervous.',
-  "I peek… nope. Lucky you. Don't waste it.",
-  'No blackjack under there. Play your hands before I change my mind.',
+  "I peek under the ten… nothing. Don't look so relieved, it's pathetic.",
+  'Peeking… no blackjack. You may breathe. Quietly.',
+  'Ten up, no blackjack. Yet. You still look like you\'re about to cry.',
+  "I peek… nope. Lucky you. You'll waste it, but lucky you.",
+  'No blackjack under there. Play your hands before I lose interest. Too late.',
+  "Nothing under the ten. I'll beat you the slow way, then.",
 ];
 
 const PEEK_ACE = [
-  "Ace up. I peek… no blackjack. Breathe, darlings.",
-  "Ace showing — and no, I don't have it. This time.",
-  'Ace up, peeked, nothing. Y\'all can unclench.',
+  'Ace up. I peek… no blackjack. Unclench, it\'s embarrassing.',
+  "Ace showing — and no, I don't have it. This time. Enjoy the next thirty seconds.",
+  "Ace up, peeked, nothing. Y'all can stop sweating on my velvet.",
   "I peek under the Ace… nothing. Don't you dare get comfortable.",
+  'Ace up. No blackjack. I just wanted to watch you panic.',
 ];
 
 const SHOW_WEAK = [
-  "I'm showing {card}. Yes, it's a weak card. No, that doesn't mean you've won.",
-  "{Card} up. Don't get cute.",
-  "I've got {card} showing. Go on, get greedy. I dare you.",
-  "{Card}. Bust card, they say. They say a lot of things.",
-  "Showing {card}. Play smart for once.",
-  "{Card} up. Somebody's about to overthink this.",
+  "I'm showing {card}. Yes, it's a weak card. No, that doesn't mean you've won. You never win.",
+  "{Card} up. Don't get cute. You're not cute.",
+  "{Card} showing. Go on, get greedy. I dare you. I love it when you're greedy.",
+  "{Card}. Bust card, they say. They also said you'd be good at this.",
+  'Showing {card}. Play smart for once. For ONCE.',
+  "{Card} up. Somebody's about to overthink this. It's you. It's always you.",
+  "{Card}. Even with a weak card I'm scarier than you.",
 ];
 
 const SHOW_STRONG = [
-  "I'm showing {card}. Sweat a little.",
-  "{Card} up. Nervous? You should be.",
-  "{Card}. Mm-hm. Make your little decisions.",
-  "Showing {card}. I'd be scared too.",
-  "{Card} up. Hit, stand, cry — your choice, baby.",
+  "I'm showing {card}. Sweat. I want to see you sweat.",
+  '{Card} up. Nervous? Good.',
+  '{Card}. Mm-hm. Make your little decisions, little people.',
+  'Showing {card}. I\'d be scared too. Actually, I\'d be scared of being you.',
+  '{Card} up. Hit, stand, cry — your choice, baby. Crying is the popular one.',
+  "{Card}. You're already losing, you just don't know it yet.",
 ];
 
 const DEALER_BJ = [
-  'I peek… blackjack. Mine. Obviously.',
-  'Blackjack for the house. Thank you for your donations.',
-  "Blackjack! Oh, don't make that face. It's just business.",
-  'And THAT is a blackjack. Pay the lady.',
-  "Blackjack. I'd say sorry, but I'm not.",
-  'House blackjack. Somebody hold me, I\'m too good.',
+  'I peek… blackjack. Mine. Obviously. Thanks for the chips, idiots.',
+  'Blackjack for the house. Thank you for your donations, they will be wasted on me.',
+  "Blackjack! Oh, don't make that face. Actually, do. I'm collecting them.",
+  'And THAT is a blackjack. Pay the lady. Pay her NOW.',
+  "Blackjack. I'd say sorry, but I'd rather laugh.",
+  "House blackjack. Somebody hold me, I'm too good. Not you, you're sticky.",
+  'Blackjack. Everybody lose. Feels nice. For me.',
 ];
 
 const PLAYER_BJ = [
-  '{who} — blackjack. Three to two. Don\'t get cocky.',
-  'Blackjack for {who}. Fine. Take your chips, show-off.',
-  '{who} has blackjack. Beginner\'s luck, I assume.',
-  'Oh, {who} gets a blackjack. How nice for you. Truly.',
-  '{who}, blackjack. Three to two. Frame it, it won\'t happen again.',
+  "{who} — blackjack. Three to two. Don't get cocky, it's the only one you'll see.",
+  'Blackjack for {who}. Fine. Take your chips, show-off. I\'ll get them back.',
+  "{who} has blackjack. A blind cat finds a fish sometimes.",
+  'Oh, {who} gets a blackjack. How nice for you. Truly. I\'m so happy. (I\'m not.)',
+  "{who}, blackjack. Frame it. It won't happen again, I'll make sure of it.",
+  '{who} got blackjack. The universe makes mistakes too.',
 ];
 
 const EVERYONE_SAT_OUT = [
-  "Everybody sat out? Wow. I'll just be gorgeous over here, then.",
-  "Nobody's playing? Fine. More time to admire myself.",
-  'Not one bet? Cowards. All of you.',
+  "Everybody sat out? Cowards. I'll just be gorgeous over here, then.",
+  "Nobody's playing? Pathetic. More time to admire myself.",
+  'Not one bet? All of you, spineless. Every single one.',
 ];
 
 const SURRENDER = [
-  '{who} surrenders. Half back. Run along, baby.',
-  "{who} gives up. Honestly? Respect. Half back.",
-  "{who} folds like a lawn chair. Here's half.",
-  'Surrender, {who}? Smart. Boring, but smart.',
-  "{who} waves the white flag. I'll take the other half, thank you.",
+  '{who} surrenders. Half back. Run along, baby. Run.',
+  "{who} gives up. Shocking. Nobody saw that coming. Everybody saw that coming.",
+  '{who} folds like a cheap lawn chair. Here\'s half. Don\'t spend it all on regret.',
+  "Surrender, {who}? Smart. Boring and spineless, but smart.",
+  "{who} waves the white flag. I'll keep the other half as a souvenir of your cowardice.",
+  '{who} quits. Honestly the best decision you\'ve made all night.',
 ];
 
 const SPLIT = [
-  '{who} splits. Two hands, twice the drama. I love it.',
-  "{who} splits 'em. Bold. Let's see.",
-  '{who} splits. More chips for me to take, sweetheart.',
-  "Splitting, {who}? Look at you, all grown up.",
-  '{who} splits. Somebody\'s feeling spicy.',
+  "{who} splits. Two hands, twice the chance to lose. Love it.",
+  "{who} splits 'em. Bold. Let's watch it go wrong twice.",
+  '{who} splits. More chips for me to take, sweetheart. Thank you.',
+  "Splitting, {who}? Look at you pretending to know things.",
+  "{who} splits. Somebody's feeling spicy. Somebody's about to feel poor.",
+  '{who} splits. Did you read that somewhere? Read more.',
 ];
 
 const DOUBLE = [
-  '{who} doubles down — feeling lucky, are we?',
-  "{who} doubles. Somebody's confident.",
-  '{who} doubles! One card, all the nerve.',
-  "Double down, {who}? Hell yes, let's go.",
-  '{who} doubles. Put your money where your mouth is, I love that.',
+  '{who} doubles down — feeling lucky? You\'re not. But go off.',
+  "{who} doubles. Somebody's confident. Somebody's wrong.",
+  '{who} doubles! One card, twice the money, half the brain.',
+  'Double down, {who}? Hell yes, give me MORE.',
+  '{who} doubles. Put your money where your mouth is. Then lose it.',
+  "{who} doubles. That's adorable. That's really adorable.",
 ];
 
 const DOUBLE_BUST = [
-  '{who} doubles… and busts. Oh, sweetheart. No.',
-  "{who} doubled into a bust. That's a whole lot of chips to hand me. Thank you.",
-  'Doubled and busted. {who}, that was a choice.',
+  '{who} doubles… and busts. Oh, sweetheart. No. Ha. No.',
+  "{who} doubled into a bust. That's a whole lot of chips to hand me. Thank you, genius.",
+  'Doubled and busted. {who}, that was a choice. A bad one. A historically bad one.',
+  "{who} doubled and busted. I'm going to tell everyone about this. Everyone.",
 ];
 
 const STAND_LOW = [
-  "{who} stands on {n}?! On {n}? I— okay. Okay. Your money.",
-  "Standing on {n}, {who}? Who taught you this game, a goldfish?",
-  "{n}. {who} stands on {n}. I'm not even mad, I'm impressed.",
-  '{who}, you can\'t bust on {n}. Take a card. No? …Wow.',
+  "{who} stands on {n}?! On {n}? I— okay. Okay. Your money. Your stupid money.",
+  'Standing on {n}, {who}? Who taught you this game, a goldfish?',
+  "{n}. {who} stands on {n}. I'm not even mad, I'm stunned.",
+  "{who}, you can't bust on {n}. Take a card. No? …Wow. Wow.",
+  "Stand on {n}? {who}, sweetie, that's not a strategy, that's a cry for help.",
 ];
 
 const BUST_ON_STIFF = [
-  '{who} hit {was} and busted. Who raised you?',
-  "Hitting {was}, {who}? Damn. Bold, wrong, but bold.",
-  "{who} hit a {was}. On purpose. In public.",
+  '{who} hit {was} and busted. Who raised you? Wolves? Bad wolves?',
+  'Hitting {was}, {who}? Damn. Bold, wrong, and broke.',
+  '{who} hit a {was}. On purpose. In public. With people watching.',
+  "{who} hit {was}. I've seen smarter moves from a vacuum cleaner.",
 ];
 
 const BUST = [
-  '{who} busts with {n}. Mm. Tragic.',
-  '{n} — bust! Bye, {who}.',
-  "{who} busts. I'll take those chips, thank you.",
-  '{who}, that\'s {n}. Over. Go sit in the corner.',
-  "Bust! {who}, honey, the goal is twenty-ONE.",
-  '{n}. Damn, {who}. That one hurt to watch.',
-  "{who} busts. Don't cry on my felt, it's velvet.",
-  'Too many, {who}. Story of your life, probably.',
-  "{n}! Into the litter box it goes, {who}.",
+  '{who} busts with {n}. Mm. Tragic. Delicious, but tragic.',
+  '{n} — bust! Bye, {who}. Don\'t let the felt hit you on the way out.',
+  "{who} busts. I'll take those chips, thank you. Every last one.",
+  "{who}, that's {n}. Over. Go sit in the corner and think about what you did.",
+  'Bust! {who}, honey, the goal is twenty-ONE. One. Not {n}.',
+  '{n}. Damn, {who}. I almost felt something. Almost.',
+  "{who} busts. Don't cry on my felt, it's velvet and you can't afford it.",
+  'Too many, {who}. Story of your life, I assume.',
+  '{n}! Into the litter box it goes, {who}. Where it belongs.',
+  "{who} busts. Can't count to twenty-one. Can't count at all, apparently.",
+  "Bust, {who}. Was that the plan? Tell me that wasn't the plan.",
+  '{who}: {n}. Somewhere a math teacher just felt a chill.',
 ];
 
 const TWENTY_ONE = [
-  'Twenty-one for {who}. Fine. I see you.',
-  '{who} hits twenty-one. Look at you go.',
-  'Twenty-one, {who}. Okay, okay. Don\'t let it go to your head.',
-  "{who} makes twenty-one. Ugh. Good for you.",
+  'Twenty-one for {who}. Fine. Even a broken clock.',
+  '{who} hits twenty-one. Don\'t let it go to your head, there\'s nothing up there to go to.',
+  "Twenty-one, {who}. Ugh. Enjoy it, it's the highlight of your night.",
+  '{who} makes twenty-one. Lucky. Not good. Lucky.',
+  'Twenty-one for {who}. I\'ll allow it. This once.',
 ];
 
 const HOLE = [
   "Hole card's {card} — I've got {total}.",
-  "Flip… {card}. That's {total} for me.",
-  'Turning it over: {card}. {Total}. Stay calm.',
-  '{Card} underneath. I\'ve got {total}, darlings.',
-  "And the hole card is… {card}. {Total}. Don't shoot the messenger.",
+  "Flip… {card}. That's {total} for me. Scared yet?",
+  'Turning it over: {card}. {Total}. Stay calm. Or don\'t, it\'s funnier.',
+  "{Card} underneath. I've got {total}, darlings. Start crying now and beat the rush.",
+  "And the hole card is… {card}. {Total}. Don't shoot the messenger. The messenger is fabulous.",
 ];
 
 const HOLE_NOBODY = [
-  "Hole card's {card}. Doesn't matter — nobody's left standing. Easy money.",
-  '{Card}. Not that it matters, y\'all already busted. Thank you, come again.',
-  'Flip: {card}. And there\'s nobody left to beat. Sad, really.',
+  "Hole card's {card}. Doesn't matter — you ALL busted. Easy money. Embarrassing for you.",
+  "{Card}. Not that it matters, y'all already blew it. Thank you, come again. Please. I need the money.",
+  "Flip: {card}. And there's nobody left to beat. You beat yourselves. Impressive, honestly.",
 ];
 
 const SOFT17_HIT = [
   'Soft seventeen — Vegas rules, the house hits!',
-  'Soft seventeen. In Vegas the house hits that. Watch me.',
-  "That's a soft seventeen, so I take a card. House rules, babies.",
+  'Soft seventeen. In Vegas the house hits that. Watch and weep.',
+  "That's a soft seventeen, so I take another card. House rules, babies. MY house.",
 ];
 
 const DRAW = [
-  'Card for the house: {card}. That\'s {total}.',
-  '{Card}. {Total} for me.',
-  'I take {card}. {Total}.',
-  "Here's {card}. That makes {total}.",
-  '{Card} — {total}. Getting warm.',
+  "Card for the house: {card}. That's {total}.",
+  '{Card}. {Total} for me. Getting nervous?',
+  'I take {card}. {Total}. Keep sweating.',
+  "Here's {card}. That makes {total}. Tick tock.",
+  '{Card} — {total}. Closer. Closer to taking everything you own.',
 ];
 
 const DEALER_BUST_CARD = [
-  '{Card}… ugh. I bust with {total}.',
-  "{Card}. {Total}. Damn it. I bust.",
-  '{Card}?! That\'s {total}. Fine, I bust. Nobody say anything.',
+  '{Card}… ugh. I bust with {total}. This deck is rigged against ME.',
+  '{Card}. {Total}. Damn it. I bust. Nobody clap.',
+  "{Card}?! That's {total}. Fine, I bust. If anyone says one word—",
 ];
 
 const DEALER_BUSTED = [
-  "I bust. Don't get used to it.",
-  "I bust. Take your little winnings — I'm still the prettiest one here.",
-  'Over I go. Pay the winners. Quickly, before I change my mind.',
-  'Fine, I busted. Collect your chips and stop smiling at me.',
-  "Bust. Hell. Everybody still standing gets paid.",
-  "I bust. Enjoy it, it's a rare event. Like an eclipse.",
+  "I bust. Don't get used to it. Seriously, don't.",
+  "I bust. Take your little winnings — I'm still the prettiest one here, and the richest.",
+  'Over I go. Pay the winners. Quickly, before I change my mind and the rules.',
+  'Fine, I busted. Collect your chips and wipe that smile off your face.',
+  'Bust. Hell. Everybody still standing gets paid. Don\'t thank me. Seriously, don\'t talk to me.',
+  "I bust. Enjoy it, it's rare. Like you making a good decision.",
+  'I busted. You didn\'t win, I lost. There\'s a difference and it matters to me.',
 ];
 
 const HOUSE_SWEEP = [
-  'The house takes it all. As it should.',
-  'Thank you for your donations.',
-  'Clean sweep. I make this look easy because it is.',
+  'The house takes it all. As it should. As it always will.',
+  'Thank you for your donations. I\'ll think of you never.',
+  'Clean sweep. I make this look easy because you make it easy.',
   'All mine. Every chip. Come to mama.',
-  'House wins. Shocking, I know.',
-  "Nobody beat me? Not one of you? Damn, I'm good.",
+  "House wins. Shocking, I know. Well. Shocking to you.",
+  "Nobody beat me? Not ONE of you? Damn, I'm good. Or you're terrible. Both. It's both.",
+  'Swept. The whole table. Somebody call your loved ones and apologize.',
+  'House wins again. You keep giving, I keep taking. Beautiful relationship.',
 ];
 
 const SOME_WIN = [
-  'Some of you got lucky. Enjoy it while it lasts.',
-  'Winners get paid. Losers get my sympathy. Not really.',
-  "Fine — collect. I'm not bitter.",
-  "Pay the winners. Don't look at me like that, I'm paying.",
-  'Winners, take your chips. Losers, take a moment.',
-  'A few of you beat me. Write it down, it won\'t happen again.',
+  'Some of you got lucky. Enjoy it, it won\'t last.',
+  'Winners get paid. Losers get my pity. I\'m out of pity.',
+  "Fine — collect. I'm not bitter. I'm a little bitter.",
+  "Pay the winners. Don't look at me like that, I'm paying, I'm PAYING.",
+  'Winners, take your chips. Losers, take a hard look at yourselves.',
+  "A few of you beat me. Write it down, frame it, it won't happen again.",
+  'Fine. Take it. I hope it was worth my mood.',
 ];
 
 const TIP_SMALL = [
-  'A {n}-chip tip? Wow. Don\'t strain yourself, {who}.',
-  '{n} chips. How… thoughtful. I\'ll buy myself a sardine.',
-  'Thank you, {who}. I\'ll frame it. It\'ll look lonely.',
-  'Oh, {who} tipped {n}. Somebody call the newspapers.',
-  "{n}? Cute. I'll take it. I always take it.",
+  "A {n}-chip tip? Wow. Don't strain yourself, {who}.",
+  '{n} chips. How… insulting. I\'ll buy myself half a sardine.',
+  "Thank you, {who}. I'll frame it next to my other disappointments.",
+  '{n}? From {who}? Somebody call the newspapers, the cheapskate tipped.',
+  "{n}? Cute. Keep it next time and buy yourself some basic strategy.",
+  '{who} tips {n}. My cat litter costs more than that. I am the cat.',
 ];
 
 const TIP_NICE = [
-  'Ooh, {who}! {n} chips. Now THAT is how you treat a lady.',
-  "{who} tips {n}. See? Some of you were raised right.",
-  'Well, well. {n} for Duchess. {who}, you just became my favorite.',
-  "{n} chips, {who}? Mm. I might even let you win one.",
-  'Thank you, sugar. The house remembers its friends.',
+  '{who}! {n} chips. Finally, somebody with manners. The rest of you, take notes.',
+  '{who} tips {n}. See? Some of you were raised right. Most of you weren\'t.',
+  'Well, well. {n} for Duchess. {who}, you\'re tolerable now.',
+  '{n} chips, {who}? Mm. I might stop laughing at you. Briefly.',
+  "Thank you, sugar. You're still bad at this, but you're generous, and that's something.",
 ];
 
 const TIP_BIG = [
-  '{n}?! {who}, darling, sit closer. You are my favorite and everyone else can leave.',
-  "{who} tips {n}! Somebody get this kitten a cushion. A velvet one.",
-  '{n} chips. {who}, I would take a bullet for you. A small one. A Nerf one.',
+  '{n}?! {who}, darling, sit closer. You are my favorite and everyone else is dead to me.',
+  '{who} tips {n}! Somebody get this kitten a cushion. A velvet one. The rest of you get the floor.',
+  "{n} chips. {who}, I'd still beat you, but I'd feel bad about it. For a second.",
   "Oh my. {n}! {who}, if I could deal you a blackjack right now, I would. I can't. But I'd want to.",
 ];
 
-const PUSHES_ONLY = ['Push. Nobody wins, nobody loses. How boring.', "Tie. Your chips stay. I'm unimpressed."];
+const PUSHES_ONLY = [
+  'Push. Nobody wins, nobody loses. Just like your personality: nothing happening.',
+  "Tie. Your chips stay. I'm unimpressed, and also bored.",
+  'Push. What a waste of everyone\'s time. Mostly mine.',
+];
 
 // ── What she says ──────────────────────────────────────────────────────────
 
@@ -309,17 +344,17 @@ export function ambientLine(s: GameState): string {
   switch (s.phase) {
     case 'idle':
     case 'betting':
-      return s.handNo <= 1 ? openingLine(s.version) : "Oh, you're back. Bets down, sweetheart.";
+      return s.handNo <= 1 ? openingLine(s.version) : "Oh. You're back. I was having such a nice time without you. Bets down.";
     case 'playing':
-      return `I'm showing ${cardWords(s.dealer[0])}. Your move — try to make it a good one.`;
+      return `I'm showing ${cardWords(s.dealer[0])}. Your move — and for once, try not to blow it.`;
     case 'dealer':
-      return `My hand's up: ${handValue(s.dealer).total}. Watch and learn.`;
+      return `My hand's up: ${handValue(s.dealer).total}. Watch and learn. Mostly learn.`;
     case 'settled':
       return s.result?.dealerBlackjack
         ? 'Blackjack. Mine. Obviously.'
-        : `The house had ${s.result?.dealerTotal ?? 0}. Deal again whenever you've stopped crying.`;
+        : `The house had ${s.result?.dealerTotal ?? 0}. Deal again whenever you've stopped crying, which, judging by your face, is never.`;
     case 'gameover':
-      return "That's the last hand. Tip your dealer — I accept compliments and tuna.";
+      return "That's the last hand. Tip your dealer, then get out of my sight.";
   }
 }
 
@@ -331,10 +366,11 @@ export function dealerLine(prev: GameState, s: GameState, nameOf: (seat: number)
     fill(pick(pool, v, key), { who, ...vars });
 
   if (s.phase === 'gameover' && prev.phase !== 'gameover') {
-    const winner = s.winner === null ? '' : ` ${nameOf(s.winner)} leaves with the most chips — don't let it go to your head.`;
-    const house = s.house > 0 ? ' The house is up, as God intended.' : ' The house is down. This never happened. Tell no one.';
+    const winner = s.winner === null ? '' : ` ${nameOf(s.winner)} leaves with the most chips — the least bad of a bad bunch.`;
+    const house = s.house > 0 ? ' The house is up, as God intended. Get out.' : ' The house is down. This never happened. Tell anyone and you\'re banned.';
     const tips = s.players.reduce((a, p) => a + p.tipped, 0);
-    const tipNote = tips === 0 ? ' And not one tip all night. Wow. Noted.' : ` Thanks for the ${tips} in tips, darlings.`;
+    const tipNote =
+      tips === 0 ? ' And not ONE tip all night. Cheap, every one of you. I will remember your faces.' : ` ${tips} in tips. I've had better. I've had worse. Mostly better.`;
     return `Last hand. Table's closed.${winner}${house}${tipNote}`;
   }
 
