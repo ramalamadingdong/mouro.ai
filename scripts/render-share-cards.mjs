@@ -132,7 +132,7 @@ const games = [
   {
     name: 'games',
     title: 'Family game night',
-    text: 'Seven games to play with family and friends. No accounts, no ads — share a code and play.',
+    text: 'Seven games to play with family and friends.',
     path: 'mouro.ai/games',
     a: '#1c2d26', b: '#0c1512', ink: '#e0b64a',
     icons: [

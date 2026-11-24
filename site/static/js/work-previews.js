@@ -1,5 +1,5 @@
-// Plays the small preview drawings on the home page's project cards on a
-// loop while they are on screen. The drawings are
+// Plays the small preview drawings on the home page's project cards: on
+// hover with a mouse, on a loop while on screen without one. The drawings are
 // complete and still without this script or under reduced motion; the CSS
 // animates only inside .preview.play.
 (() => {
@@ -71,6 +71,22 @@
         }, CYCLE);
         return () => { clearInterval(timer); stop(); };
     }
+    // With a mouse, a preview plays each time the pointer moves onto its
+    // card. Without hover (phones, tablets), it loops while on screen.
+    if (matchMedia('(hover: hover)').matches) {
+        previews.forEach((preview) => {
+            const card = preview.closest('.work-item') || preview;
+            let stop = () => {};
+            card.addEventListener('pointerenter', () => {
+                stop();
+                reset(preview);
+                void preview.offsetWidth; // restart the CSS animations
+                stop = play(preview);
+            });
+        });
+        return;
+    }
+
     const seen = new IntersectionObserver((entries) => {
         for (const { target, isIntersecting } of entries) {
             if (isIntersecting && !running.has(target)) {
