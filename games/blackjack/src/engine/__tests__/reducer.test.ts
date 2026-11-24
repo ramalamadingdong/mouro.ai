@@ -29,8 +29,8 @@ describe('createGame', () => {
     expect(s.turnUid).toBe(ANY_PLAYER);
   });
   it('rounds the limits to the bet step', () => {
-    const s = createGame({ players: [{ uid: 'a', name: 'A', isHuman: true }], startingStack: 1000, minBet: 25, maxBet: 333 });
-    expect(s.config.minBet).toBe(20);
+    const s = createGame({ players: [{ uid: 'a', name: 'A', isHuman: true }], startingStack: 1000, minBet: 27, maxBet: 333 });
+    expect(s.config.minBet).toBe(25);
     expect(s.config.maxBet).toBe(330);
   });
 });
@@ -52,7 +52,7 @@ describe('betting', () => {
 
   it('refuses a bet off the step, under the minimum, over the maximum or out of turn', () => {
     const s = deal(newGame(2));
-    for (const amount of [15, 5, 510, -10]) expect(applyMove(s, { kind: 'bet', amount }, uidOf(0)).ok).toBe(false);
+    for (const amount of [12, 5, 505, -10]) expect(applyMove(s, { kind: 'bet', amount }, uidOf(0)).ok).toBe(false);
     expect(applyMove(s, { kind: 'bet', amount: 10 }, uidOf(1)).ok).toBe(false);
     expect(applyMove(s, { kind: 'hit' }, uidOf(0)).ok).toBe(false);
   });
@@ -91,6 +91,13 @@ describe('the deal', () => {
     expect(s.result!.net[0]).toBe(150);
     expect(s.players[0].stack).toBe(1150);
     expect(s.result!.net[1]).toBe(100); // 18 beats the dealer's 17
+  });
+
+  it('a blackjack on an odd multiple of 5 pays 3:2 rounded down', () => {
+    const s = finish(round(1, 'As 9c Kh 8d', 25));
+    expect(s.players[0].hands[0].outcome).toBe('blackjack');
+    expect(s.result!.net[0]).toBe(37);
+    expect(s.players[0].stack).toBe(1037);
   });
 
   it('the dealer peeks under an Ace and settles at once', () => {

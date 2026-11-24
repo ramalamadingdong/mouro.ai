@@ -5,7 +5,7 @@ import { Modal } from '@/components/modal';
 import './help.css';
 
 const EXAMPLES: readonly { name: string; cards: string; note: string }[] = [
-  { name: 'Blackjack', cards: 'As Kh', note: 'An Ace and a ten-card as your first two: paid 3 to 2' },
+  { name: 'Blackjack', cards: 'As Kh', note: 'An Ace and a ten-card as your first two: paid 3 to 2 (rounded down to a whole chip)' },
   { name: 'Soft 17', cards: 'Ad 6c', note: 'The Ace counts 11 until that would bust you' },
   { name: 'Hard 17', cards: 'Tc 7d', note: 'No Ace to fall back on: one more card risks a bust' },
   { name: 'Bust', cards: 'Kc 6s 9h', note: 'Over 21: the bet is lost, whatever the dealer does' },
@@ -21,7 +21,7 @@ export function HelpModal({ open, onClose }: { open: boolean; onClose: () => voi
           Kings count 10, and an Ace counts 11 or 1, whichever helps.
         </p>
         <p>
-          Each round starts with a <strong>bet</strong> (10 to 500, or sit the round out). Everyone gets two cards face
+          Each round starts with a <strong>bet</strong>: tap the 10, 25, 50 and 100 chips to build it up (10 to 500), or sit the round out. Everyone gets two cards face
           up; the dealer shows one card and keeps one face down. On your turn:
         </p>
         <ul className="help__list">

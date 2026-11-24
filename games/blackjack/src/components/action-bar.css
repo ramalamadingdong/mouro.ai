@@ -166,3 +166,71 @@
 .actions__top--short {
   min-height: 2.5rem;
 }
+
+/* ── Betting chips ──────────────────────────────────────────────────────── */
+
+.bet-chips {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-md);
+}
+
+/* A casino chip: a coloured disc with a dashed white inlay. */
+.bet-chip {
+  --chip: #3a6fb0;
+  display: grid;
+  place-items: center;
+  /* Grows half as fast as the cards on bigger screens (--card-scale, table.css). */
+  --chip-size: calc(3.25rem * (1 + (var(--card-scale, 1) - 1) * 0.5));
+  width: var(--chip-size);
+  height: var(--chip-size);
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--chip) 52%, transparent 53%), var(--chip);
+  box-shadow:
+    inset 0 0 0 0.3rem var(--chip),
+    inset 0 0 0 0.45rem rgb(255 255 255 / 0.85),
+    0 3px 6px rgb(0 0 0 / 0.5);
+  border: 2px dashed rgb(255 255 255 / 0.9);
+  color: #fff;
+  font-size: var(--size-body);
+  font-weight: var(--weight-heavy);
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.5);
+  transition:
+    transform var(--dur-fast) var(--ease),
+    opacity var(--dur-fast) var(--ease);
+}
+.bet-chip[data-value='25'] {
+  --chip: #2f8a4f;
+}
+.bet-chip[data-value='50'] {
+  --chip: #c0612b;
+}
+.bet-chip[data-value='100'] {
+  --chip: #26232b;
+}
+
+.bet-chip:active:not(:disabled) {
+  transform: scale(0.92) translateY(2px);
+}
+
+.bet-chip:disabled {
+  opacity: 0.3;
+}
+
+.bet-chips__clear {
+  min-height: 2.75rem;
+  padding: 0 var(--space-sm);
+  color: var(--text-muted);
+  font-size: var(--size-sm);
+  font-weight: var(--weight-medium);
+}
+.bet-chips__clear:disabled {
+  opacity: 0.4;
+}
+
+.bet-chips__hint {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: var(--size-sm);
+}

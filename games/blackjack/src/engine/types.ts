@@ -4,7 +4,8 @@
  * reducer along.
  *
  * Chips are always whole numbers. Bets move in steps of `RULES.BET_STEP`
- * (an even number), so a 3:2 blackjack payout is always a whole number too.
+ * (5, so the 10/25/50/100 chips all fit); a 3:2 blackjack payout on an odd
+ * multiple of 5 is rounded DOWN to the whole chip (25 pays 37).
  */
 
 /**
@@ -26,8 +27,8 @@ export const RULES = {
    * left is reshuffled. One and a half decks, as in most casinos.
    */
   CUT: 78,
-  /** Every bet is a multiple of this. Even, so 3:2 never makes half a chip. */
-  BET_STEP: 10,
+  /** Every bet is a multiple of this: the smallest step the 10/25/50/100 chips make. */
+  BET_STEP: 5,
   /** Default table limits. */
   DEFAULT_MIN_BET: 10,
   DEFAULT_MAX_BET: 500,
