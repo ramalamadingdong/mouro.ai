@@ -10,6 +10,9 @@ never removed: they keep their folder, server namespace, rules, Caddy route,
 CI/deploy entries and tests, and stay playable at their own URL so invites
 already sent keep working.
 
+A new game must also load the analytics tag in its `index.html` (or Expo
+`+html.tsx`); see "Analytics" in the root `CLAUDE.md`. CI fails without it.
+
 ## Games that existed before the series
 
 | Game | Where | What |

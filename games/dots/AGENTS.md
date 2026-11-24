@@ -13,6 +13,9 @@ other game too.
 
 ## Non-negotiable project constraints
 
+- **Analytics tag stays in the page head** (`index.html`, or `src/app/+html.tsx` for
+  Expo): `https://mouro.ai/static/js/analytics.js`. See "Analytics" in the root
+  `CLAUDE.md`; CI fails without it.
 - **Same stack as `games/holdem` and `games/yahtzee`**: Vite + React 19 +
   TypeScript (strict), React Router v7, zustand v5, plain CSS custom
   properties, Vitest, oxlint. Its own `package.json` and lockfile; never npm

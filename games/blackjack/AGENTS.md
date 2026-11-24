@@ -14,6 +14,9 @@ never against each other; she is not a seat and not in `players`.
 
 ## Non-negotiable project constraints
 
+- **Analytics tag stays in the page head** (`index.html`, or `src/app/+html.tsx` for
+  Expo): `https://mouro.ai/static/js/analytics.js`. See "Analytics" in the root
+  `CLAUDE.md`; CI fails without it.
 - **Same stack as `games/holdem`** (and so `games/yahtzee`), on purpose: Vite +
   React 19 + TypeScript (strict), React Router v7, zustand v5, plain CSS
   custom properties, Vitest, oxlint. No CSS-in-JS, no Tailwind, no native app.

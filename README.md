@@ -125,5 +125,8 @@ everything else is rebuilt by a deploy.
 - Each game keeps its own `package.json` and lockfile (the Expo apps are pinned
   to SDK 54 for Expo Go on iPhone; yahtzee is on newer React). There are no npm
   workspaces on purpose — hoisting would mix React versions.
+- Every page and game loads the analytics tag (self-hosted Umami at `/stats`);
+  how to add it is in [`CLAUDE.md`](CLAUDE.md#analytics-required-on-every-new-page-and-game),
+  and `scripts/check-analytics.mjs` enforces it in CI.
 - Per-project notes for coding agents live in each folder's `AGENTS.md`;
   repo-wide ones in [`CLAUDE.md`](CLAUDE.md).

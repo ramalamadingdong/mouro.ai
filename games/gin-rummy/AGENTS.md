@@ -5,6 +5,9 @@ before writing any code.
 
 ## Non-negotiable project constraints
 
+- **Analytics tag stays in the page head** (`index.html`, or `src/app/+html.tsx` for
+  Expo): `https://mouro.ai/static/js/analytics.js`. See "Analytics" in the root
+  `CLAUDE.md`; CI fails without it.
 - **Expo SDK 54.** Do NOT upgrade the SDK. The iPhone is tested via the App
   Store **Expo Go**, which currently supports SDK 54; there is no Mac to fall
   back on for a custom native build.
