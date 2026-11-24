@@ -10,6 +10,8 @@
 //   {id, op:'sub', sid, path}                        → stream of {op:'value', sid, value} / {op:'cancel', sid}
 //   {op:'unsub', sid}
 //   {id, op:'od', path, action:'set'|'update'|'remove'|'cancel', value?, values?}
+//   {id, op:'nearby:host', code, name, players}      → {id, ok}   (code:null withdraws)
+//   {id, op:'nearby:list'}                           → {id, ok, rooms:[{code, name, players}]}
 // Failures carry {ok:false, code:'permission_denied' | 'bad_request', error}.
 
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
@@ -21,6 +23,33 @@ import { canonical, fromStore, getAt, resolveServerValues, splitPath, toStore, v
 const DAY_MS = 86_400_000;
 const MAX_SUBS = 200; // live subscriptions per connection
 const MAX_DISCONNECT_OPS = 50;
+const NEARBY_TTL_MS = 20 * 60_000; // a lobby stays listed this long after its last announce
+const NEARBY_MAX = 8; // rooms returned per list
+
+/**
+ * "On your Wi-Fi": which network a connection comes from, as a matching key.
+ *
+ * Players in one house reach the server from one public IPv4 address, or from
+ * one IPv6 /64 (the home network's prefix; each phone on mobile data gets its
+ * own /64, so strangers on a carrier do not match over IPv6). Behind Caddy the
+ * address is the first X-Forwarded-For entry, trusted only when the socket
+ * itself comes from loopback. The key lives in memory for the length of a
+ * connection: it is never stored, logged, or sent to any client.
+ */
+export function networkKey(req) {
+  const peer = req.socket?.remoteAddress ?? '';
+  const loopback = peer === '127.0.0.1' || peer === '::1' || peer === '::ffff:127.0.0.1';
+  const forwarded = loopback ? String(req.headers?.['x-forwarded-for'] ?? '').split(',')[0].trim() : '';
+  let ip = forwarded || peer;
+  if (ip.startsWith('::ffff:')) ip = ip.slice(7);
+  if (!ip.includes(':')) return ip ? `4:${ip}` : null;
+  // Expand :: so the first four groups are the /64 prefix.
+  const [head, tail = ''] = ip.split('::');
+  const h = head ? head.split(':') : [];
+  const t = tail ? tail.split(':') : [];
+  const groups = ip.includes('::') ? [...h, ...Array(8 - h.length - t.length).fill('0'), ...t] : h;
+  return `6:${groups.slice(0, 4).map((g) => g.toLowerCase().replace(/^0+(?=.)/, '')).join(':')}`;
+}
 
 export function createAuth(secret) {
   const sign = (uid) => createHmac('sha256', secret).update(uid).digest('base64url');
@@ -41,9 +70,9 @@ export function createAuth(secret) {
 }
 
 /**
- * @param {{store: import('./db.js').Store, games: {name:string, rules:import('./rules.js').Rules, reap?:string[]}[], secret:string, log?:(...a:any[])=>void}} opts
+ * @param {{store: import('./db.js').Store, games: {name:string, rules:import('./rules.js').Rules, reap?:string[]}[], secret:string, log?:(...a:any[])=>void, netKeyOf?:(req:any)=>string|null}} opts
  */
-export function createRealtimeServer({ store, games, secret, log = () => {} }) {
+export function createRealtimeServer({ store, games, secret, log = () => {}, netKeyOf = networkKey }) {
   const dbs = new Map(games.map((g) => [g.name, Object.assign(new GameDb(g.name, g.rules, store), { reap: g.reap ?? [] })]));
   const auth = createAuth(secret);
   const http = createServer((req, res) => {
@@ -54,6 +83,8 @@ export function createRealtimeServer({ store, games, secret, log = () => {} }) {
     res.writeHead(404).end();
   });
   const wss = new WebSocketServer({ noServer: true, maxPayload: 1 << 20 });
+  /** Lobbies announced for "On your Wi-Fi": game → code → {net, uid, name, players, at}. Memory only. */
+  const nearby = new Map(games.map((g) => [g.name, new Map()]));
 
   http.on('upgrade', (req, socket, head) => {
     // Accept /rt and /rt/<anything>; the database is chosen in `hello`.
@@ -64,7 +95,9 @@ export function createRealtimeServer({ store, games, secret, log = () => {} }) {
     wss.handleUpgrade(req, socket, head, (ws) => wss.emit('connection', ws, req));
   });
 
-  wss.on('connection', (ws) => {
+  wss.on('connection', (ws, req) => {
+    const net = netKeyOf(req);
+    let hosting = null; // the code this connection announced, if any
     /** @type {GameDb|null} */
     let db = null;
     let uid = null;
@@ -195,6 +228,34 @@ export function createRealtimeServer({ store, games, secret, log = () => {} }) {
             disconnectOps.push({ key, writes });
             return reply({ ok: true });
           }
+          case 'nearby:host': {
+            const rooms = nearby.get(db.name);
+            if (hosting) rooms.delete(hosting);
+            hosting = null;
+            if (msg.code === null || msg.code === undefined) return reply({ ok: true });
+            const code = String(msg.code);
+            if (!validKey(code) || code.length > 12) return bad('invalid code');
+            // Only a room that exists in this game can be listed.
+            if (!(db.reap.length ? db.reap : ['rooms']).some((top) => db.get([top, code]) != null)) return bad('no such room');
+            if (!net) return reply({ ok: true });
+            const name = String(msg.name ?? '').trim().slice(0, 24);
+            const players = Number.isInteger(msg.players) ? Math.max(0, Math.min(msg.players, 99)) : 0;
+            rooms.set(code, { net, uid, name, players, at: now });
+            hosting = code;
+            return reply({ ok: true });
+          }
+          case 'nearby:list': {
+            const rooms = nearby.get(db.name);
+            const found = [];
+            for (const [code, r] of rooms) {
+              if (now - r.at > NEARBY_TTL_MS) {
+                rooms.delete(code);
+                continue;
+              }
+              if (net && r.net === net && r.uid !== uid && found.length < NEARBY_MAX) found.push({ code, name: r.name, players: r.players });
+            }
+            return reply({ ok: true, rooms: found });
+          }
           default:
             return bad(`unknown op ${msg.op}`);
         }
@@ -207,6 +268,7 @@ export function createRealtimeServer({ store, games, secret, log = () => {} }) {
     ws.on('close', () => {
       clearInterval(beat);
       if (!db) return;
+      if (hosting) nearby.get(db.name).delete(hosting);
       db.listeners.delete(pushSubs);
       if (disconnectOps.length) {
         const now = Date.now();

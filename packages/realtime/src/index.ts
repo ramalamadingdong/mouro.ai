@@ -119,6 +119,8 @@ export class RealtimeClient {
   private welcomeWaiters: Array<() => void> = [];
   private storage: KeyValueStorage | null = null;
   private tokenKey: string;
+  /** The lobby this client shows "On your Wi-Fi"; re-sent after a reconnect. */
+  private nearbyHost: Record<string, unknown> | null = null;
 
   constructor(options: RealtimeOptions) {
     this.options = options;
@@ -227,6 +229,8 @@ export class RealtimeClient {
       this.backoff = 500;
       // Re-establish live subscriptions, then flush queued requests.
       for (const [sid, s] of this.subs) this.raw({ op: 'sub', sid, path: s.path });
+      // The server forgets an announced lobby when the socket closes.
+      if (this.nearbyHost) this.raw(this.nearbyHost);
       // Requests in flight when the socket dropped are re-sent: set/update are
       // idempotent and transactions are compare-and-set, so a replay is safe.
       const q = this.queue;
@@ -300,6 +304,10 @@ export class RealtimeClient {
     this.pending.clear();
     this.subs.clear();
     ws?.close();
+  }
+
+  setNearbyHost(body: Record<string, unknown> | null): void {
+    this.nearbyHost = body;
   }
 
   watchConnected(cb: (c: boolean) => void): Unsubscribe {
@@ -470,4 +478,33 @@ export function onDisconnect(r: DatabaseReference): OnDisconnect {
     remove: () => send({ action: 'remove' }),
     cancel: () => send({ action: 'cancel' }),
   };
+}
+
+// ── "On your Wi-Fi" ─────────────────────────────────────────────────────────
+// Not part of the Firebase API. The server matches players who reach it from
+// the same network (one public IPv4 address, or one IPv6 /64) and keeps that
+// match in memory only; clients never see an address, just these fields.
+
+export interface NearbyRoom {
+  code: string;
+  /** The host's display name, as they announced it. */
+  name: string;
+  players: number;
+}
+
+/**
+ * Show a waiting room to players on the same network, or stop with `null`.
+ * Kept across reconnects; it ends when the room is withdrawn or this client
+ * disconnects for good. A room that does not exist is refused.
+ */
+export async function announceNearbyRoom(db: Database, room: NearbyRoom | null): Promise<void> {
+  const body = room ? { op: 'nearby:host', code: room.code, name: room.name, players: room.players } : null;
+  db.client.setNearbyHost(body);
+  await db.client.request(body ?? { op: 'nearby:host', code: null });
+}
+
+/** Waiting rooms of this game announced from the same network. */
+export async function listNearbyRooms(db: Database): Promise<NearbyRoom[]> {
+  const reply = (await db.client.request({ op: 'nearby:list' })) as Reply & { rooms?: unknown };
+  return Array.isArray(reply.rooms) ? (reply.rooms as NearbyRoom[]) : [];
 }
