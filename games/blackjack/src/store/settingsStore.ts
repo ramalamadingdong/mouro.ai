@@ -30,12 +30,15 @@ interface SettingsData {
   playerName: string;
   lastRoom: LastRoom | null;
   table: TableOptions;
+  /** Buzz the phone when it becomes this player's turn (where the browser can). */
+  vibrate: boolean;
 }
 
 interface SettingsState extends SettingsData {
   setPlayerName: (name: string) => void;
   setLastRoom: (room: LastRoom | null) => void;
   setTable: (patch: Partial<TableOptions>) => void;
+  setVibrate: (on: boolean) => void;
 }
 
 const DEFAULT_TABLE: TableOptions = { opponents: 4, startingStack: 1000, rounds: 20, difficulty: 'medium' };
@@ -59,15 +62,17 @@ export const useSettingsStore = create<SettingsState>()(
       playerName: '',
       lastRoom: null,
       table: DEFAULT_TABLE,
+      vibrate: true,
       setPlayerName: (playerName) => set({ playerName }),
       setLastRoom: (lastRoom) => set({ lastRoom }),
+      setVibrate: (vibrate) => set({ vibrate }),
       setTable: (patch) => set((s) => ({ table: cleanTable({ ...s.table, ...patch }) })),
     }),
     {
       name: 'blackjack-settings',
       storage: createJSONStorage(() => localStorage),
       version: 1,
-      partialize: (s): SettingsData => ({ playerName: s.playerName, lastRoom: s.lastRoom, table: s.table }),
+      partialize: (s): SettingsData => ({ playerName: s.playerName, lastRoom: s.lastRoom, table: s.table, vibrate: s.vibrate }),
       // Storage is user-editable and survives app updates: never trust its shape.
       merge: (persisted, current) => {
         const old = (typeof persisted === 'object' && persisted !== null ? persisted : {}) as Partial<SettingsData>;
@@ -80,6 +85,7 @@ export const useSettingsStore = create<SettingsState>()(
               ? { code: room.code, role: room.role }
               : null,
           table: cleanTable(old.table),
+          vibrate: old.vibrate !== false,
         };
       },
     },

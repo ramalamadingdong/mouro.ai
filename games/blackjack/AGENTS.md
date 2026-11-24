@@ -144,6 +144,15 @@ finished.
 Online there are no cats: only the dealer pause before each `next` and the
 held result.
 
+## Your-turn buzz
+
+`src/hooks/use-turn-buzz.ts` vibrates once (`navigator.vibrate`) on the edge
+into "my turn" (betting or playing), not again while it stays mine, and not
+when my own deal/rematch tap put me on turn. On by default; a switch in the
+table Menu (`settingsStore.vibrate`) turns it off, shown only where the
+browser has the API. Android only in practice: iPhone Safari has no
+Vibration API, so it silently does nothing there.
+
 ## Disconnects (online)
 
 As in Hold'em: if the player on turn has no presence node, the others wait

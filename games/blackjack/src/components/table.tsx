@@ -29,6 +29,8 @@ import { Avatar } from '@/components/avatar';
 import { CardView } from '@/components/card';
 import { HelpModal } from '@/components/help';
 import { Modal } from '@/components/modal';
+import { canVibrate, useTurnBuzz } from '@/hooks/use-turn-buzz';
+import { useSettingsStore } from '@/store/settingsStore';
 import './table.css';
 
 export interface TableProps {
@@ -107,6 +109,9 @@ export function Table(props: TableProps) {
   const { state, mySeat, thinkingSeat = null, away, busy = false, error, onMove } = props;
   const [menuOpen, setMenuOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  const vibrate = useSettingsStore((s) => s.vibrate);
+  const setVibrate = useSettingsStore((s) => s.setVibrate);
+  useTurnBuzz(state, mySeat);
 
   const n = state.players.length;
   const settled = state.phase === 'settled';
@@ -452,6 +457,17 @@ export function Table(props: TableProps) {
           >
             How to play
           </button>
+          {canVibrate() && (
+            <button
+              type="button"
+              role="switch"
+              aria-checked={vibrate}
+              className="btn btn--secondary btn--block"
+              onClick={() => setVibrate(!vibrate)}
+            >
+              Vibrate on my turn: {vibrate ? 'On' : 'Off'}
+            </button>
+          )}
           <button type="button" className="btn btn--secondary btn--block" onClick={props.onLeave}>
             {props.leaveLabel}
           </button>
