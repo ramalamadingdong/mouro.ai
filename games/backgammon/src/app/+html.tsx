@@ -65,6 +65,8 @@ export default function Root({ children }: PropsWithChildren) {
         {/* Lock the page background to the felt green so there's no white flash
             before React mounts, in either colour scheme. */}
         <style dangerouslySetInnerHTML={{ __html: backgroundStyle }} />
+        {/* Analytics (self-hosted Umami, cookieless): see site/static/js/analytics.js */}
+        <script defer src="https://mouro.ai/static/js/analytics.js" />
       </head>
       <body>{children}</body>
     </html>

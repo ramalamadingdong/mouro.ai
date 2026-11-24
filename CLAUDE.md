@@ -55,6 +55,13 @@ are working in — those hold each project's non-negotiables.
   every realtime room. The `road-trip` realtime namespace (rules in
   `games/road-trip/`) is for the Categories word game only; its rules reject
   any other field.
+- **Analytics.** Every page loads `site/static/js/analytics.js` by its absolute
+  address (`https://mouro.ai/static/js/analytics.js`, which works from any app's
+  base path). It loads the self-hosted Umami at `/stats` (systemd
+  `mouro-umami`, set up by `infra/umami-setup.sh`), counts only the live
+  domain, drops query strings and replaces room codes with `:code`. A new page
+  or game adds the same one-line tag. Never send location, room codes or
+  anything a player typed in an event.
 - Don't commit `.env` files, `server/data/`, or build output.
 
 ## Verify before finishing

@@ -1,0 +1,29 @@
+# Umami analytics for mouro.ai, served by Caddy at https://mouro.ai/stats
+[Unit]
+Description=mouro.ai analytics (Umami)
+After=network.target postgresql.service
+Requires=postgresql.service
+
+[Service]
+Type=simple
+User=mouro-umami
+Group=mouro-umami
+WorkingDirectory=/opt/umami-src
+EnvironmentFile=/etc/mouro-umami/env
+Environment=NODE_ENV=production
+Environment=BASE_PATH=/stats
+Environment=DISABLE_TELEMETRY=1
+Environment=HOSTNAME=127.0.0.1
+Environment=PORT=3100
+ExecStart=/opt/umami-src/node_modules/.bin/next start -H 127.0.0.1 -p 3100
+Restart=always
+RestartSec=3
+
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/opt/umami-src/.next/cache
+
+[Install]
+WantedBy=multi-user.target
