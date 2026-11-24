@@ -68,12 +68,22 @@
   display: flex;
   align-items: center;
   gap: var(--space-sm);
-  min-height: 2.75rem;
+  /* At least two lines tall; a long line may take up to four (in smaller
+     type) and the felt, which flexes, gives up the room — so she is never
+     cut off and the page never scrolls. */
+  flex-shrink: 0;
+  min-height: 2.9rem;
   margin: 0 var(--space-xs) var(--space-xs);
   padding: 0.2rem var(--space-sm) 0.2rem 0.25rem;
   border-radius: var(--radius-lg);
   background: var(--wood-raised);
   border: 1px solid var(--border);
+}
+
+.talk__line[data-long='true'] {
+  -webkit-line-clamp: 4;
+  font-size: var(--size-xs);
+  line-height: 1.2;
 }
 
 .talk__avatar {
@@ -83,12 +93,12 @@
   box-shadow: 0 0 0 2px var(--accent-dim);
 }
 
-/* Three lines at most; a new line fades in (it is re-keyed on every change). */
+/* Two lines at most (long ones in smaller type); a new line fades in (it is re-keyed on every change). */
 .talk__line {
   flex: 1;
   min-width: 0;
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   color: var(--text);
@@ -153,7 +163,10 @@
   display: flex;
   flex-direction: column;
   padding-top: var(--space-xs);
-  min-height: 29rem;
+  /* The felt takes whatever height is left and shrinks to fit: the table
+     must never make the page scroll, however small the screen or however
+     much Duchess has to say. Seats are placed in percentages of it. */
+  min-height: 15rem;
 }
 
 .felt {
@@ -690,9 +703,46 @@
 /* A phone in a browser with both toolbars showing has ~650px of height. The
    felt gives up its minimum and the page is allowed to scroll rather than
    crush the seats into the board. */
-@media (max-height: 640px) {
-  .felt-wrap {
-    min-height: 26rem;
+/* Short phones (an iPhone SE, or any phone with the browser bars showing):
+   everything a notch smaller so the felt keeps enough room for eight seats. */
+@media (max-height: 740px) and (max-width: 699px) {
+  .table {
+    --card-scale: 0.88;
+  }
+  .table__bar,
+  .table__menu {
+    min-height: 2.4rem;
+  }
+  .seat__who {
+    width: 3.8rem;
+  }
+  .seat__avatar {
+    width: 2.1rem;
+  }
+  .dealer__avatar {
+    width: 1.6rem;
+  }
+  .seat__plate {
+    line-height: 1.05;
+  }
+  .hero {
+    margin-top: calc(-4rem * var(--card-scale, 1));
+  }
+  .hero__hands {
+    min-height: calc(6.6rem * var(--card-scale, 1));
+  }
+  .hero__info {
+    padding: 0.15rem var(--space-sm);
+  }
+  .felt__inplay {
+    bottom: 4.2rem;
+  }
+  /* Rows are close here: the badge rides lower and smaller so it does not
+     cover the name plate of the seat above. */
+  .seat__badge {
+    top: -0.3rem;
+    padding: 0 0.3rem;
+    font-size: 0.625rem;
   }
 }
 
@@ -719,9 +769,6 @@
     --size-xs: 0.8125rem;
     --size-sm: 0.9375rem;
   }
-  .felt-wrap {
-    min-height: 32rem;
-  }
   /* Seats keep their phone size here: on a short laptop window four rows
      down one rail only just fit. The next step, with more height, grows them. */
   .dealer__avatar {
@@ -741,9 +788,6 @@
     --card-scale: 1.55;
     --table-max-width: 900px;
   }
-  .felt-wrap {
-    min-height: 42rem;
-  }
   .seat__who {
     width: 5.5rem;
   }
@@ -761,9 +805,6 @@
     --table-max-width: 1040px;
     --size-xs: 0.875rem;
     --size-sm: 1rem;
-  }
-  .felt-wrap {
-    min-height: 50rem;
   }
   .felt__inplay {
     bottom: 8rem;

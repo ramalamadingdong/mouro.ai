@@ -96,15 +96,6 @@ export function decide(
   if (!legal || legal.seat !== seat) throw new Error('decide() called when this cat is not on turn');
   const p = state.players[seat];
 
-  if (legal.kind === 'insurance') {
-    // "Insurance is a sucker bet" — unless you are counting and the shoe is
-    // full of tens, or you are superstitious.
-    const take =
-      legal.cost > 0 &&
-      (personality.insurance === 'always' || (personality.insurance === 'count' && trueCount(state) >= 3));
-    return { kind: 'insure', take };
-  }
-
   if (legal.kind === 'bet') {
     let amount = Math.max(legal.minBet, p.stack * personality.betFraction);
     if (personality.counts) {

@@ -108,47 +108,14 @@ describe('the deal', () => {
     expect(s.house).toBe(200);
   });
 
-  it('under an Ace: insurance first, in seat order, then the peek', () => {
-    let s = round(2, '9c Tc As 9d Td Kh');
-    expect(s.phase).toBe('insurance');
-    expect(legalActions(s)).toMatchObject({ kind: 'insurance', seat: 0, cost: 50, evenMoney: false });
-    expect(applyMove(s, { kind: 'hit' }, uidOf(0)).ok).toBe(false);
-    s = act(s, { kind: 'insure', take: true });
-    expect(s.players[0].stack).toBe(850);
-    expect(totalChips(s)).toBe(2000);
-    s = act(s, { kind: 'insure', take: false });
-    expect(s.toAct).toBeNull();
-    s = next(s); // the peek: blackjack
+  it('under an Ace too, with no insurance offered', () => {
+    const s = round(2, '9c Tc As 9d Td Kh');
     expect(s.phase).toBe('settled');
-    // seat 0 loses 100 on the hand, wins 100 (2:1 on 50) on insurance
-    expect(s.result!.net).toEqual([0, -100]);
-    expect(s.players[0].stack).toBe(1000);
-    expect(totalChips(s)).toBe(2000);
-  });
-
-  it('insurance is lost when the dealer has no blackjack, and play goes on', () => {
-    let s = round(1, 'Tc As 9d 7h 2c');
-    s = act(s, { kind: 'insure', take: true });
-    s = next(s);
-    expect(s.phase).toBe('playing');
-    expect(s.house).toBe(50);
-    s = finish(s); // 19 vs A7 = soft 18: dealer stands
-    expect(s.result!.net[0]).toBe(100 - 50);
-    expect(s.players[0].stack).toBe(1050);
-    expect(totalChips(s)).toBe(1000);
-  });
-
-  it('even money: a blackjack insured against an Ace is paid 1:1 either way', () => {
-    let s = round(1, 'As Ac Kd Kh');
-    expect(legalActions(s)).toMatchObject({ kind: 'insurance', evenMoney: true });
-    s = finish(next(act(s, { kind: 'insure', take: true })));
-    expect(s.players[0].hands[0].outcome).toBe('push');
-    expect(s.result!.net[0]).toBe(100);
+    expect(s.result!.dealerBlackjack).toBe(true);
   });
 
   it('blackjack against a dealer blackjack is a push', () => {
-    let s = round(1, 'As Ac Kd Kh');
-    s = next(act(s, { kind: 'insure', take: false }));
+    const s = round(1, 'As Ac Kd Kh');
     expect(s.players[0].hands[0].outcome).toBe('push');
     expect(s.players[0].stack).toBe(1000);
   });

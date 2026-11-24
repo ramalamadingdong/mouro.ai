@@ -25,8 +25,6 @@ export interface Personality {
   counts: boolean;
   /** 0..1: random wobble on the bet size. */
   betJitter: number;
-  /** When it takes insurance: never (the textbook), on a high count, or every time. */
-  insurance: 'never' | 'count' | 'always';
 }
 
 export interface Cat {
@@ -44,49 +42,49 @@ export const CATS: readonly Cat[] = [
     name: 'Tiger',
     blurb: 'Grey tabby. Plays the chart, bets a steady slice of the stack.',
     style: 'By the book',
-    personality: { strategy: 'basic', betFraction: 0.05, counts: false, betJitter: 0.2, insurance: 'never' },
+    personality: { strategy: 'basic', betFraction: 0.05, counts: false, betJitter: 0.2 },
   },
   {
     id: 'marmalade',
     name: 'Marmalade',
     blurb: 'Orange tabby. Big bets, and she doubles anything that looks lucky.',
     style: 'Reckless',
-    personality: { strategy: 'hunch', betFraction: 0.15, counts: false, betJitter: 0.5, insurance: 'never' },
+    personality: { strategy: 'hunch', betFraction: 0.15, counts: false, betJitter: 0.5 },
   },
   {
     id: 'professor',
     name: 'Professor',
-    blurb: 'Tuxedo cat with glasses. Counts every card, bets up (and insures) when the shoe is hot.',
+    blurb: 'Tuxedo cat with glasses. Counts every card, bets up when the shoe is hot.',
     style: 'Card counter',
-    personality: { strategy: 'basic', betFraction: 0, counts: true, betJitter: 0, insurance: 'count' },
+    personality: { strategy: 'basic', betFraction: 0, counts: true, betJitter: 0 },
   },
   {
     id: 'patches',
     name: 'Patches',
     blurb: 'Calico. Hates going bust so much she stands on twelve.',
     style: 'Never busts',
-    personality: { strategy: 'never-bust', betFraction: 0.04, counts: false, betJitter: 0.3, insurance: 'never' },
+    personality: { strategy: 'never-bust', betFraction: 0.04, counts: false, betJitter: 0.3 },
   },
   {
     id: 'shadow',
     name: 'Shadow',
     blurb: 'Black cat. Minimum bet, perfect play, all night long.',
     style: 'Grinder',
-    personality: { strategy: 'basic', betFraction: 0, counts: false, betJitter: 0, insurance: 'never' },
+    personality: { strategy: 'basic', betFraction: 0, counts: false, betJitter: 0 },
   },
   {
     id: 'smokey',
     name: 'Smokey',
     blurb: 'Blue-grey cat. Copies the dealer: hits to seventeen, no tricks.',
     style: 'Mimic',
-    personality: { strategy: 'dealer', betFraction: 0.06, counts: false, betJitter: 0.25, insurance: 'never' },
+    personality: { strategy: 'dealer', betFraction: 0.06, counts: false, betJitter: 0.25 },
   },
   {
     id: 'biscuit',
     name: 'Biscuit',
-    blurb: 'Cream cat with dark points. Splits every pair and always buys insurance, just in case.',
+    blurb: 'Cream cat with dark points. Splits every pair, just in case.',
     style: 'Superstitious',
-    personality: { strategy: 'hunch', betFraction: 0.08, counts: false, betJitter: 0.4, insurance: 'always' },
+    personality: { strategy: 'hunch', betFraction: 0.08, counts: false, betJitter: 0.4 },
   },
 ];
 

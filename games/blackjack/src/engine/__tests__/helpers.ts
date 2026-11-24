@@ -125,7 +125,6 @@ export function randomLegalMove(s: GameState, rng: () => number): { move: Move; 
     const amount = pick < 0.15 ? legal.maxBet : legal.minBet + legal.step * Math.floor(rng() * (steps + 1));
     return { move: { kind: 'bet', amount }, uid: actor };
   }
-  if (legal.kind === 'insurance') return { move: { kind: 'insure', take: legal.cost > 0 && roll < 0.4 }, uid: actor };
   if (legal.canSurrender && roll < 0.08) return { move: { kind: 'surrender' }, uid: actor };
   if (legal.canSplit && roll < 0.6) return { move: { kind: 'split' }, uid: actor };
   if (legal.canDouble && roll < 0.3) return { move: { kind: 'double' }, uid: actor };
@@ -169,7 +168,6 @@ export function checkInvariants(s: GameState, chips: number, label: string): voi
   if (s.toAct !== null) {
     const p = s.players[s.toAct];
     if (s.phase === 'betting') check(p.hands.length === 0 && p.stack >= s.config.minBet, label, 'bettor cannot bet');
-    else if (s.phase === 'insurance') check(p.hands.length === 1 && p.insurance === 0, label, 'insurance asked twice');
     else check(s.phase === 'playing' && !p.hands[p.active].done, label, 'player on turn cannot act');
   }
   if (s.phase === 'playing' || s.phase === 'dealer') check(s.dealer.length >= 2, label, 'dealer short of cards');
@@ -180,8 +178,7 @@ export function checkInvariants(s: GameState, chips: number, label: string): voi
   if (s.phase === 'settled') {
     const r = s.result!;
     s.players.forEach((p, i) => {
-      const ins = p.insurance === 0 ? 0 : r.dealerBlackjack ? p.insurance * 2 : -p.insurance;
-      const net = p.hands.reduce((a, h) => a + h.paid - h.bet, 0) + ins;
+      const net = p.hands.reduce((a, h) => a + h.paid - h.bet, 0);
       check(net === r.net[i], label, 'net disagrees with the hands');
       check(p.hands.every((h) => h.outcome !== null), label, 'unsettled hand');
     });

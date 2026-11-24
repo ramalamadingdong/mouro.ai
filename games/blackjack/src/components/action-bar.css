@@ -267,10 +267,23 @@
     0 1px 2px rgb(0 0 0 / 0.6);
 }
 
-.actions__status--offer {
-  padding: 0 var(--space-sm);
-  line-height: 1.35;
-}
-.actions__status--offer strong {
-  color: var(--accent-bright);
+/* Short phones: the controls give the felt some room back (see table.css). */
+@media (max-height: 740px) and (max-width: 699px) {
+  .actions {
+    gap: var(--space-xs);
+    padding-top: var(--space-xs);
+  }
+  .actions__top {
+    min-height: 4.6rem;
+    gap: var(--space-xs);
+  }
+  .actions__btn {
+    min-height: 2.9rem;
+  }
+  .bet-chip {
+    --chip-size: 2.75rem;
+  }
+  .bet-chips__edit {
+    min-height: 2.2rem;
+  }
 }

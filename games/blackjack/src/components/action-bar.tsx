@@ -109,46 +109,6 @@ function BetControls({
 }
 
 export function ActionBar({ legal, pushed, onPush, onUndo, onClear, status, busy = false, extra, onMove }: ActionBarProps) {
-  if (legal?.kind === 'insurance') {
-    return (
-      <section className="actions" aria-label="Insurance">
-        <div className="actions__top">
-          <div className="actions__status actions__status--offer" role="status">
-            {legal.evenMoney ? (
-              <span>
-                <strong>Even money?</strong> Take your blackjack paid 1 to 1 now, whatever the dealer has.
-              </span>
-            ) : legal.cost > 0 ? (
-              <span>
-                <strong>Insurance?</strong> Bet {chips(legal.cost)} that the dealer has blackjack. Pays 2 to 1.
-              </span>
-            ) : (
-              <span>Not enough chips for insurance.</span>
-            )}
-          </div>
-        </div>
-        <div className="actions__buttons">
-          <button
-            type="button"
-            className="actions__btn actions__btn--quiet"
-            disabled={busy}
-            onClick={() => onMove({ kind: 'insure', take: false })}
-          >
-            {legal.evenMoney ? 'No thanks' : 'No insurance'}
-          </button>
-          <button
-            type="button"
-            className="actions__btn actions__btn--main"
-            disabled={busy || legal.cost === 0}
-            onClick={() => onMove({ kind: 'insure', take: true })}
-          >
-            {legal.evenMoney ? 'Even money' : `Insure ${chips(legal.cost)}`}
-          </button>
-        </div>
-      </section>
-    );
-  }
-
   if (legal?.kind === 'bet') {
     return (
       <BetControls

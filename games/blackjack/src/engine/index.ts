@@ -22,7 +22,6 @@ export {
   createGame,
   dealerMustDraw,
   dealerSoft17,
-  insuranceCost,
   holeCardShown,
   isBlackjack,
   isGameOver,

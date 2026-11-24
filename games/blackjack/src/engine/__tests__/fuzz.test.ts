@@ -15,7 +15,6 @@ describe('fuzz', () => {
     let doubles = 0;
     let dealerBusts = 0;
     let reshuffles = 0;
-    let insured = 0;
     let surrenders = 0;
     for (let game = 0; rounds < 3000; game++) {
       const rng = makeRng([game, 0xb1a]);
@@ -47,7 +46,6 @@ describe('fuzz', () => {
         }
         if (move.kind === 'split') splits++;
         if (move.kind === 'double') doubles++;
-        if (move.kind === 'insure' && move.take) insured++;
         if (move.kind === 'surrender') surrenders++;
         if (s.phase === 'settled' && prev.phase !== 'settled' && s.result) {
           if (s.result.dealerTotal > 21) dealerBusts++;
@@ -63,7 +61,6 @@ describe('fuzz', () => {
     expect(doubles).toBeGreaterThan(100);
     expect(dealerBusts).toBeGreaterThan(100);
     expect(reshuffles).toBeGreaterThan(5);
-    expect(insured).toBeGreaterThan(30);
     expect(surrenders).toBeGreaterThan(30);
   });
 });

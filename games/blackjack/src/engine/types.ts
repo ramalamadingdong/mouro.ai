@@ -47,10 +47,6 @@ export const SHOE_SIZE = 52 * RULES.DECKS;
  * 'betting'  — `toAct` is the seat placing a bet, in seat order. When the
  *              last bet is in, `toAct` is null and the dealer must send `next`
  *              to deal the cards.
- * 'insurance'— the dealer shows an Ace: in seat order, each seat with a hand
- *              takes insurance or not (`toAct`). Then `next` makes the dealer
- *              peek: a dealer blackjack settles the round at once, otherwise
- *              insurance is lost and play begins.
  * 'playing'  — `toAct` is the seat playing its hand `players[toAct].active`.
  *              When every hand is finished, `toAct` is null and `next` turns
  *              the dealer's hole card.
@@ -59,13 +55,11 @@ export const SHOE_SIZE = 52 * RULES.DECKS;
  * 'settled'  — the round is paid; `result` is set; waits for `deal`.
  * 'gameover' — the last round is played, or no human can afford a bet.
  */
-export type Phase = 'idle' | 'betting' | 'insurance' | 'playing' | 'dealer' | 'settled' | 'gameover';
+export type Phase = 'idle' | 'betting' | 'playing' | 'dealer' | 'settled' | 'gameover';
 
 export type LastActionKind =
   | 'bet'
   | 'sitout'
-  | 'insure'
-  | 'noinsure'
   | 'hit'
   | 'stand'
   | 'double'
@@ -110,12 +104,6 @@ export interface PlayerState {
   hands: Hand[];
   /** Index into `hands` of the hand being played. */
   active: number;
-  /**
-   * Chips staked on insurance this round (0 = none). Lost to the house at the
-   * peek, or paid 2:1 when the dealer has blackjack; kept for the round so
-   * the result can show it.
-   */
-  insurance: number;
   /**
    * Online only: somebody had to act for this player because they were away.
    * Cleared by the player's own next action. Clients use it to skip the grace
@@ -196,12 +184,10 @@ export interface GameState {
  *
  * Player moves — only from the seat in `toAct`:
  *   bet      while betting. `amount` 0 sits this round out.
- *   insure   while the dealer offers insurance: take it (half the bet) or not.
  *   hit / stand / double / split / surrender   while playing, on the active hand.
  *
  * away — sent by any OTHER player for the seat in `toAct` when that player has
- * gone: sits them out of the round while betting, declines insurance, stands
- * while playing. The
+ * gone: sits them out of the round while betting, stands while playing. The
  * engine cannot see presence; the database rules and the client decide when
  * it is allowed.
  */
@@ -215,11 +201,10 @@ export type Move =
   | { kind: 'double' }
   | { kind: 'split' }
   | { kind: 'surrender' }
-  | { kind: 'insure'; take: boolean }
   | { kind: 'away' };
 
 /** The moves a player makes on their own turn. */
-export type PlayerMove = Extract<Move, { kind: 'bet' | 'insure' | 'hit' | 'stand' | 'double' | 'split' | 'surrender' }>;
+export type PlayerMove = Extract<Move, { kind: 'bet' | 'hit' | 'stand' | 'double' | 'split' | 'surrender' }>;
 
 export type ApplyResult = { ok: true; state: GameState } | { ok: false; error: string };
 
@@ -232,14 +217,6 @@ export type LegalActions =
       /** Largest bet: the table maximum, capped at the stack, rounded down to a step. */
       maxBet: number;
       step: number;
-    }
-  | {
-      kind: 'insurance';
-      seat: number;
-      /** Chips insurance costs: half the bet, rounded down. 0 = cannot afford it (decline only). */
-      cost: number;
-      /** This seat holds a blackjack: taking insurance is "even money". */
-      evenMoney: boolean;
     }
   | {
       kind: 'play';
