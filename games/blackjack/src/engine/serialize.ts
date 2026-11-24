@@ -182,6 +182,8 @@ function decode(raw: unknown): GameState {
     minBet: int(cfg.minBet, RULES.BET_STEP, MAX_CHIPS, 'minBet'),
     maxBet: int(cfg.maxBet, RULES.BET_STEP, MAX_CHIPS, 'maxBet'),
     rounds: int(cfg.rounds, 1, 1000, 'rounds'),
+    // Absent in games started before dealers could be chosen: Duchess.
+    dealer: typeof cfg.dealer === 'string' && /^[a-z0-9]{1,20}$/.test(cfg.dealer) ? cfg.dealer : 'duchess',
   };
   if (config.minBet % RULES.BET_STEP !== 0 || config.maxBet % RULES.BET_STEP !== 0) bad('bet step');
 

@@ -57,6 +57,7 @@ export const useSoloStore = create<SoloStore>()(
           ],
           startingStack: options.startingStack,
           rounds: options.rounds,
+          dealer: options.dealer,
         });
         const dealt = applyMove(fresh, { kind: 'deal', seed: randomSeed() }, SOLO_UID);
         set({

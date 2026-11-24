@@ -10,7 +10,7 @@
  * receives — see AGENTS.md — so this component is what keeps it hidden).
  */
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
-import { DEALER } from '@/ai';
+import { dealerById } from '@/dealers';
 import { CUT_FRACTION, NAG_AFTER, ambientLine, dealerLine, finallyLine, impatienceLine, type Talk } from '@/dealer-talk';
 import {
   chipsInPlay,
@@ -149,6 +149,10 @@ export function Table(props: TableProps) {
   const { state, mySeat, thinkingSeat = null, away, busy = false, error, onMove } = props;
   const [menuOpen, setMenuOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  // The dealer this table voted for (or the player picked): face, name and voice.
+  const DEALER = dealerById(state.config.dealer);
+  const DEALER_UID = `cat-${DEALER.id}`;
+  const voice = DEALER.voice;
   const [tipOpen, setTipOpen] = useState(false);
   const vibrate = useSettingsStore((s) => s.vibrate);
   const setVibrate = useSettingsStore((s) => s.setVibrate);
@@ -200,7 +204,7 @@ export function Table(props: TableProps) {
     return `Waiting for ${toActName} to ${verb}…`;
   };
   if (state.phase === 'betting') status = state.toAct === null ? 'Dealing…' : waitingOn('bet');
-  else if (state.phase === 'playing') status = state.toAct === null ? `${DEALER.name} turns her card…` : waitingOn('play');
+  else if (state.phase === 'playing') status = state.toAct === null ? `${DEALER.name} turns ${DEALER.their} card…` : waitingOn('play');
   else if (state.phase === 'dealer') {
     const { total } = handValue(state.dealer);
     status = total > 21 ? `${DEALER.name} busts!` : `${DEALER.name} has ${total}…`;
@@ -219,7 +223,7 @@ export function Table(props: TableProps) {
   const [talk, setTalk] = useState<{ version: number; prev: GameState; line: Talk }>(() => ({
     version: state.version,
     prev: state,
-    line: ambientLine(state),
+    line: ambientLine(voice, state),
   }));
   // She calls players by name ("Sugar" for an unnamed "You").
   const talkName = (seat: number): string => (state.players[seat].name === 'You' ? 'Sugar' : state.players[seat].name);
@@ -229,7 +233,7 @@ export function Table(props: TableProps) {
     // If she was nagging about the last state, a move she has nothing else
     // to say about gets a "Finally." instead of her old line coming back.
     const wasNagging = nag.version === talk.version && nag.level > 0;
-    const line = dealerLine(talk.prev, state, talkName) ?? (wasNagging ? finallyLine(state.version) : talk.line);
+    const line = dealerLine(talk.prev, state, talkName, voice) ?? (wasNagging ? finallyLine(voice, state.version) : talk.line);
     setTalk({ version: state.version, prev: state, line });
   }
 
@@ -252,7 +256,7 @@ export function Table(props: TableProps) {
   }, [state.version, waitSeat]);
   const nagLevel = nag.version === state.version && waitSeat !== null ? nag.level : 0;
   const said: Talk =
-    nagLevel > 0 ? impatienceLine(nagLevel, waitSeat === -1 || waitSeat === null ? null : talkName(waitSeat), state.version) : talk.line;
+    nagLevel > 0 ? impatienceLine(voice, nagLevel, waitSeat === -1 || waitSeat === null ? null : talkName(waitSeat), state.version) : talk.line;
   const shoeLeft = state.shoe.length / SHOE_SIZE;
 
   function handView(p: PlayerState, hand: Hand, i: number, size: 'sm' | 'md' | 'lg', active: boolean): ReactNode {
@@ -403,7 +407,7 @@ export function Table(props: TableProps) {
 
       <div className="talk">
         <span className="talk__avatar" aria-hidden="true">
-          <Avatar uid={DEALER.uid} name={DEALER.name} />
+          <Avatar uid={DEALER_UID} name={DEALER.name} />
         </span>
         <p className="talk__line" aria-live="polite" key={said.text} data-long={said.text.length > 90 ? 'true' : undefined}>
           “{said.text}” <span className="talk__emoji">{said.emoji}</span>
@@ -426,7 +430,7 @@ export function Table(props: TableProps) {
           <div className="dealer" data-turn={state.phase === 'dealer' ? 'true' : undefined}>
             <div className="dealer__who">
               <span className="dealer__avatar">
-                <Avatar uid={DEALER.uid} name={DEALER.name} />
+                <Avatar uid={DEALER_UID} name={DEALER.name} />
                 {/* The emoji she just sent, popping up beside her. Re-keyed so it pops each time. */}
                 <span className="dealer__emoji" key={`${said.text}|${said.emoji}`} aria-hidden="true" data-mad={nagLevel >= 3 ? 'true' : undefined}>
                   {said.emoji}

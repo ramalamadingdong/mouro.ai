@@ -6,6 +6,7 @@
 import { useNavigate } from 'react-router-dom';
 import { CATS } from '@/ai';
 import { Avatar } from '@/components/avatar';
+import { DealerPicker } from '@/components/dealer-picker';
 import { Segmented } from '@/components/segmented';
 import { Table } from '@/components/table';
 import { useSoloDriver } from '@/hooks/use-solo-driver';
@@ -96,6 +97,11 @@ function Setup() {
               );
             })}
           </ul>
+        </div>
+
+        <div className="field">
+          <span className="field__label">Your dealer</span>
+          <DealerPicker value={table.dealer} onChange={(dealer) => setTable({ dealer })} />
         </div>
 
         <Segmented

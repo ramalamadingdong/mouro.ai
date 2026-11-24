@@ -152,6 +152,26 @@ finished.
 Online there are no cats: only the dealer pause before each `next` and the
 held result.
 
+## Four dealers, voted for
+
+The owner asked for "multiple dealers, let us vote on one". `src/dealers/`
+holds each dealer as data — a `Voice` (every line, by moment, plus nag
+levels, emoji and game-over/ambient lines) — and `src/dealer-talk.ts` is the
+one piece of logic that decides when to say what, for all of them. Dealers:
+Duchess (mean diva), Nana Mittens (sweet grandma), Lucky Lou (lounge
+showman), Unit 9 (robot). Faces are in `components/avatar.tsx`
+(`cat-<id>`).
+
+The chosen id rides in `state.config.dealer` (cosmetic, no rule reads it;
+missing in old states means Duchess). Solo: `settingsStore.table.dealer`.
+Online: each seated player writes `rooms/<code>/votes/<uid>` (a dealer id,
+only while `waiting`; see the rules and the "dealer votes" server test), and
+`startGame` picks `tallyVotes` — most votes among seated players, a tie goes
+to the host's pick, then list order, none means Duchess. A test checks every
+dealer has lines for every moment and talks through a whole game cleanly.
+To add a dealer: a new voice file, an entry in `DEALERS`, a coat in the
+avatar.
+
 ## Duchess gets impatient, and sends emoji
 
 The owner asked: "the longer the person takes the more she shit talks them",

@@ -1,0 +1,71 @@
+.dealers {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.dealers__card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  border: 2px solid transparent;
+  background: var(--wood-raised);
+  color: var(--text);
+  text-align: left;
+  transition:
+    border-color var(--dur-base) var(--ease),
+    opacity var(--dur-base) var(--ease);
+}
+
+.dealers__card[aria-checked='true'] {
+  border-color: var(--accent);
+}
+
+.dealers__card[data-leading='true'] {
+  box-shadow: 0 0 0 1px var(--accent-dim), 0 0 0.8rem rgb(224 182 74 / 0.25);
+}
+
+.dealers__avatar {
+  flex-shrink: 0;
+  width: 2.75rem;
+}
+
+.dealers__text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+  min-width: 0;
+}
+
+.dealers__name {
+  font-weight: var(--weight-bold);
+}
+
+.dealers__style {
+  font-weight: var(--weight-medium);
+  font-size: var(--size-sm);
+  color: var(--accent);
+}
+
+.dealers__blurb {
+  font-size: var(--size-sm);
+  color: var(--text-muted);
+}
+
+.dealers__votes {
+  margin-top: 0.15rem;
+  font-size: var(--size-xs);
+  font-weight: var(--weight-bold);
+  color: var(--accent-bright);
+}
+
+.dealers__crown {
+  position: absolute;
+  top: -0.55rem;
+  right: 0.5rem;
+  font-size: 1.1rem;
+}

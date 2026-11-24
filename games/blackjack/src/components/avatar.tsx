@@ -21,6 +21,9 @@ const COATS: Record<string, Coat> = {
   smokey: { fur: '#6f7b8b', pink: '#c99aa3', eye: '#a6cf5f' },
   biscuit: { fur: '#efe3c9', pink: '#b98679', eye: '#6aa9e0' },
   duchess: { fur: '#fbf8f2', pink: '#f2b3b0', eye: '#4f8fd6' },
+  nana: { fur: '#bdb8b1', pink: '#efb3b3', eye: '#7fa9c9' },
+  lou: { fur: '#d9863a', pink: '#f1ad98', eye: '#6aa64a' },
+  unit9: { fur: '#9aa4ae', pink: '#5d6670', eye: '#2fe6ff' },
 };
 
 /** Markings drawn over the base head, under the face. All clipped to the head. */
@@ -104,6 +107,40 @@ function CatFace({ id }: { id: string }) {
       <g stroke={id === 'shadow' ? '#8d8894' : '#fff8'} strokeWidth="0.9" strokeLinecap="round">
         <path d="M20 46 8 44M20 48.5 9 50M44 46l12-2M44 48.5 55 50" />
       </g>
+      {id === 'nana' && (
+        // Little gold half-moon spectacles and rosy cheeks.
+        <g>
+          <circle cx="15" cy="44" r="3.6" fill="#f2a1a1" opacity="0.55" />
+          <circle cx="49" cy="44" r="3.6" fill="#f2a1a1" opacity="0.55" />
+          <g stroke="#c9a24a" strokeWidth="1.6" fill="rgb(255 255 255 / 0.15)">
+            <path d="M16 37a6.5 6.5 0 0 0 13 0z" />
+            <path d="M35 37a6.5 6.5 0 0 0 13 0z" />
+            <path d="M29 37h6" fill="none" />
+          </g>
+        </g>
+      )}
+      {id === 'lou' && (
+        // A black fedora with a band, worn at a jaunty angle.
+        <g transform="rotate(-6 32 16)">
+          <ellipse cx="32" cy="18" rx="24" ry="4.2" fill="#1d1b22" />
+          <path d="M18 18c0-9 5-13 14-13s14 4 14 13z" fill="#26232b" />
+          <path d="M32 5.500c-1.500 2-1.500 4 0 6" stroke="#3a3640" strokeWidth="1.5" fill="none" />
+          <rect x="18" y="13.500" width="28" height="3.200" fill="#c0392b" />
+        </g>
+      )}
+      {id === 'unit9' && (
+        // Metal seams, an antenna, and a glowing LED visor over the eyes.
+        <g>
+          <path d="M32 18V6" stroke="#5d6670" strokeWidth="2" />
+          <circle cx="32" cy="5" r="2.6" fill="#ff4d4d" />
+          <path d="M10 40h44M32 19v16" stroke="#7d8790" strokeWidth="1" opacity="0.7" />
+          <rect x="15" y="32" width="34" height="8.500" rx="4.200" fill="#11151a" />
+          <rect x="18" y="34.200" width="10" height="4" rx="2" fill="#2fe6ff" />
+          <rect x="36" y="34.200" width="10" height="4" rx="2" fill="#2fe6ff" />
+          <circle cx="20" cy="47" r="1" fill="#5d6670" />
+          <circle cx="44" cy="47" r="1" fill="#5d6670" />
+        </g>
+      )}
       {id === 'duchess' && (
         // The dealer's green eyeshade.
         <g>

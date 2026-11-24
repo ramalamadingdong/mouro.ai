@@ -6,6 +6,7 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { CATS, type Difficulty } from '@/ai';
+import { DEALERS, DEFAULT_DEALER } from '@/dealers';
 
 export interface LastRoom {
   code: string;
@@ -23,6 +24,8 @@ export interface TableOptions {
   rounds: number;
   /** Offline only. */
   difficulty: Difficulty;
+  /** Offline: the dealer you picked. (Online the table votes.) */
+  dealer: string;
 }
 
 interface SettingsData {
@@ -43,7 +46,7 @@ interface SettingsState extends SettingsData {
   setChime: (on: boolean) => void;
 }
 
-const DEFAULT_TABLE: TableOptions = { cats: CATS.slice(0, 4).map((c) => c.id), startingStack: 1000, rounds: 20, difficulty: 'medium' };
+const DEFAULT_TABLE: TableOptions = { cats: CATS.slice(0, 4).map((c) => c.id), startingStack: 1000, rounds: 20, difficulty: 'medium', dealer: DEFAULT_DEALER };
 
 /** Clamp whatever was in storage back into the allowed choices. */
 function cleanTable(raw: unknown): TableOptions {
@@ -61,6 +64,7 @@ function cleanTable(raw: unknown): TableOptions {
     startingStack: pick(t.startingStack, STACK_CHOICES, DEFAULT_TABLE.startingStack),
     rounds: pick(t.rounds, ROUND_CHOICES, DEFAULT_TABLE.rounds),
     difficulty: pick(t.difficulty, ['easy', 'medium', 'hard'] as const, DEFAULT_TABLE.difficulty),
+    dealer: pick(t.dealer, DEALERS.map((d) => d.id), DEFAULT_TABLE.dealer),
   };
 }
 

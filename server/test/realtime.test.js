@@ -413,6 +413,25 @@ describe('blackjack rules', () => {
     await set(state(host), tipped);
   });
 
+  test('dealer votes: each seated player writes only their own vote, a dealer id, while waiting', async () => {
+    const { players: [host, a], uids, state } = await table('BJG88', 2);
+    const vote = (p, uid = p.uid) => ref(p.db, `rooms/BJG88/votes/${uid}`);
+    await set(vote(a), 'nana');
+    await set(vote(host), 'lou');
+    await set(vote(a), 'unit9'); // change of mind
+    await denied(set(vote(a, host.uid), 'nana')); // not someone else's vote
+    await denied(set(vote(a), 'Not A Dealer!'));
+    await denied(set(vote(a), { junk: 1 }));
+    const outsider = await player('blackjack');
+    await denied(set(vote(outsider), 'nana'));
+    // The chosen dealer rides in the game's config.
+    const s = bjState(uids, { version: 1, toAct: 0, by: host.uid, kind: 'deal' });
+    await denied(set(state(host), { ...s, config: { ...s.config, dealer: 'NOPE NOPE' } }));
+    await set(state(host), { ...s, config: { ...s.config, dealer: 'unit9' } });
+    await update(ref(host.db, 'rooms/BJG88/meta'), { status: 'playing', updatedAt: serverTimestamp() });
+    await denied(set(vote(a), 'nana')); // voting closes when the game starts
+  });
+
   test('away: another player may act for the one on turn only while their presence is gone', async () => {
     const { players: [host, a, b], uids, state } = await table('BJD55');
     await set(state(host), bjState(uids, { version: 1, toAct: 1, by: host.uid, kind: 'deal' }));

@@ -19,7 +19,9 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useGameStore } from '@/store/gameStore';
 import { useSettingsStore } from '@/store/settingsStore';
-import { leaveRoom, seatOrder } from '@/net/rooms';
+import { leaveRoom, seatOrder, tallyVotes } from '@/net/rooms';
+import { DealerPicker } from '@/components/dealer-picker';
+import { dealerById } from '@/dealers';
 import { useAuth } from '@/net/auth';
 import { RULES } from '@/engine';
 import { Segmented } from '@/components/segmented';
@@ -73,6 +75,8 @@ export function LobbyRoute() {
   const presence = useGameStore((s) => s.presence);
   const connected = useGameStore((s) => s.connected);
   const error = useGameStore((s) => s.error);
+  const votes = useGameStore((s) => s.votes);
+  const vote = useGameStore((s) => s.vote);
 
   const setLastRoom = useSettingsStore((s) => s.setLastRoom);
   // The host's table options live in settings, so the next room starts from
@@ -314,6 +318,35 @@ export function LobbyRoute() {
               );
             })}
           </ul>
+        </section>
+
+        <section className="panel">
+          <h2 className="panel__heading">Vote for your dealer</h2>
+          <DealerPicker
+            value={uid !== null ? (votes[uid] ?? null) : null}
+            onChange={(id) => void vote(id)}
+            voters={Object.fromEntries(
+              Object.entries(votes).reduce<[string, string[]][]>((acc, [voter, id]) => {
+                const name = voter === uid ? 'you' : seats[voter]?.name;
+                if (!name) return acc;
+                const entry = acc.find(([d]) => d === id);
+                if (entry) entry[1].push(name);
+                else acc.push([id, [name]]);
+                return acc;
+              }, []),
+            )}
+            leading={meta && Object.keys(votes).length > 0 ? tallyVotes(votes, seats, meta.host) : null}
+          />
+          <p className="field__hint">
+            Everyone gets a vote; tap another dealer to change yours. Most votes deals the game — a tie goes to the
+            host&apos;s pick.
+            {meta && Object.keys(votes).length > 0 && (
+              <>
+                {' '}
+                Right now: <strong>{dealerById(tallyVotes(votes, seats, meta.host)).name}</strong>.
+              </>
+            )}
+          </p>
         </section>
 
         {isHost && (
