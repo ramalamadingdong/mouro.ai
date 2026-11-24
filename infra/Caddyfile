@@ -12,6 +12,7 @@
 #   /tabby-eights/     Tabby Eights SPA (Vite)      /srv/mouro.ai/tabby-eights
 #   /mahjong/          Mahjong SPA (Vite)           /srv/mouro.ai/mahjong
 #   /rt                realtime server (WebSocket)  127.0.0.1:8787
+#   /stats/            analytics (Umami)            127.0.0.1:3100
 #   anything else      404 page                     /srv/mouro.ai/site/404.html
 #
 # Deploys rsync each build into /srv/mouro.ai/<app>.new and swap it into place
@@ -42,6 +43,14 @@ www.mouro.ai {
 	# Content-hashed build output can be cached forever.
 	@hashed path_regexp hashed ^/(backgammon|gin-rummy)/_expo/static/|^/(yahtzee|holdem|blackjack|dots|pawprints|tabby-eights|mahjong)/assets/
 	header @hashed Cache-Control "public, max-age=31536000, immutable"
+
+	# ── analytics (Umami, set up by infra/umami-setup.sh) ───────────────────
+	# Dashboard at /stats (login required); the tracker and its collect
+	# endpoint are /stats/script.js and /stats/api/send.
+	redir /stats /stats/ permanent
+	handle /stats/* {
+		reverse_proxy 127.0.0.1:3100
+	}
 
 	# ── realtime server ─────────────────────────────────────────────────────
 	handle /rt* {
