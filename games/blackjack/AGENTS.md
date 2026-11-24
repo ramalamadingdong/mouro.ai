@@ -164,7 +164,7 @@ compact pass in `table.css` and `action-bar.css`. Check 320×568, 375×667,
 ## Duchess calls the game
 
 `src/dealer-talk.ts` is Duchess's patter: a Vegas diva with a sharp tongue
-and attitude (the owner's brief: "a diva with attitude", "give her a
+and attitude (the owner's brief: "a diva with attitude", then "meaner"; "give her a
 personality"). Mild language ("damn", "hell") is allowed by the owner; no
 slurs, and no accent or dialect played as a racial stereotype — the
 attitude is in what she says. Every moment has a big pool of lines (the
