@@ -76,7 +76,12 @@ function BetControls({
               ? `Tap chips to bet · ${chips(min)}–${chips(max)}`
               : `${pushed.length} ${pushed.length === 1 ? 'chip' : 'chips'} · ${chips(bet)}${short ? ` (min ${chips(min)})` : ''}`}
           </p>
-          <button type="button" className="bet-chips__edit" disabled={busy || pushed.length === 0} onClick={onClear}>
+          <button
+            type="button"
+            className="bet-chips__edit bet-chips__edit--clear"
+            disabled={busy || pushed.length === 0}
+            onClick={onClear}
+          >
             Clear
           </button>
         </div>

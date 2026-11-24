@@ -231,12 +231,27 @@
   gap: var(--space-sm);
 }
 
+/* Undo and Clear: real buttons with a full-size target either side of the
+   running total, not text links. */
 .bet-chips__edit {
-  min-height: 2.25rem;
-  padding: 0 var(--space-sm);
-  color: var(--text-muted);
-  font-size: var(--size-sm);
-  font-weight: var(--weight-medium);
+  flex-shrink: 0;
+  min-width: 5.5rem;
+  min-height: 2.75rem;
+  padding: 0 var(--space-md);
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  background: var(--wood-raised);
+  color: var(--text);
+  font-size: var(--size-body);
+  font-weight: var(--weight-bold);
+  transition: transform var(--dur-fast) var(--ease);
+}
+.bet-chips__edit:active:not(:disabled) {
+  transform: scale(0.96);
+}
+.bet-chips__edit--clear {
+  border-color: var(--bad);
+  color: var(--bad);
 }
 .bet-chips__edit:disabled {
   opacity: 0.35;
