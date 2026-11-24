@@ -1,9 +1,46 @@
 import { describe, expect, it } from 'vitest';
-import { NAG_AFTER, dealerLine, impatienceLine, openingLine } from '@/dealer-talk';
+import { NAG_AFTER, dealerLine as line, impatienceLine as nagLine, openingLine as opening } from '@/dealer-talk';
+import { DEALERS } from '@/dealers';
+import { DUCHESS } from '@/dealers/duchess';
+import { LINE_KEYS } from '@/dealers/types';
+
+const dealerLine = (a: GameState, b: GameState, n: (seat: number) => string) => line(a, b, n, DUCHESS);
+const impatienceLine = (l: number, who: string | null, seed: number) => nagLine(DUCHESS, l, who, seed);
+const openingLine = (seed?: number) => opening(DUCHESS, seed);
 import { RULES, type GameState } from '@/engine';
 import { act, betAll, deal, newGame, next, stack } from '@/engine/__tests__/helpers';
 
 const say = (prev: GameState, s: GameState): string | null => dealerLine(prev, s, (seat) => `P${seat}`)?.text ?? null;
+
+describe('every dealer', () => {
+  it.each(DEALERS.map((d) => [d.name, d] as const))('%s has lines for every moment, five nag levels, and the house rules up front', (_, d) => {
+    for (const key of LINE_KEYS) expect(d.voice.lines[key].length, key).toBeGreaterThan(0);
+    expect(d.voice.nag).toHaveLength(5);
+    expect(d.voice.nagDeal).toHaveLength(5);
+    expect(d.voice.nagEmoji).toHaveLength(5);
+    for (const l of d.voice.lines.open) expect(l).toMatch(/soft seventeen/);
+    for (const level of d.voice.nag) for (const l of level) expect(l).toMatch(/\{who\}/);
+    for (const l of d.voice.finally) expect(l).not.toMatch(/\{/);
+  });
+
+  it.each(DEALERS.map((d) => [d.name, d] as const))('%s talks through a whole game without a gap', (_, d) => {
+    let s = deal(newGame(2));
+    let prev = s;
+    for (let i = 0; i < 40 && s.phase !== 'gameover'; i++) {
+      const legal = s.toAct;
+      if (s.phase === 'betting' && legal !== null) s = act(s, { kind: 'bet', amount: 10 });
+      else if (s.phase === 'playing' && legal !== null) s = act(s, { kind: 'hit' });
+      else if (s.phase === 'settled') s = deal(s, i);
+      else s = next(s);
+      const said = line(prev, s, (seat) => `P${seat}`, d.voice);
+      if (said) {
+        expect(said.text).not.toMatch(/\{\w+\}/);
+        expect(said.emoji.length).toBeGreaterThan(0);
+      }
+      prev = s;
+    }
+  });
+});
 
 describe('Duchess', () => {
   it('opens with the house rules', () => {

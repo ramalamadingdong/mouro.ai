@@ -122,6 +122,8 @@ export interface GameConfig {
   maxBet: number;
   /** Rounds in a game. */
   rounds: number;
+  /** Which dealer runs the table (an id from `src/dealers`; voted for online). Cosmetic: no rule depends on it. */
+  dealer: string;
 }
 
 export interface RoundResult {
@@ -241,4 +243,5 @@ export interface NewGameOptions {
   minBet?: number;
   maxBet?: number;
   rounds?: number;
+  dealer?: string;
 }

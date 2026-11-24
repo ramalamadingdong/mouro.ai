@@ -119,6 +119,12 @@
                 ".validate": false
               }
             },
+            "dealer": {
+              ".validate": "newData.isString() && newData.val().matches(/^[a-z0-9]{1,20}$/)",
+              "$deep": {
+                ".validate": false
+              }
+            },
             "$other": {
               ".validate": false
             }
@@ -323,6 +329,15 @@
           "$uid": {
             ".write": "auth != null && auth.uid === $uid && $code.matches(/^[A-HJKMNP-Z2-9]{5}$/) && (!newData.exists() || (root.child('rooms').child($code).child('meta').exists() && (root.child('rooms').child($code).child('seats').hasChild($uid) || root.child('rooms').child($code).child('meta/host').val() === $uid) && newData.isNumber() && newData.val() > 0))",
             ".validate": "$uid === auth.uid && $uid.length <= 128 && newData.isNumber() && newData.val() > 0",
+            "$deep": {
+              ".validate": false
+            }
+          }
+        },
+        "votes": {
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid && $code.matches(/^[A-HJKMNP-Z2-9]{5}$/) && (!newData.exists() || (root.child('rooms').child($code).child('meta').exists() && root.child('rooms').child($code).child('meta/status').val() === 'waiting' && (root.child('rooms').child($code).child('seats').hasChild($uid) || root.child('rooms').child($code).child('meta/host').val() === $uid) && newData.isString() && newData.val().matches(/^[a-z0-9]{1,20}$/)))",
+            ".validate": "$uid === auth.uid && $uid.length <= 128 && newData.isString() && newData.val().matches(/^[a-z0-9]{1,20}$/)",
             "$deep": {
               ".validate": false
             }

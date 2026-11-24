@@ -16,7 +16,7 @@ export function HelpModal({ open, onClose }: { open: boolean; onClose: () => voi
     <Modal open={open} title="How to play" onClose={onClose}>
       <div className="help">
         <p>
-          Everybody plays against <strong>Duchess, the dealer</strong>, not against each other. Get closer to{' '}
+          Everybody plays against <strong>the dealer</strong> — a cat you pick (or, online, vote for): Duchess, Nana Mittens, Lucky Lou or Unit 9 — not against each other. Get closer to{' '}
           <strong>21</strong> than the dealer without going over. Number cards count their number, Jacks, Queens and
           Kings count 10, and an Ace counts 11 or 1, whichever helps.
         </p>
@@ -52,7 +52,7 @@ export function HelpModal({ open, onClose }: { open: boolean; onClose: () => voi
           every bet that is not a blackjack. There is no insurance at this table.
         </p>
         <p>
-          While you bet you can <strong>tip Duchess</strong> (5 to 100 chips) — it goes to the house, never below your
+          While you bet you can <strong>tip the dealer</strong> (5 to 100 chips) — it goes to the house, never below your
           minimum bet, and she will have something to say about it. The game lasts a set number of rounds. Whoever has the most chips at the end wins; run out and you are done.
         </p>
 
@@ -74,13 +74,13 @@ export function HelpModal({ open, onClose }: { open: boolean; onClose: () => voi
         </ol>
         <h3 className="help__heading">House rules (Las Vegas Strip)</h3>
         <ul className="help__list">
-          <li>Six decks; reshuffled when the cut card comes out (the shoe gauge by Duchess shows how close it is).</li>
+          <li>Six decks; reshuffled when the cut card comes out (the shoe gauge by the dealer's line shows how close it is).</li>
           <li>Dealer hits soft 17 and peeks for blackjack under an Ace or a ten.</li>
           <li>Blackjack pays 3 to 2; late surrender returns half. No insurance.</li>
           <li>Double on any two cards, also after a split. Split to four hands; split Aces get one card.</li>
           <li>Payouts that would make half a chip are rounded down.</li>
         </ul>
-        <p className="help__foot">Duchess calls every change at the table as it happens — read her line under the menu.</p>
+        <p className="help__foot">The dealer calls every change at the table as it happens — read their line under the menu.</p>
       </div>
     </Modal>
   );

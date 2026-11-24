@@ -13,6 +13,7 @@ import { auth, db } from '@/net/realtime';
 import { ensureAnonymousAuth, getAuthError, getCurrentUid } from '@/net/auth';
 import { attachPresence, type PresenceHandle } from '@/net/presence';
 import {
+  castVote,
   deleteRoomIfStale,
   isRoomStale,
   startGame as startGameInRoom,
@@ -31,6 +32,8 @@ interface RoomData {
   seats: Record<string, RoomSeat>;
   state: GameState | null;
   presence: Record<string, number>;
+  /** uid → dealer id voted for in the lobby. */
+  votes: Record<string, string>;
   /** This device's seat in `state.players`, or null (spectator / not dealt in). */
   mySeat: number | null;
   connected: boolean;
@@ -48,6 +51,8 @@ interface GameStore extends RoomData {
    */
   send: (move: Move, options?: { quiet?: boolean }) => Promise<void>;
   startGame: (options: RoomOptions) => Promise<void>;
+  /** Vote for a dealer in the lobby. */
+  vote: (dealerId: string) => Promise<void>;
   clearError: () => void;
 }
 
@@ -57,6 +62,7 @@ const EMPTY: RoomData = {
   seats: {},
   state: null,
   presence: {},
+  votes: {},
   mySeat: null,
   connected: false,
   pendingMove: false,
@@ -128,6 +134,7 @@ export const useGameStore = create<GameStore>()((set, get) => ({
         seats: room.seats,
         state: room.state,
         presence: room.presence,
+        votes: room.votes,
         mySeat: seatOf(room.state, uid),
       });
     });
@@ -182,9 +189,19 @@ export const useGameStore = create<GameStore>()((set, get) => ({
       return;
     }
     try {
-      await startGameInRoom(code, { meta, seats, state, presence: seen }, options);
+      await startGameInRoom(code, { meta, seats, state, presence: seen, votes: get().votes }, options);
     } catch (err) {
       set({ error: err instanceof Error ? err.message : 'Could not start the game.' });
+    }
+  },
+
+  vote: async (dealerId) => {
+    const { code } = get();
+    if (!code) return;
+    try {
+      await castVote(code, dealerId);
+    } catch {
+      set({ error: 'Could not cast that vote. Check your connection.' });
     }
   },
 

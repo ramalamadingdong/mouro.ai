@@ -30,6 +30,9 @@ import { get, onDisconnect, onValue, ref, remove, runTransaction, serverTimestam
 import { RULES, applyMove, createGame, normalize, type GameState, type Move } from '@/engine';
 import { db } from '@/net/realtime';
 import { ensureAnonymousAuth, getCurrentUid } from '@/net/auth';
+import { DEALERS, tallyVotes } from '@/dealers';
+
+export { tallyVotes };
 import { randomRoomCode, randomSeed } from '@/util/seed';
 import { MAX_NAME_LENGTH, packSeat, unpackSeat } from '@/util/seat';
 
@@ -52,6 +55,8 @@ export interface RoomSnapshot {
   state: GameState | null;
   /** uid → last-seen ms. A uid that is missing is not connected. */
   presence: Record<string, number>;
+  /** uid → the dealer id that player voted for in the lobby. */
+  votes: Record<string, string>;
 }
 
 /** What the host chooses in the lobby. */
@@ -138,7 +143,25 @@ function decodeRoom(raw: unknown): RoomSnapshot | null {
     // which the table shows as "no game" rather than rendering a forgery.
     state: normalize(raw.state),
     presence: decodePresence(raw.presence),
+    votes: decodeVotes(raw.votes),
   };
+}
+
+/** Known dealer ids only: a stray or forged value simply does not count. */
+function decodeVotes(v: unknown): Record<string, string> {
+  const out: Record<string, string> = {};
+  if (!isObj(v)) return out;
+  for (const [uid, id] of Object.entries(v)) {
+    if (typeof id === 'string' && DEALERS.some((d) => d.id === id)) out[uid] = id;
+  }
+  return out;
+}
+
+/** Vote for a dealer (any seated player, while the room is waiting). Tap again to change. */
+export async function castVote(code: string, dealerId: string): Promise<void> {
+  const uid = await requireUid();
+  if (!DEALERS.some((d) => d.id === dealerId)) throw new Error('No such dealer.');
+  await set(ref(db, `rooms/${code}/votes/${uid}`), dealerId);
 }
 
 /**
@@ -264,6 +287,7 @@ export async function startGame(code: string, room: RoomSnapshot, options: RoomO
     players: order.map((seatUid) => ({ uid: seatUid, name: room.seats[seatUid]?.name ?? 'Player', isHuman: true })),
     startingStack: options.startingStack,
     rounds: options.rounds,
+    dealer: tallyVotes(room.votes, room.seats, meta.host),
   });
   const dealt = applyMove(fresh, { kind: 'deal', seed: randomSeed() }, uid);
   if (!dealt.ok) throw new Error(dealt.error);
@@ -361,6 +385,7 @@ export async function leaveRoom(code: string): Promise<void> {
   // Presence BEFORE the seat: the presence rule requires membership for
   // anything but a delete, and deletes are cheapest while still a member.
   await removeQuietly(`rooms/${code}/presence/${uid}`);
+  await removeQuietly(`rooms/${code}/votes/${uid}`);
   await removeQuietly(`rooms/${code}/seats/${uid}`);
   // The rules let the HOST delete their room at any time, so the host's
   // "blind" stale-room cleanup would not be refused by a live game — it would

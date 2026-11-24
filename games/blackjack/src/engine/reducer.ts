@@ -42,6 +42,9 @@ import {
   type PlayerState,
 } from './types';
 
+/** A dealer id: short, lowercase, so it fits the database rule. */
+const DEALER_ID = /^[a-z0-9]{1,20}$/;
+
 const roundToStep = (n: number): number => Math.floor(n / RULES.BET_STEP) * RULES.BET_STEP;
 
 export function createGame(options: NewGameOptions): GameState {
@@ -56,7 +59,7 @@ export function createGame(options: NewGameOptions): GameState {
 
   return {
     version: 0,
-    config: { startingStack, minBet, maxBet, rounds },
+    config: { startingStack, minBet, maxBet, rounds, dealer: DEALER_ID.test(options.dealer ?? '') ? options.dealer! : 'duchess' },
     players: options.players.map((p) => ({
       uid: p.uid,
       name: p.name,

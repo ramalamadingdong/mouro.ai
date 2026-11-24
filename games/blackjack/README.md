@@ -1,7 +1,7 @@
 # Blackjack
 
 Blackjack with no sign-up, shipped as a static PWA at
-**https://mouro.ai/blackjack/**. Everybody plays against Duchess, the dealer
+**https://mouro.ai/blackjack/**. Everybody plays against a dealer cat — Duchess, Nana Mittens, Lucky Lou or Unit 9, picked solo or voted for online
 cat; the table seats up to eight.
 
 - **Play the cats.** You plus 0–7 computer players — Tiger (by the book),
@@ -16,7 +16,7 @@ cat; the table seats up to eight.
   deliberately no service worker, so it needs a network to launch.
 
 Las Vegas Strip rules: six decks, dealer hits soft 17, blackjack 3:2, late
-surrender (no insurance), double after split. Duchess calls the game as
+surrender (no insurance), double after split. The dealer calls the game as
 it happens. The game lasts 10, 20 or 40 rounds; most chips at the end wins.
 
 **Trust model, plainly:** online games are client-authoritative, like the other
