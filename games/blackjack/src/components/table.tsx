@@ -25,6 +25,7 @@ import {
   type PlayerState,
 } from '@/engine';
 import { ActionBar } from '@/components/action-bar';
+import { CHIPS } from '@/components/chips';
 import { Avatar } from '@/components/avatar';
 import { CardView } from '@/components/card';
 import { HelpModal } from '@/components/help';
@@ -105,6 +106,38 @@ function seatPlaces(count: number): { side: 'left' | 'right'; top: number }[] {
   ];
 }
 
+/**
+ * The betting spot in front of you while you build a bet: every chip you
+ * have pushed, stacked by value (so "three 25s" reads at a glance), with the
+ * total in big type.
+ */
+function BetSpot({ pushed }: { pushed: readonly number[] }) {
+  const total = pushed.reduce((a, b) => a + b, 0);
+  const stacks = [...CHIPS].reverse().map((value) => ({ value, count: pushed.filter((c) => c === value).length }));
+  return (
+    <div className="bet-spot" data-empty={pushed.length === 0 ? 'true' : undefined} aria-label={`Your bet: ${chips(total)}`}>
+      <div className="bet-spot__stacks" aria-hidden="true">
+        {stacks
+          .filter((s) => s.count > 0)
+          .map((s) => (
+            <div key={s.value} className="bet-spot__stack">
+              <span className="bet-spot__chips">
+                {/* Drawn up to 8 high; the count underneath says the rest. */}
+                {Array.from({ length: Math.min(s.count, 8) }, (_, i) => (
+                  <i key={i} className="bet-chip bet-chip--mini" data-value={s.value} />
+                ))}
+              </span>
+              <span className="bet-spot__count">
+                {s.count}×{s.value}
+              </span>
+            </div>
+          ))}
+      </div>
+      <span className="bet-spot__total">{pushed.length === 0 ? 'Bet' : chips(total)}</span>
+    </div>
+  );
+}
+
 export function Table(props: TableProps) {
   const { state, mySeat, thinkingSeat = null, away, busy = false, error, onMove } = props;
   const [menuOpen, setMenuOpen] = useState(false);
@@ -123,10 +156,12 @@ export function Table(props: TableProps) {
   const isMe = (seat: number): boolean => seat === mySeat;
   const nameOf = (seat: number): string => (isMe(seat) ? 'You' : state.players[seat].name);
 
-  // The bet slider starts at the last bet this player placed.
-  // (Adjusting state during render is React's sanctioned way to follow a prop.)
-  const [lastBet, setLastBet] = useState(state.config.minBet);
-  if (hero.lastAction?.kind === 'bet' && hero.lastAction.amount !== lastBet) setLastBet(hero.lastAction.amount);
+  // Chips pushed into the betting spot this round, in the order they went in.
+  // Every round starts from nothing; keyed by the round so a new one clears it.
+  const roundKey = `${state.handNo}:${state.phase}`;
+  const [pushedFor, setPushedFor] = useState<{ key: string; chips: number[] }>({ key: roundKey, chips: [] });
+  const pushed = pushedFor.key === roundKey ? pushedFor.chips : [];
+  const setPushed = (next: number[]): void => setPushedFor({ key: roundKey, chips: next });
 
   const legal = mySeat !== null && state.toAct === mySeat ? legalActions(state) : null;
 
@@ -339,7 +374,8 @@ export function Table(props: TableProps) {
             {hero.hands.map((h, i) =>
               handView(hero, h, i, hero.hands.length > 1 ? 'md' : 'lg', heroTurn && hero.active === i && hero.hands.length > 1),
             )}
-            {hero.hands.length === 0 && <span className="hand__gap hand__gap--lg" aria-hidden="true" />}
+            {hero.hands.length === 0 &&
+              (legal?.kind === 'bet' ? <BetSpot pushed={pushed} /> : <span className="hand__gap hand__gap--lg" aria-hidden="true" />)}
           </div>
           <div className="hero__info">
             <span className="hero__name">{mySeat === null ? hero.name : 'You'}</span>
@@ -390,7 +426,10 @@ export function Table(props: TableProps) {
             // A fresh bar (and a fresh bet amount) for every round.
             key={`${state.handNo}:${state.phase}`}
             legal={legal}
-            defaultBet={lastBet}
+            pushed={pushed}
+            onPush={(value) => setPushed([...pushed, value])}
+            onUndo={() => setPushed(pushed.slice(0, -1))}
+            onClear={() => setPushed([])}
             status={status}
             busy={busy}
             onMove={onMove}
