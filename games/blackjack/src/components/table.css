@@ -6,7 +6,8 @@
  * Mobile-first and portrait: the felt is a tall oval that takes whatever
  * height is left, and every seat is placed in percentages of it, so the same
  * rules serve a 390px phone and a desktop window (where the whole table is
- * simply capped at --table-max-width and centred).
+ * capped at --table-max-width and centred; on bigger screens the cap and
+ * every card grow — see "Bigger screens" at the end).
  */
 
 .table {
@@ -139,10 +140,10 @@
 
 .dealer__cards {
   display: flex;
-  min-height: calc(2.875rem * 1.4);
+  min-height: calc(2.875rem * 1.4 * var(--card-scale, 1));
 }
 .dealer__cards .card + .card {
-  margin-left: -1.1rem;
+  margin-left: calc(-1.1rem * var(--card-scale, 1));
 }
 
 /* ── Hands (anyone's) ───────────────────────────────────────────────────── */
@@ -167,13 +168,13 @@
 }
 /* Fanned: each card shows its rank in the top-left corner it keeps visible. */
 .hand--sm .card + .card {
-  margin-left: -1.1rem;
+  margin-left: calc(-1.1rem * var(--card-scale, 1));
 }
 .hand--md .card + .card {
-  margin-left: -1.75rem;
+  margin-left: calc(-1.75rem * var(--card-scale, 1));
 }
 .hand--lg .card + .card {
-  margin-left: -2.65rem;
+  margin-left: calc(-2.65rem * var(--card-scale, 1));
 }
 
 .hand__tags {
@@ -223,19 +224,19 @@
 /* An empty place for cards: keeps the layout still between rounds. */
 .hand__gap {
   display: block;
-  width: 1.875rem;
+  width: calc(1.875rem * var(--card-scale, 1));
   aspect-ratio: 5 / 7;
   border-radius: 0.35rem;
   border: 1px dashed rgb(255 255 255 / 0.16);
 }
 .hand__gap--md {
-  width: 2.875rem;
+  width: calc(2.875rem * var(--card-scale, 1));
 }
 .hand__gap--md + .hand__gap--md {
-  margin-left: -1.1rem;
+  margin-left: calc(-1.1rem * var(--card-scale, 1));
 }
 .hand__gap--lg {
-  width: 4.25rem;
+  width: calc(4.25rem * var(--card-scale, 1));
   opacity: 0;
 }
 
@@ -380,17 +381,17 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.1rem;
-  max-width: 6.2rem;
+  max-width: calc(6.2rem * var(--card-scale, 1));
 }
 .seat--right .seat__hands {
   justify-content: flex-end;
 }
 /* Split hands: smaller cards so up to four fit beside the seat. */
 .seat__hands[data-many='true'] .card {
-  --card-w: 1.45rem;
+  --card-w: calc(1.45rem * var(--card-scale, 1));
 }
 .seat__hands[data-many='true'] .hand--sm .card + .card {
-  margin-left: -0.8rem;
+  margin-left: calc(-0.8rem * var(--card-scale, 1));
 }
 .seat__hands[data-many='true'] .hand {
   padding: 0.1rem;
@@ -466,7 +467,7 @@
   justify-content: center;
   gap: var(--space-sm);
   /* Pulled up over the felt's near edge: you are sitting AT the table. */
-  margin-top: -4.4rem;
+  margin-top: calc(-4.4rem * var(--card-scale, 1));
   padding: 0 var(--space-sm);
 }
 
@@ -475,7 +476,7 @@
   align-items: flex-end;
   gap: 0.2rem;
   /* Reserve one big card's height (plus its tags) so the dock never jumps. */
-  min-height: 7.5rem;
+  min-height: calc(7.5rem * var(--card-scale, 1));
   border-radius: var(--radius-lg);
   transition: box-shadow var(--dur-base) var(--ease);
 }
@@ -487,10 +488,10 @@
 
 /* Three or four split hands: smaller cards still. */
 .hero__hands[data-many='true']:has(.hand:nth-child(3)) .card {
-  --card-w: 2.3rem;
+  --card-w: calc(2.3rem * var(--card-scale, 1));
 }
 .hero__hands[data-many='true']:has(.hand:nth-child(3)) .hand--md .card + .card {
-  margin-left: -1.35rem;
+  margin-left: calc(-1.35rem * var(--card-scale, 1));
 }
 
 .hero__info {
@@ -618,4 +619,69 @@
 }
 .seat__hands[data-many='true'] .hand__label-outcome {
   display: none;
+}
+
+/* ── Bigger screens ─────────────────────────────────────────────────────── */
+
+/* Tablets, laptops and monitors: the table grows wider and every card grows
+   with it (all card sizes and fan overlaps are multiples of --card-scale),
+   along with the seats and their text. Each step is gated on height as well
+   as width — height is what runs out first — so a short, wide window keeps
+   smaller cards rather than pushing the buttons off the screen. */
+@media (min-width: 700px) and (min-height: 740px) {
+  .table {
+    --card-scale: 1.3;
+    --table-max-width: 780px;
+    --size-xs: 0.8125rem;
+    --size-sm: 0.9375rem;
+  }
+  .felt-wrap {
+    min-height: 34rem;
+  }
+  /* Seats keep their phone size here: on a short laptop window four rows
+     down one rail only just fit. The next step, with more height, grows them. */
+  .dealer__avatar {
+    width: 2.4rem;
+  }
+  .hero__info {
+    min-width: 8rem;
+    max-width: 11rem;
+  }
+  .felt__inplay {
+    bottom: 6rem;
+  }
+}
+
+@media (min-width: 800px) and (min-height: 900px) {
+  .table {
+    --card-scale: 1.55;
+    --table-max-width: 900px;
+  }
+  .felt-wrap {
+    min-height: 42rem;
+  }
+  .seat__who {
+    width: 5.5rem;
+  }
+  .seat__avatar {
+    width: 3.5rem;
+  }
+  .felt__inplay {
+    bottom: 7rem;
+  }
+}
+
+@media (min-width: 1200px) and (min-height: 1050px) {
+  .table {
+    --card-scale: 1.8;
+    --table-max-width: 1040px;
+    --size-xs: 0.875rem;
+    --size-sm: 1rem;
+  }
+  .felt-wrap {
+    min-height: 50rem;
+  }
+  .felt__inplay {
+    bottom: 8rem;
+  }
 }
