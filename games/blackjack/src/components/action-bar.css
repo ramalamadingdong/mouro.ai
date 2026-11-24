@@ -150,6 +150,20 @@
   color: var(--text-muted);
 }
 
+.actions__btn--sitout {
+  flex-grow: 0.45;
+  font-size: var(--size-sm);
+  font-weight: var(--weight-medium);
+  color: var(--text-hint);
+  background: transparent;
+}
+.actions__btn--sitout[data-confirm='true'] {
+  flex-grow: 0.9;
+  border-color: var(--bad);
+  color: var(--bad);
+  font-weight: var(--weight-bold);
+}
+
 .actions__btn--side {
   flex-grow: 0.85;
   font-size: var(--size-body);

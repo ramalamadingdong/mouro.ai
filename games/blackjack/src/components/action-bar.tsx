@@ -4,6 +4,7 @@
  * comes from `legalActions` — the bar never works out legality itself, so it
  * cannot disagree with the engine.
  */
+import { useEffect, useState } from 'react';
 import type { LegalActions, PlayerMove } from '@/engine';
 import { CHIPS } from '@/components/chips';
 import './action-bar.css';
@@ -29,6 +30,9 @@ export interface ActionBarProps {
 
 const chips = (n: number): string => n.toLocaleString('en-US');
 
+/** How long the betting bar ignores taps after it appears (a tap meant for Hit lands here otherwise). */
+const TAP_GUARD_MS = 500;
+
 
 function BetControls({
   legal,
@@ -53,8 +57,32 @@ function BetControls({
   const bet = pushed.reduce((a, b) => a + b, 0);
   const short = bet < min;
 
+  // Sit out used to be lost to stray taps: it sits where Hit was a moment
+  // ago, so a quick tap as a new round opened sat the player out. Now (1)
+  // the whole bar ignores taps for its first half-second, and (2) Sit out
+  // needs a second tap within a few seconds to count.
+  const [ready, setReady] = useState(false);
+  const [confirmSitOut, setConfirmSitOut] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setReady(true), TAP_GUARD_MS);
+    return () => clearTimeout(timer);
+  }, []);
+  useEffect(() => {
+    if (!confirmSitOut) return;
+    const timer = setTimeout(() => setConfirmSitOut(false), 3000);
+    return () => clearTimeout(timer);
+  }, [confirmSitOut]);
+
   return (
-    <section className="actions" aria-label="Your bet">
+    <section
+      className="actions"
+      aria-label="Your bet"
+      onClickCapture={(e) => {
+        if (ready) return;
+        e.stopPropagation();
+        e.preventDefault();
+      }}
+    >
       <div className="actions__top">
         <div className="bet-chips">
           {CHIPS.map((value) => (
@@ -96,11 +124,15 @@ function BetControls({
       <div className="actions__buttons">
         <button
           type="button"
-          className="actions__btn actions__btn--quiet"
+          className="actions__btn actions__btn--sitout"
+          data-confirm={confirmSitOut ? 'true' : undefined}
           disabled={busy}
-          onClick={() => onMove({ kind: 'bet', amount: 0 })}
+          onClick={() => {
+            if (confirmSitOut) onMove({ kind: 'bet', amount: 0 });
+            else setConfirmSitOut(true);
+          }}
         >
-          Sit out
+          {confirmSitOut ? 'Sure? Tap again' : 'Sit out'}
         </button>
         <button
           type="button"
