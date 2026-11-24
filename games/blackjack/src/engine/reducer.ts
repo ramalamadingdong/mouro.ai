@@ -17,8 +17,8 @@
  *
  * House rules — a Las Vegas Strip shoe game (see AGENTS.md): six decks,
  * reshuffled at the cut card between rounds; dealer HITS soft 17 and peeks for
- * blackjack under an Ace or a ten; insurance (even money on a blackjack)
- * when the dealer shows an Ace, paying 2:1; blackjack pays 3:2 (rounded down
+ * blackjack under an Ace or a ten (no insurance — the owner's call);
+ * blackjack pays 3:2 (rounded down
  * to a whole chip); double on any first two cards, also after a split; split
  * any two cards of the same value, up to four hands; split Aces take one card
  * each; a two-card 21 after a split is not a blackjack; late surrender (half
@@ -64,7 +64,6 @@ export function createGame(options: NewGameOptions): GameState {
       stack: startingStack,
       hands: [],
       active: 0,
-      insurance: 0,
       sitOut: false,
       lastAction: null,
     })),
@@ -91,20 +90,10 @@ export function isBlackjack(hand: Hand): boolean {
   return !hand.split && isNatural(hand.cards);
 }
 
-/** What insurance costs a seat: half its bet, rounded down to a whole chip. */
-export function insuranceCost(p: PlayerState): number {
-  return p.hands.length === 1 ? Math.floor(p.hands[0].bet / 2) : 0;
-}
-
-/**
- * Chips riding on the table right now (0 once the round is settled).
- * Insurance only counts while it is undecided: at the peek it is either
- * lost to the house or paid with the round.
- */
+/** Chips riding on the table right now (0 once the round is settled). */
 export function chipsInPlay(state: GameState): number {
   if (state.result !== null) return 0;
-  const insurance = state.phase === 'insurance' ? state.players.reduce((sum, p) => sum + p.insurance, 0) : 0;
-  return state.players.reduce((sum, p) => sum + p.hands.reduce((s, h) => s + h.bet, 0), 0) + insurance;
+  return state.players.reduce((sum, p) => sum + p.hands.reduce((s, h) => s + h.bet, 0), 0);
 }
 
 /** Every chip in the game, house included. Constant for the whole game — the fuzz test's anchor. */
@@ -153,10 +142,6 @@ export function legalActions(state: GameState): LegalActions | null {
       maxBet: Math.max(state.config.minBet, roundToStep(Math.min(state.config.maxBet, p.stack))),
       step: RULES.BET_STEP,
     };
-  }
-  if (state.phase === 'insurance') {
-    const cost = insuranceCost(p);
-    return { kind: 'insurance', seat, cost: p.stack >= cost ? cost : 0, evenMoney: isBlackjack(p.hands[0]) };
   }
   if (state.phase !== 'playing') return null;
   const hand = p.hands[p.active];
@@ -288,18 +273,7 @@ function settle(state: GameState): void {
     }
     p.stack += paid;
     houseNet -= paid - staked;
-    // Insurance: paid 2:1 here when the dealer has blackjack (it is still on
-    // the table); otherwise it was already lost to the house at the peek and
-    // only shows in this round's net.
-    let insuranceNet = 0;
-    if (p.insurance > 0 && dealerBJ) {
-      p.stack += p.insurance * 3;
-      houseNet -= p.insurance * 2;
-      insuranceNet = p.insurance * 2;
-    } else if (p.insurance > 0) {
-      insuranceNet = -p.insurance;
-    }
-    return paid - staked + insuranceNet;
+    return paid - staked;
   });
   state.house += houseNet;
   state.result = { dealerTotal: dealer.total, dealerBlackjack: dealerBJ, net };
@@ -328,7 +302,6 @@ function deal(state: GameState, seed: readonly number[]): string | null {
   for (const p of state.players) {
     p.hands = [];
     p.active = 0;
-    p.insurance = 0;
     p.lastAction = null;
   }
   state.dealer = [];
@@ -344,7 +317,6 @@ function rematch(state: GameState, seed: readonly number[]): string | null {
     p.stack = state.config.startingStack;
     p.hands = [];
     p.active = 0;
-    p.insurance = 0;
     p.sitOut = false;
     p.lastAction = null;
   }
@@ -377,37 +349,19 @@ function dealCards(state: GameState): void {
       p.lastAction = { kind: 'blackjack', amount: 0 };
     }
   }
-  // An Ace up: insurance first, then the peek (a `next` from 'insurance').
-  if (cardValue(state.dealer[0]) === 11) {
-    state.phase = 'insurance';
-    state.toAct = nextToInsure(state, 0);
-    return;
-  }
   peek(state);
-}
-
-/** First seat at or after `from` that can afford insurance. */
-function nextToInsure(state: GameState, from: number): number | null {
-  for (let seat = from; seat < state.players.length; seat++) {
-    const p = state.players[seat];
-    const cost = insuranceCost(p);
-    if (cost > 0 && p.stack >= cost) return seat;
-  }
-  return null;
 }
 
 /**
  * The peek: under an Ace or a ten the dealer checks for blackjack before
  * anyone plays, so nobody doubles or splits into a hand that was already
- * lost. A blackjack settles the round (paying insurance); otherwise any
- * insurance is lost to the house and play begins.
+ * lost. A blackjack settles the round; otherwise play begins.
  */
 function peek(state: GameState): void {
   if (cardValue(state.dealer[0]) >= 10 && isNatural(state.dealer)) {
     settle(state);
     return;
   }
-  for (const p of state.players) state.house += p.insurance;
   state.phase = 'playing';
   state.toAct = nextToPlay(state, 0);
 }
@@ -420,9 +374,6 @@ function next(state: GameState, from: Phase, dealerCards: number): string | null
   switch (state.phase) {
     case 'betting':
       dealCards(state);
-      return null;
-    case 'insurance':
-      peek(state);
       return null;
     case 'playing':
       // Turn the hole card.
@@ -460,26 +411,10 @@ function playerAction(state: GameState, action: PlayerMove, seat: number): strin
     return null;
   }
 
-  if (legal.kind === 'insurance') {
-    if (action.kind !== 'insure') return 'Insurance first: take it or not.';
-    if (action.take) {
-      if (legal.cost === 0) return 'Not enough chips for insurance.';
-      p.stack -= legal.cost;
-      p.insurance = legal.cost;
-      p.lastAction = { kind: 'insure', amount: legal.cost };
-    } else {
-      p.lastAction = { kind: 'noinsure', amount: 0 };
-    }
-    state.toAct = nextToInsure(state, seat + 1);
-    return null;
-  }
-
   const hand = p.hands[p.active];
   switch (action.kind) {
     case 'bet':
       return 'The bets are already in.';
-    case 'insure':
-      return 'Insurance is closed.';
     case 'surrender':
       if (!legal.canSurrender) return 'You can only surrender your first two cards.';
       hand.done = true;
@@ -532,13 +467,12 @@ function playerAction(state: GameState, action: PlayerMove, seat: number): strin
   return null;
 }
 
-/** Act for the absent player on turn: sit out while betting, no insurance, stand while playing. */
+/** Act for the absent player on turn: sit out while betting, stand while playing. */
 function away(state: GameState, senderSeat: number): string | null {
   const legal = legalActions(state);
   if (!legal) return 'Nobody is due to act.';
   if (senderSeat === legal.seat) return 'You cannot be away from your own turn.';
-  const stand: PlayerMove =
-    legal.kind === 'bet' ? { kind: 'bet', amount: 0 } : legal.kind === 'insurance' ? { kind: 'insure', take: false } : { kind: 'stand' };
+  const stand: PlayerMove = legal.kind === 'bet' ? { kind: 'bet', amount: 0 } : { kind: 'stand' };
   const error = playerAction(state, stand, legal.seat);
   if (error === null) state.players[legal.seat].sitOut = true;
   return error;
@@ -569,7 +503,6 @@ export function applyMove(state: GameState, move: Move, uid: string): ApplyResul
       error = next(nextState, move.from, move.dealerCards);
       break;
     case 'bet':
-    case 'insure':
     case 'hit':
     case 'stand':
     case 'double':

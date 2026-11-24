@@ -67,8 +67,6 @@ const signed = (n: number): string => (n > 0 ? `+${chips(n)}` : n < 0 ? `−${ch
 const ACTION_LABELS: Record<string, string> = {
   bet: 'Bet',
   sitout: 'Sitting out',
-  insure: 'Insured',
-  noinsure: 'Pass',
   surrender: 'Surrender',
   hit: 'Hit',
   stand: 'Stand',
@@ -199,7 +197,6 @@ export function Table(props: TableProps) {
     return `Waiting for ${toActName} to ${verb}…`;
   };
   if (state.phase === 'betting') status = state.toAct === null ? 'Dealing…' : waitingOn('bet');
-  else if (state.phase === 'insurance') status = state.toAct === null ? `${DEALER.name} peeks…` : waitingOn('decide on insurance');
   else if (state.phase === 'playing') status = state.toAct === null ? `${DEALER.name} turns her card…` : waitingOn('play');
   else if (state.phase === 'dealer') {
     const { total } = handValue(state.dealer);
@@ -209,10 +206,8 @@ export function Table(props: TableProps) {
     mySeat !== null &&
     (state.phase === 'betting'
       ? hero.lastAction !== null || hero.stack < state.config.minBet
-      : state.phase === 'insurance'
-        ? hero.lastAction?.kind === 'insure' || hero.lastAction?.kind === 'noinsure' || hero.hands.length === 0
-        : hero.hands.every((h) => h.done));
-  const inRound = state.phase === 'betting' || state.phase === 'insurance' || state.phase === 'playing' || state.phase === 'dealer';
+      : hero.hands.every((h) => h.done));
+  const inRound = state.phase === 'betting' || state.phase === 'playing' || state.phase === 'dealer';
 
   // ── Duchess calls the game ───────────────────────────────────────────────
   // Re-derived on each new state (adjusting state during render, React's
@@ -381,7 +376,7 @@ export function Table(props: TableProps) {
         <span className="talk__avatar" aria-hidden="true">
           <Avatar uid={DEALER.uid} name={DEALER.name} />
         </span>
-        <p className="talk__line" aria-live="polite" key={talk.line}>
+        <p className="talk__line" aria-live="polite" key={talk.line} data-long={talk.line.length > 90 ? 'true' : undefined}>
           “{talk.line}”
         </p>
         <span

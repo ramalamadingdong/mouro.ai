@@ -26,7 +26,7 @@ import { useEffect } from 'react';
 import { AWAY, dealerDelay } from '@/pace';
 import { useGameStore } from '@/store/gameStore';
 
-const DEALER_PHASES = new Set(['betting', 'insurance', 'playing', 'dealer']);
+const DEALER_PHASES = new Set(['betting', 'playing', 'dealer']);
 
 export function useOnlineDealer(): void {
   const state = useGameStore((s) => s.state);

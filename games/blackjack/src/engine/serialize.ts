@@ -32,12 +32,10 @@ import {
   type RoundResult,
 } from './types';
 
-const PHASES: readonly Phase[] = ['idle', 'betting', 'insurance', 'playing', 'dealer', 'settled', 'gameover'];
+const PHASES: readonly Phase[] = ['idle', 'betting', 'playing', 'dealer', 'settled', 'gameover'];
 const ACTION_KINDS: readonly LastAction['kind'][] = [
   'bet',
   'sitout',
-  'insure',
-  'noinsure',
   'hit',
   'stand',
   'double',
@@ -51,7 +49,6 @@ const MOVE_KINDS: readonly LastMove['kind'][] = [
   'next',
   'rematch',
   'bet',
-  'insure',
   'hit',
   'stand',
   'double',
@@ -151,8 +148,6 @@ function decodePlayer(v: unknown): PlayerState {
     stack: chips(v.stack, 'stack'),
     hands,
     active,
-    // Absent in states written before insurance existed: none taken.
-    insurance: v.insurance === undefined ? 0 : chips(v.insurance, 'insurance'),
     sitOut: bool(v.sitOut, 'sitOut'),
     lastAction,
   };
@@ -219,8 +214,7 @@ function decode(raw: unknown): GameState {
 
   // ── Integrity: what a modified client would have to break to cheat ───────
   // Chips are conserved for the whole game, the house's bank included.
-  const insurance = phase === 'insurance' ? players.reduce((s, p) => s + p.insurance, 0) : 0;
-  const inPlay = state.result === null ? players.reduce((s, p) => s + p.hands.reduce((t, h) => t + h.bet, 0), 0) + insurance : 0;
+  const inPlay = state.result === null ? players.reduce((s, p) => s + p.hands.reduce((t, h) => t + h.bet, 0), 0) : 0;
   const total = players.reduce((sum, p) => sum + p.stack, 0) + inPlay + state.house;
   if (total !== seatCount * config.startingStack) bad('chips not conserved');
   // No physical card is in two places at once.

@@ -15,8 +15,8 @@ cat; the table seats up to eight.
 - **Installable.** Add it to your home screen and it opens standalone. There is
   deliberately no service worker, so it needs a network to launch.
 
-Las Vegas Strip rules: six decks, dealer hits soft 17, blackjack 3:2, insurance
-and even money, late surrender, double after split. Duchess calls the game as
+Las Vegas Strip rules: six decks, dealer hits soft 17, blackjack 3:2, late
+surrender (no insurance), double after split. Duchess calls the game as
 it happens. The game lasts 10, 20 or 40 rounds; most chips at the end wins.
 
 **Trust model, plainly:** online games are client-authoritative, like the other

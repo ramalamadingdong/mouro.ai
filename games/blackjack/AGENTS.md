@@ -84,12 +84,8 @@ checks every invariant and the wire round-trip after every move).
   rules"). **Dealer hits soft 17** (`RULES.DEALER_HITS_SOFT_17`), and
   **peeks** for blackjack under an Ace or a ten: a dealer blackjack settles at
   once, before anyone can double or split.
-- **Insurance** (and **even money** for a blackjack, which is the same bet)
-  when the dealer shows an Ace: an `'insurance'` phase between the deal and
-  the peek, asked in seat order; half the bet rounded down, paid 2:1. At the
-  peek it is lost to the house (no blackjack) or paid with the round.
-  `player.insurance` keeps the stake for the round so the result can show it;
-  it only counts as chips in play during the `'insurance'` phase.
+- **No insurance** (and so no even money): the owner tried it and took it
+  out. The dealer peeks under an Ace or a ten straight after the deal.
 - **Late surrender** on the first two cards of an unsplit hand, after the
   peek: half the bet back (rounded down).
 - **Blackjack pays 3:2, rounded down to a whole chip.** Bets move in steps of
@@ -152,13 +148,27 @@ finished.
 Online there are no cats: only the dealer pause before each `next` and the
 held result.
 
+## Never scroll the table
+
+The table screen must fit the viewport at every size with no page scroll,
+whatever Duchess is saying (the owner asked). The felt flexes (`min-height`
+15rem) and gives up room to everything else; Duchess's box grows to at most
+four short lines for a long line; short phones (`max-height: 740px`) get a
+compact pass in `table.css` and `action-bar.css`. Check 320×568, 375×667,
+390×780 and a short laptop window after any layout change.
+
 ## Duchess calls the game
 
-`src/dealer-talk.ts` is Duchess's patter: a Vegas lounge-act cat ("Place your
-bets, kittens!", "Winner winner, tuna dinner!"). `dealerLine(prev, next)` is
+`src/dealer-talk.ts` is Duchess's patter: a Vegas diva with a sharp tongue
+and attitude (the owner's brief: "a diva with attitude", "give her a
+personality"). Mild language ("damn", "hell") is allowed by the owner; no
+slurs, and no accent or dialect played as a racial stereotype — the
+attitude is in what she says. Every moment has a big pool of lines (the
+owner asked that she not feel repetitive): add to the pools freely. `dealerLine(prev, next)` is
 pure and picks its variation from `version`, so every client shows the same
-line. She announces every rule moment — bets closed, insurance open, the peek,
-the hole card, hitting soft 17, the reshuffle — in the line under the header.
+line (picked by a hash of version and moment). She announces every rule
+moment — bets closed, the peek, the hole card, hitting soft 17, the
+reshuffle — in the line under the header.
 The shoe gauge beside her shows the cards left and the cut card.
 
 ## Your-turn buzz

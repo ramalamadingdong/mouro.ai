@@ -1,6 +1,5 @@
 /**
- * Tell the player it has become their turn — to bet, take insurance, or play
- * a hand — so a phone left on the table (or a player chatting online) is
+ * Tell the player it has become their turn — to bet or to play a hand — so a phone left on the table (or a player chatting online) is
  * called back: a short two-note CHIME and, where the phone allows, a BUZZ.
  *
  * Only on the EDGE into "my turn", never again while it stays mine (hitting,

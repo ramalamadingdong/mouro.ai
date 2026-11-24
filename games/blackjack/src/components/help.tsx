@@ -48,10 +48,8 @@ export function HelpModal({ open, onClose }: { open: boolean; onClose: () => voi
           again; a tie (a <em>push</em>) returns your bet.
         </p>
         <p>
-          If the dealer shows a ten, she checks for blackjack straight away. If she shows an <strong>Ace</strong>, she
-          first offers <strong>insurance</strong>: a side bet of half your bet that she has blackjack, paid 2 to 1. With
-          a blackjack of your own it is called <strong>even money</strong> — you are paid 1 to 1 whatever she has. Then
-          she peeks; a dealer blackjack takes every bet that is not a blackjack.
+          If the dealer shows an Ace or a ten, she checks for blackjack straight away, and a dealer blackjack takes
+          every bet that is not a blackjack. There is no insurance at this table.
         </p>
         <p>
           The game lasts a set number of rounds. Whoever has the most chips at the end wins; run out and you are done.
@@ -77,7 +75,7 @@ export function HelpModal({ open, onClose }: { open: boolean; onClose: () => voi
         <ul className="help__list">
           <li>Six decks; reshuffled when the cut card comes out (the shoe gauge by Duchess shows how close it is).</li>
           <li>Dealer hits soft 17 and peeks for blackjack under an Ace or a ten.</li>
-          <li>Blackjack pays 3 to 2; insurance pays 2 to 1; late surrender returns half.</li>
+          <li>Blackjack pays 3 to 2; late surrender returns half. No insurance.</li>
           <li>Double on any two cards, also after a split. Split to four hands; split Aces get one card.</li>
           <li>Payouts that would make half a chip are rounded down.</li>
         </ul>
