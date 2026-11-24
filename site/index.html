@@ -132,104 +132,143 @@
         <a class="text-link" href="/projects/">Read all write-ups</a>
     </div>
     <ul class="work">
-        <li class="work-item" data-lens="robotics" data-lens-order-robotics="1">
+        <li class="work-item has-preview" data-lens="robotics" data-lens-order-robotics="1">
+            <div class="preview pv-bars" aria-hidden="true">
+                <p class="pv-cap">Latency per action chunk</p>
+                <div class="pv-bar" style="--v: 1"><span>Before</span><b>4421 ms</b></div>
+                <div class="pv-bar is-hot" style="--v: 0.251"><span>Mixed quantization</span><b>1111 ms</b></div>
+                <p class="pv-big"><b>86/100</b> on LIBERO-10</p>
+            </div>
             <h3><a href="/projects/#pi05">Pi0.5 VLA on Dragonwing NPU</a></h3>
-            <p class="kicker">A vision-language-action model running on edge NPUs</p>
             <p>
-                I deployed the Pi0.5 vision-language-action model across dual Dragonwing NPUs and published it as a
-                Qualcomm tutorial. It reaches 86/100 task success on LIBERO-10. Mixed quantization cut latency per
-                action chunk from 4421 ms to 1111 ms. Shown at ROSCon in September 2026, running fully on the IQ9 EVK
-                NPU with GPU simulation.
-                <a href="https://dragonwingdocs.qualcomm.com/tutorials/pi05-vla-on-dragonwing-npu" target="_blank" rel="noreferrer">Read the tutorial</a>.
+                Pi0.5 running across dual Dragonwing NPUs, published as a Qualcomm tutorial and shown at ROSCon in
+                September 2026. <a href="https://dragonwingdocs.qualcomm.com/tutorials/pi05-vla-on-dragonwing-npu" target="_blank" rel="noreferrer">Read the tutorial</a>.
             </p>
-            <p class="stack"><span class="stack-label">Built with</span>C++, QNN, Hexagon NPU, quantization, LIBERO</p>
+            <p class="stack"><span class="stack-label">Built with</span>C++, QNN, Hexagon NPU, quantization</p>
         </li>
-        <li class="work-item" data-lens="agents embedded" data-lens-order-agents="1" data-lens-order-embedded="2">
+        <li class="work-item has-preview" data-lens="agents embedded" data-lens-order-agents="1" data-lens-order-embedded="2">
+            <div class="preview pv-pcb" aria-hidden="true">
+                <svg viewBox="0 0 300 130">
+                    <rect class="pv-board" x="14" y="10" width="272" height="110" rx="8"/>
+                    <circle class="pv-hole" cx="28" cy="24" r="4"/><circle class="pv-hole" cx="272" cy="24" r="4"/>
+                    <circle class="pv-hole" cx="28" cy="106" r="4"/><circle class="pv-hole" cx="272" cy="106" r="4"/>
+                    <rect class="pv-chip" x="124" y="40" width="52" height="44" rx="2"/>
+                    <g class="pv-pins">
+                        <path d="M124 48h-6M124 58h-6M124 68h-6M124 78h-6M176 48h6M176 58h6M176 68h6M176 78h6"/>
+                    </g>
+                    <g class="pv-trace">
+                        <path d="M118 48H96l-14-14H48"/>
+                        <path d="M118 58H86l-10 10v26"/>
+                        <path d="M118 78h-10l-12 12v10"/>
+                        <path d="M182 48h22l16-16h34"/>
+                        <path d="M182 68h40l12 12v20"/>
+                        <path d="M182 78h8l10 10v12"/>
+                    </g>
+                    <g class="pv-pad">
+                        <circle cx="48" cy="34" r="3.5"/><circle cx="76" cy="94" r="3.5"/><circle cx="96" cy="100" r="3.5"/>
+                        <circle cx="254" cy="32" r="3.5"/><circle cx="234" cy="100" r="3.5"/><circle cx="200" cy="100" r="3.5"/>
+                    </g>
+                    <text x="150" y="66" text-anchor="middle">U1</text>
+                </svg>
+                <p class="pv-tag">6 boards made</p>
+            </div>
             <h3><a href="/projects/#pcb-agent">PCB Agent</a></h3>
-            <p class="kicker">Circuit boards designed end to end by an AI agent</p>
             <p>
-                An agent workflow that designs a circuit board end to end: parts, netlist, placement, routing, and
-                fab-ready Gerbers. It ships as a Claude Code plugin. The design lives in a CSV, scripts build the
-                KiCad files from it, and five levels of checks run all the way to the fab output. I have manufactured
-                6 board designs with it.
-                <a href="/blog/pcb-design-with-ai/">Read the full write-up</a>.
+                An AI agent that designs a circuit board end to end, from parts to fab-ready Gerbers. It ships as a
+                Claude Code plugin. <a href="/blog/pcb-design-with-ai/">Read the write-up</a>.
             </p>
-            <p class="stack"><span class="stack-label">Built with</span>Python, KiCad pcbnew API, Freerouting, Docker, Claude Code</p>
+            <p class="stack"><span class="stack-label">Built with</span>Python, KiCad, Freerouting, Claude Code</p>
         </li>
-        <li class="work-item" data-lens="devrel product agents" data-lens-order-devrel="3" data-lens-order-product="3" data-lens-order-agents="2">
+        <li class="work-item has-preview" data-lens="devrel product agents" data-lens-order-devrel="3" data-lens-order-product="3" data-lens-order-agents="2">
+            <div class="preview pv-search" aria-hidden="true">
+                <p class="pv-field">How do I set the swerve module offsets?</p>
+                <ul class="pv-results">
+                    <li><b>WPILib</b> Swerve drive kinematics</li>
+                    <li><b>CTRE Phoenix 6</b> CANcoder magnet offset</li>
+                    <li><b>REV</b> MAXSwerve absolute encoder</li>
+                </ul>
+            </div>
             <h3><a href="/projects/#agentic-csa">FIRST Agentic CSA</a></h3>
-            <p class="kicker">AI-powered FRC documentation search</p>
             <p>
-                Open-source MCP server that lets AI assistants search FRC docs in plain English: WPILib, REV, CTRE
-                Phoenix 6, Redux Robotics, and PhotonVision. 3,000+ users and 16 releases.
-                <a href="/projects/#agentic-csa">Try the search</a>.
+                Open-source MCP server that lets AI assistants search FRC docs in plain English. 3,000+ users and 16
+                releases. <a href="/projects/#agentic-csa">Try the search</a>.
             </p>
-            <p class="stack"><span class="stack-label">Built with</span>Python, MCP Protocol, VS Code Integration</p>
+            <p class="stack"><span class="stack-label">Built with</span>Python, MCP, VS Code</p>
         </li>
-        <li class="work-item" data-lens="devrel product" data-lens-order-devrel="2" data-lens-order-product="1">
+        <li class="work-item has-preview" data-lens="devrel product" data-lens-order-devrel="2" data-lens-order-product="1">
+            <div class="preview pv-units" aria-hidden="true">
+                <div class="pv-dots"></div>
+                <p class="pv-big"><b>500</b> RUBIK Pi boards donated</p>
+            </div>
             <h3><a href="/projects/#first-k12">FIRST and K-12 robotics at Qualcomm</a></h3>
-            <p class="kicker">A grassroots partnership that became an engineering initiative</p>
             <p>
-                I started a grassroots robotics partnership with FIRST that became a Qualcomm engineering initiative:
-                a 500-unit donation and the first US distributor for RUBIK Pi. Two projects I started and led, the
-                FIRST Robotics Vision System and the Experiential Robotics AI Education Kit, were featured at a White
-                House press conference on AI education in 2025.
+                A grassroots FIRST partnership that became a Qualcomm initiative and the first US RUBIK Pi
+                distributor. Two of its projects were featured at the White House in 2025.
             </p>
-            <p class="stack"><span class="stack-label">Areas</span>FIRST, XRP, RUBIK Pi, Arduino UNO Q, PhotonVision</p>
+            <p class="stack"><span class="stack-label">Areas</span>FIRST, XRP, RUBIK Pi, Arduino UNO Q</p>
         </li>
-        <li class="work-item" data-lens="robotics devrel product agents" data-lens-order-robotics="3" data-lens-order-devrel="1" data-lens-order-product="2" data-lens-order-agents="3">
+        <li class="work-item has-preview" data-lens="robotics devrel product agents" data-lens-order-robotics="3" data-lens-order-devrel="1" data-lens-order-product="2" data-lens-order-agents="3">
+            <div class="preview pv-mcp" aria-hidden="true">
+                <svg viewBox="0 0 300 130">
+                    <path class="pv-link" d="M62 60H134M166 60H238"/>
+                    <text class="pv-small" x="98" y="50" text-anchor="middle">MCP</text>
+                    <text class="pv-small" x="202" y="50" text-anchor="middle">MCP</text>
+                    <path class="pv-node" d="M30 70a12 12 0 0 1 2-23 16 16 0 0 1 30 4 10 10 0 0 1 0 19z"/>
+                    <rect class="pv-node" x="134" y="44" width="32" height="22" rx="2"/>
+                    <path class="pv-node" d="M128 72h44"/>
+                    <rect class="pv-node is-hot" x="238" y="44" width="36" height="32" rx="2"/>
+                    <path class="pv-pins" d="M244 44v-5M252 44v-5M260 44v-5M268 44v-5M244 76v5M252 76v5M260 76v5M268 76v5"/>
+                    <text x="46" y="100" text-anchor="middle">Cloud</text>
+                    <text x="150" y="100" text-anchor="middle">PC</text>
+                    <text x="256" y="100" text-anchor="middle">IoT</text>
+                </svg>
+            </div>
             <h3><a href="/projects/#edge-ai-demos">Edge AI demos</a></h3>
-            <p class="kicker">MCP across devices, on-device Gemma, and the RUBIK Pi developer experience</p>
             <p>
-                A cross-product Model Context Protocol demo spanning cloud, PC, and IoT hardware, which was Qualcomm's
-                most successful YouTube Live to date at the time. On-device Gemma on RUBIK Pi with hardware
-                acceleration. A rebuild of the RUBIK Pi developer experience: a rewritten Quick Start, 5 PRs and
-                10k+ lines to partner repos, and the AI workflow moved to LiteRT.
+                One MCP demo across cloud, PC and IoT, which was Qualcomm's most successful YouTube Live at the time.
+                Also on-device Gemma and a rebuilt RUBIK Pi developer experience.
             </p>
             <p class="stack"><span class="stack-label">Built with</span>MCP, Gemma, LiteRT, RUBIK Pi</p>
         </li>
-        <li class="work-item" data-lens="robotics" data-lens-order-robotics="4">
+        <li class="work-item has-preview" data-lens="robotics" data-lens-order-robotics="4">
+            <div class="preview pv-shot" aria-hidden="true">
+                <svg viewBox="0 0 300 130">
+                    <path class="pv-floor" d="M10 112H290"/>
+                    <path class="pv-arc-vac" d="M44 92Q150 -36 270 92"/>
+                    <path class="pv-arc" d="M44 92Q140 -18 236 66"/>
+                    <rect class="pv-node" x="24" y="92" width="32" height="20" rx="2"/>
+                    <path class="pv-goal" d="M222 58l8 20h20l8-20"/>
+                    <path class="pv-goal" d="M240 78V112"/>
+                    <circle class="pv-ball" cx="236" cy="66" r="5"/>
+                    <text class="pv-small" x="196" y="18">no drag</text>
+                </svg>
+                <p class="pv-tag pv-tag-left">14 ft, 65°</p>
+            </div>
             <h3><a href="/projects/#shooter-selector">FRC Shooter Selector</a></h3>
-            <p class="kicker">Ballistics analysis and optimization tool</p>
             <p>
-                Physics simulation toolkit for REBUILT (game element) shooters with drag modeling, motor torque analysis, and
-                plot-driven optimization outputs.
+                Ballistics for REBUILT shooters, with drag, motor torque and plot-driven optimization.
                 <a href="/projects/#shooter-selector">Try a shot</a>.
             </p>
             <p class="stack"><span class="stack-label">Built with</span>Python, Django, Plotly</p>
         </li>
         <li class="work-item" data-lens="devrel embedded" data-lens-order-devrel="4" data-lens-order-embedded="3">
             <h3><a href="/projects/#rubik-tflite">Rubik TFLite</a></h3>
-            <p class="kicker">TFLite + libQnn on Qualcomm NPU</p>
-            <p>
-                Worked with a student to make Qualcomm NPU access easy using the TFLite libQnn delegate, with C and Python
-                demos for image transformation models.
-            </p>
-            <p class="stack"><span class="stack-label">Built with</span>C++, TFLite, QNN, Python</p>
+            <p>Qualcomm NPU access through the TFLite libQnn delegate, with C and Python demos. Built with a student.</p>
         </li>
         <li class="work-item" data-lens="embedded" data-lens-order-embedded="4">
-            <h3><a href="/projects/#military-service">Military Service Leadership</a></h3>
-            <p class="kicker">Maintenance, logistics, and mission support</p>
+            <h3><a href="/projects/#military-service">Military service</a></h3>
             <p>
-                Deployed overseas on HIMARS maintenance while serving as a local interpreter. Led a 35-soldier platoon,
-                automated logistics workflows, and earned the Army Commendation Medal for hands-on repairs and system
-                reprogramming. Built <a href="/projects/#auto-xo">Auto XO</a> and
-                <a href="/projects/#dd-1750">DD Form 1750 automation</a> to streamline TOC and logistics
-                workflows.
+                HIMARS maintenance overseas, a 35-soldier platoon, and the Army Commendation Medal. Built
+                <a href="/projects/#auto-xo">Auto XO</a> and <a href="/projects/#dd-1750">DD Form 1750 automation</a>.
             </p>
-            <p class="stack"><span class="stack-label">Areas</span>Platoon Leadership, Logistics Automation, Field Maintenance</p>
         </li>
         <li class="work-item" data-lens="devrel" data-lens-order-devrel="5">
-            <h3><a href="/projects/#qualcomm-youtube">Qualcomm YouTube talks and demos</a></h3>
+            <h3><a href="/projects/#qualcomm-youtube">Qualcomm YouTube talks</a></h3>
             <p>Short, practical sessions on edge AI tooling, robotics vision, and developer workflows.</p>
         </li>
         <li class="work-item" data-lens="robotics embedded" data-lens-order-robotics="2" data-lens-order-embedded="1">
-            <h3><a href="/projects/#other-builds">Other builds and earlier work</a></h3>
-            <p>
-                5G modem firmware at Qualcomm, a MicroPython port to the Arduino UNO Q, SmolVLA post-trained on my
-                own hardware, the NVIDIA Video to Data Challenge, a smart archery quiver, an UNO Q handheld game
-                console, and a home lab on a Qualcomm IQ9.
-            </p>
+            <h3><a href="/projects/#other-builds">Other builds</a></h3>
+            <p>5G modem firmware, MicroPython on the UNO Q, SmolVLA, a smart archery quiver, and an IQ9 home lab.</p>
         </li>
     </ul>
 </section>
