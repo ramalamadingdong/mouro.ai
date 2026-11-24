@@ -2195,11 +2195,6 @@ img {
     }
 }
 
-/* A card left alone on the last row of three takes the whole row. */
-.work-item:nth-child(3n + 1):last-child {
-    grid-column: 1 / -1;
-}
-
 /* Folded on a phone (inline script on /), open and unmarked elsewhere. */
 details.more > summary {
     display: none;
@@ -2244,5 +2239,284 @@ details.more > summary {
     /* LinkedIn and GitHub are in the bar above. */
     .hero .button-quiet {
         display: none;
+    }
+}
+
+/* ── Work cards with previews (home) ────────────────────────────────────── */
+/* The six main projects each open with a small drawn preview built from the
+   project's own numbers; the four smaller entries are plain tiles below. */
+
+.work {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    grid-auto-flow: row dense;
+}
+
+.work-item.has-preview {
+    grid-column: span 4;
+    border-top-color: var(--screen, var(--band));
+}
+
+/* In the dark theme the previews sit darker than the cards, like screens. */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --screen: #0d141b;
+    }
+}
+
+.pv-tag.pv-tag-left {
+    right: auto;
+    left: 12px;
+    top: 10px;
+    bottom: auto;
+}
+
+.work-item:not(.has-preview) {
+    grid-column: span 3;
+    padding: 12px 0 0;
+    border-top: 2px solid var(--ink);
+    background: none;
+}
+
+.work-item:not(.has-preview) h3 {
+    font-size: 1.05rem;
+}
+
+.work-item:not(.has-preview) p {
+    font-size: 0.92rem;
+    color: var(--steel);
+}
+
+.preview {
+    position: relative;
+    height: 150px;
+    margin: -18px -20px 6px;
+    padding: 14px 18px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 8px;
+    background: var(--screen, var(--band));
+    color: var(--band-ink);
+    font-size: 0.82rem;
+    line-height: 1.3;
+    overflow: hidden;
+}
+
+.preview svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+
+.preview text {
+    fill: var(--band-steel);
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.preview .pv-small {
+    font-size: 10px;
+    font-weight: 500;
+}
+
+.pv-cap {
+    color: var(--band-steel);
+}
+
+.pv-big {
+    color: var(--band-steel);
+}
+
+.pv-big b {
+    margin-right: 6px;
+    font-size: 1.7rem;
+    font-weight: 800;
+    font-stretch: var(--wide);
+    line-height: 1;
+    color: var(--band-ink);
+}
+
+.pv-tag {
+    position: absolute;
+    right: 12px;
+    bottom: 10px;
+    padding: 2px 8px;
+    background: var(--yellow);
+    color: var(--on-yellow);
+    font-size: 0.76rem;
+    font-weight: 700;
+}
+
+/* Pi0.5: latency before and after, to scale. */
+.pv-bar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 3px 8px;
+    color: var(--band-steel);
+}
+
+.pv-bar b {
+    color: var(--band-ink);
+    font-variant-numeric: tabular-nums;
+}
+
+.pv-bar::after {
+    content: "";
+    grid-column: 1 / -1;
+    width: calc(var(--v) * 100%);
+    height: 8px;
+    background: var(--band-steel);
+    opacity: 0.45;
+}
+
+.pv-bar.is-hot::after {
+    background: var(--yellow);
+    opacity: 1;
+}
+
+.pv-bars .pv-big b {
+    font-size: 1.25rem;
+}
+
+/* PCB Agent: a board with its routed traces. */
+.pv-board {
+    fill: rgba(255, 255, 255, 0.03);
+    stroke: var(--band-steel);
+    stroke-opacity: 0.6;
+    stroke-width: 1.5;
+}
+
+.pv-hole {
+    fill: none;
+    stroke: var(--band-steel);
+}
+
+.pv-chip {
+    fill: var(--band-line);
+    stroke: var(--band-steel);
+}
+
+.pv-pins {
+    stroke: var(--band-steel);
+    stroke-width: 2;
+}
+
+.pv-trace path {
+    fill: none;
+    stroke: var(--yellow);
+    stroke-width: 2.5;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+}
+
+.pv-pad {
+    fill: var(--yellow);
+}
+
+/* Agentic CSA: a question and the docs it finds. */
+.pv-field {
+    padding: 7px 10px;
+    border: 1px solid var(--band-steel);
+    border-radius: 3px;
+    color: var(--band-ink);
+}
+
+.pv-field::after {
+    content: "";
+    display: inline-block;
+    width: 1px;
+    height: 1em;
+    margin-left: 2px;
+    vertical-align: -2px;
+    background: var(--yellow);
+}
+
+.pv-results {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 4px;
+}
+
+.pv-results li {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--band-steel);
+}
+
+.pv-results b {
+    margin-right: 6px;
+    color: var(--yellow);
+    font-weight: 650;
+}
+
+/* FIRST and K-12: one dot per donated board, 50 by 10. */
+.pv-dots {
+    height: 60px;
+    background-image: radial-gradient(circle, var(--yellow) 1.5px, transparent 1.9px);
+    background-size: calc(100% / 50) 6px;
+}
+
+/* Edge AI and the shooter: line drawings. */
+.pv-link {
+    stroke: var(--band-steel);
+    stroke-width: 2;
+    stroke-dasharray: 4 4;
+}
+
+.pv-node {
+    fill: none;
+    stroke: var(--band-ink);
+    stroke-width: 2;
+    stroke-linejoin: round;
+}
+
+.pv-node.is-hot {
+    stroke: var(--yellow);
+}
+
+.pv-floor {
+    stroke: var(--band-line);
+    stroke-width: 2;
+}
+
+.pv-arc,
+.pv-arc-vac {
+    fill: none;
+    stroke-width: 2.5;
+    stroke-linecap: round;
+}
+
+.pv-arc {
+    stroke: var(--yellow);
+}
+
+.pv-arc-vac {
+    stroke: var(--band-steel);
+    stroke-width: 1.5;
+    stroke-dasharray: 3 5;
+}
+
+.pv-goal {
+    fill: none;
+    stroke: var(--band-ink);
+    stroke-width: 2;
+}
+
+.pv-ball {
+    fill: var(--yellow);
+}
+
+@media (max-width: 1000px) {
+    .work {
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+
+    .work-item.has-preview,
+    .work-item:not(.has-preview) {
+        grid-column: span 3;
     }
 }
