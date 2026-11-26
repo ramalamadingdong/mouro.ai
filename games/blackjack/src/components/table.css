@@ -1017,3 +1017,11 @@
   font-size: var(--size-sm);
   text-align: center;
 }
+
+/* Under the vibrate switch in the menu. */
+.table__menu-note {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--size-sm);
+  text-align: center;
+}

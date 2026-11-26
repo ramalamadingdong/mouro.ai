@@ -7,7 +7,9 @@
  * the next round puts me straight on turn to bet: I am already looking).
  *
  * - Vibration: the Vibration API. Android browsers have it; iPhone Safari does
- *   not, and nothing a web page can do turns it on — hence the chime.
+ *   not, and nothing a web page can do turns it on — hence the chime. Chrome
+ *   on Android also stays still while the phone's ringer is on silent, and
+ *   while the tab is in the background.
  * - Chime: Web Audio. Browsers (iOS above all) only let a page make sound
  *   after a tap, and only from an AudioContext created or resumed inside
  *   one, so the context is unlocked on the first tap anywhere on the page.
@@ -18,11 +20,24 @@ import { useEffect, useRef } from 'react';
 import type { GameState } from '@/engine';
 import { useSettingsStore } from '@/store/settingsStore';
 
-/** Two short pulses: noticeable, not alarming. */
-const PATTERN = [70, 60, 70];
+/**
+ * Two firm pulses. 70 ms pulses were too faint to feel on many Android
+ * phones, above all one lying on a table.
+ */
+const PATTERN = [200, 120, 200];
 
 export function canVibrate(): boolean {
   return typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function';
+}
+
+/** One buzz now, from inside a tap (switching it on), so you know it works. */
+export function buzz(): void {
+  if (!canVibrate()) return;
+  try {
+    navigator.vibrate(PATTERN);
+  } catch {
+    // Blocked by a policy: nothing to do.
+  }
 }
 
 // ── The chime ──────────────────────────────────────────────────────────────
@@ -119,12 +134,6 @@ export function useTurnBuzz(state: GameState, mySeat: number | null): void {
     if (chime) playChime();
     // Browsers refuse (and log an error) before the page has had a tap.
     const tapped = (navigator as Navigator & { userActivation?: { hasBeenActive: boolean } }).userActivation?.hasBeenActive ?? true;
-    if (vibrate && canVibrate() && tapped) {
-      try {
-        navigator.vibrate(PATTERN);
-      } catch {
-        // Blocked (no user gesture yet, or a policy): nothing to do.
-      }
-    }
+    if (vibrate && tapped) buzz();
   }, [myTurn, causedByMe, vibrate, chime]);
 }

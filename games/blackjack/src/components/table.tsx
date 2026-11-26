@@ -37,7 +37,7 @@ import { Avatar } from '@/components/avatar';
 import { CardView } from '@/components/card';
 import { HelpModal } from '@/components/help';
 import { Modal } from '@/components/modal';
-import { canVibrate, playChime, useTurnBuzz } from '@/hooks/use-turn-buzz';
+import { buzz, canVibrate, playChime, useTurnBuzz } from '@/hooks/use-turn-buzz';
 import { useSettingsStore } from '@/store/settingsStore';
 import './table.css';
 
@@ -791,10 +791,17 @@ export function Table(props: TableProps) {
               role="switch"
               aria-checked={vibrate}
               className="btn btn--secondary btn--block"
-              onClick={() => setVibrate(!vibrate)}
+              onClick={() => {
+                setVibrate(!vibrate);
+                // Turning it on buzzes once, so you can tell it works.
+                if (!vibrate) buzz();
+              }}
             >
               Vibrate on my turn: {vibrate ? 'On' : 'Off'}
             </button>
+          )}
+          {canVibrate() && vibrate && (
+            <p className="table__menu-note">Your phone stays still while it is on silent.</p>
           )}
           <button type="button" className="btn btn--secondary btn--block" onClick={props.onLeave}>
             {props.leaveLabel}
