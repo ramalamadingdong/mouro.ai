@@ -1,7 +1,11 @@
 /**
  * Card-back photo picker. Lets a player choose an image from their library to
- * use as the face-down card back — a LOCAL, personal cosmetic that is never
- * synced (each player sees their own backs).
+ * use as the face-down card back. The photo is shown to the other player as
+ * well (see gameStore's `setMyCardBack`), but it is only ever chosen here.
+ *
+ * Two steps, so the in-app cropper (components/photo-cropper.tsx) can sit
+ * between them: `pickCardBackPhoto` gets the raw photo, then
+ * `renderCardBack` crops the chosen rectangle out of it.
  *
  * Lives outside the engine because it imports Expo. We return a small JPEG
  * `data:` URI rather than the raw picked file: we downscale + compress so it
@@ -11,8 +15,7 @@
  */
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
-
-import { CARD_HEIGHT, CARD_WIDTH } from '@/components/playing-card';
+import { Image } from 'react-native';
 
 /**
  * Longest edge of the stored image, in px. The largest a back ever renders at
@@ -24,12 +27,25 @@ const MAX_DIMENSION = 320;
 /** Thrown when the user denies photo-library access. */
 export class CardBackPickError extends Error {}
 
+/** A picked photo at its full size, before cropping. */
+export type PickedPhoto = { uri: string; width: number; height: number };
+
+/** The part of a photo to keep, in the photo's own pixels. */
+export type CropRect = { originX: number; originY: number; width: number; height: number };
+
+function sizeOf(uri: string): Promise<{ width: number; height: number }> {
+  return new Promise((resolve, reject) => {
+    Image.getSize(uri, (width, height) => resolve({ width, height }), reject);
+  });
+}
+
 /**
- * Prompt for library permission, let the user pick + crop an image, then return
- * a downscaled JPEG `data:` URI ready to persist. Resolves `null` if the user
- * cancels. Throws {@link CardBackPickError} if permission is denied.
+ * Prompt for library permission and let the user pick an image. Resolves
+ * `null` if the user cancels. Throws {@link CardBackPickError} if permission
+ * is denied. No system crop step: the app's own cropper does that, the same
+ * way on every platform (the web has no crop step, and iOS's is square only).
  */
-export async function pickCardBackImage(): Promise<string | null> {
+export async function pickCardBackPhoto(): Promise<PickedPhoto | null> {
   const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (!perm.granted) {
     throw new CardBackPickError(
@@ -39,32 +55,37 @@ export async function pickCardBackImage(): Promise<string | null> {
 
   const result = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: 'images',
-    allowsEditing: true,
-    // Android crops to the card shape; iOS forces a square crop, which we then
-    // center-fill with `contentFit="cover"` when rendering the back.
-    aspect: [CARD_WIDTH, CARD_HEIGHT],
+    allowsEditing: false,
     quality: 1,
   });
   if (result.canceled || !result.assets?.length) return null;
 
   const asset = result.assets[0];
+  let { width, height } = asset;
+  if (!width || !height) ({ width, height } = await sizeOf(asset.uri));
+  return { uri: asset.uri, width, height };
+}
 
-  // Downscale the longest edge; the other dimension follows to keep the ratio.
-  const w = asset.width || MAX_DIMENSION;
-  const h = asset.height || MAX_DIMENSION;
+/**
+ * Cut `crop` out of the photo, downscale it and return a JPEG `data:` URI
+ * ready to persist.
+ */
+export async function renderCardBack(uri: string, crop: CropRect): Promise<string> {
   const resize =
-    w >= h
-      ? { width: Math.min(w, MAX_DIMENSION) }
-      : { height: Math.min(h, MAX_DIMENSION) };
+    crop.width >= crop.height
+      ? { width: Math.min(Math.round(crop.width), MAX_DIMENSION) }
+      : { height: Math.min(Math.round(crop.height), MAX_DIMENSION) };
 
-  try {
-    const image = await ImageManipulator.manipulate(asset.uri).resize(resize).renderAsync();
-    const out = await image.saveAsync({ format: SaveFormat.JPEG, compress: 0.7, base64: true });
-    if (out.base64) return `data:image/jpeg;base64,${out.base64}`;
-    return out.uri;
-  } catch {
-    // Manipulation is rare to fail; fall back to the raw picked image so the
-    // feature still works (slightly larger, but the crop/pick already happened).
-    return asset.uri;
-  }
+  const image = await ImageManipulator.manipulate(uri)
+    .crop({
+      originX: Math.round(crop.originX),
+      originY: Math.round(crop.originY),
+      width: Math.round(crop.width),
+      height: Math.round(crop.height),
+    })
+    .resize(resize)
+    .renderAsync();
+  const out = await image.saveAsync({ format: SaveFormat.JPEG, compress: 0.7, base64: true });
+  if (out.base64) return `data:image/jpeg;base64,${out.base64}`;
+  return out.uri;
 }

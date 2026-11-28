@@ -11,6 +11,7 @@ import { useRouter } from 'expo-router';
 
 import { CardBack } from '@/components/card-back';
 import { NearbyRooms } from '@/components/nearby-rooms';
+import { PhotoCropper } from '@/components/photo-cropper';
 import { Button } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
 import { retryAuth, useAuth } from '@/net/auth';
@@ -20,7 +21,13 @@ import { useSettingsStore } from '@/store/settingsStore';
 import { accent, felt, text } from '@/theme/colors';
 import { mono } from '@/theme/typography';
 import { isInstalledApp } from '@/util/app-hop';
-import { CardBackPickError, pickCardBackImage } from '@/util/card-back-image';
+import {
+  CardBackPickError,
+  pickCardBackPhoto,
+  renderCardBack,
+  type CropRect,
+  type PickedPhoto,
+} from '@/util/card-back-image';
 import { extractCode, isRoomCode } from '@/util/room-code';
 
 /**
@@ -42,6 +49,9 @@ export default function HomeScreen() {
   const [error, setError] = useState<string | null>(null);
   const [picking, setPicking] = useState(false);
   const [backError, setBackError] = useState<string | null>(null);
+  // The picked photo waiting in the cropper, and whether its crop is saving.
+  const [cropping, setCropping] = useState<PickedPhoto | null>(null);
+  const [savingBack, setSavingBack] = useState(false);
 
   const nameFor = (): string => {
     const trimmed = playerName.trim();
@@ -100,14 +110,28 @@ export default function HomeScreen() {
     setPicking(true);
     setBackError(null);
     try {
-      const uri = await pickCardBackImage();
-      if (uri) setCustomCardBack(uri);
+      const photo = await pickCardBackPhoto();
+      if (photo) setCropping(photo);
     } catch (err) {
       setBackError(
         err instanceof CardBackPickError ? err.message : 'Could not load that image'
       );
     } finally {
       setPicking(false);
+    }
+  };
+
+  const handleCropped = async (crop: CropRect) => {
+    if (!cropping || savingBack) return;
+    setSavingBack(true);
+    try {
+      setCustomCardBack(await renderCardBack(cropping.uri, crop));
+      setCropping(null);
+    } catch {
+      setBackError('Could not load that image');
+      setCropping(null);
+    } finally {
+      setSavingBack(false);
     }
   };
 
@@ -219,6 +243,13 @@ export default function HomeScreen() {
           {backError ? <Text style={styles.backError}>{backError}</Text> : null}
         </View>
       </View>
+
+      <PhotoCropper
+        photo={cropping}
+        saving={savingBack}
+        onCancel={() => setCropping(null)}
+        onDone={(crop) => void handleCropped(crop)}
+      />
 
       {lastRoom && (
         <View style={styles.resume}>
