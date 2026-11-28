@@ -42,14 +42,16 @@ are working in — those hold each project's non-negotiables.
   from the hub, but its folder, namespace, rules, Caddy route, CI/deploy
   entries and tests all stay so its invite links keep working.
 - **Road trip games.** The hub has two tabs: Mobile games (default) and Road
-  trip games (`/games/#road-trip`). The road trip games are `site/games/road-trip/{trivia,photo,categories}/`,
+  trip games (`/games/#road-trip`). The road trip games are `site/games/road-trip/{trivia,photo,homes,categories}/`,
   each a page of markup sharing `site/games/road-trip/app.js` and `app.css`;
   `site/games/road-trip/index.html` only redirects old links.
 - **No user may ever see another user's location.** That is the rule (the
   owner's words: "I don't mind it sent to mouro.ai, I just don't want a
   different user to see a different person's location"). Today the road trip
   pages send position only from the browser to OpenStreetMap and Wikimedia
-  and store no places in localStorage, and their privacy notes say so; if
+  and store no places in localStorage, and their privacy notes say so
+  (Home Price Guess also loads its state's home-value file from mouro.ai, so
+  mouro.ai learns the state, never the position); if
   that changes (e.g. a mouro.ai lookup service), update the notes, never log
   or store positions where anyone else could read them, and keep them out of
   every realtime room. The `road-trip` realtime namespace (rules in

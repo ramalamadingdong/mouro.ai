@@ -247,12 +247,13 @@ const games = [
   {
     name: 'road-trip',
     title: 'Road trip games',
-    text: 'Games for the car: a question for every town you cross into, guess when you’ll pass a photo of the road ahead, and Categories out loud.',
+    text: 'Games for the car: a question for every town you cross into, guess when you’ll pass a photo of the road ahead, guess what homes cost, and Categories out loud.',
     path: 'mouro.ai/games/#road-trip',
     a: '#2f4a66', b: '#172433', ink: '#f4c542',
     icons: [
       'site/games/road-trip/trivia/icons/icon-512.png',
       'site/games/road-trip/photo/icons/icon-512.png',
+      'site/games/road-trip/homes/icons/icon-512.png',
       'site/games/road-trip/categories/icons/icon-512.png',
     ],
   },
@@ -273,6 +274,15 @@ const games = [
     path: 'mouro.ai/games/road-trip/photo',
     a: '#8a5a2e', b: '#3a2716', ink: '#f6c27a',
     icon: 'site/games/road-trip/photo/icons/icon-512.png',
+  },
+  {
+    name: 'home-price-guess',
+    title: 'Home Price Guess',
+    text: 'In each new town, guess the typical home value, then see homes for sale there at the low, middle and high end.',
+    tags: ['Passengers', 'Live GPS', 'Demo drive'],
+    path: 'mouro.ai/games/road-trip/homes',
+    a: '#2f7a5c', b: '#10291f', ink: '#f4c542',
+    icon: 'site/games/road-trip/homes/icons/icon-512.png',
   },
   {
     name: 'categories',
@@ -365,7 +375,7 @@ p{margin-top:20px;font-size:29px;line-height:1.38;color:rgba(245,240,225,.82);ma
 </div>
 <div class="side">${
     icons
-      ? `<div class="shelf">${icons.map((i) => `<img src="${dataUri(i)}">`).join('')}</div>`
+      ? `<div class="shelf"${icons.length === 4 ? ' style="width:290px"' : ''}>${icons.map((i) => `<img src="${dataUri(i)}">`).join('')}</div>`
       : `<img src="${dataUri(icon)}">`
   }</div>`;
 }

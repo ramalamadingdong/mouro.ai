@@ -99,7 +99,7 @@ jobs:
         if: steps.cfg.outputs.ready == 'true'
         run: |
           set -euo pipefail
-          for u in / /games/ /backgammon/ /gin-rummy/ /yahtzee/ /holdem/ /blackjack/ /dots/ /pawprints/ /tabby-eights/ /mahjong/ /games/road-trip/trivia/ /games/road-trip/photo/ /games/road-trip/categories/ /rt/health; do
+          for u in / /games/ /backgammon/ /gin-rummy/ /yahtzee/ /holdem/ /blackjack/ /dots/ /pawprints/ /tabby-eights/ /mahjong/ /games/road-trip/trivia/ /games/road-trip/photo/ /games/road-trip/homes/ /games/road-trip/categories/ /rt/health; do
             code=$(curl -s -o /dev/null -w '%{http_code}' "https://mouro.ai$u")
             echo "$u → $code"; [ "$code" = 200 ]
           done

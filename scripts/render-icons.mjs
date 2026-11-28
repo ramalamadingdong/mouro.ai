@@ -27,6 +27,7 @@ const icons = [
   ['site/games/cat-cafe/icons/cat-cafe.svg', web('site/games/cat-cafe/icons')],
   ['site/games/road-trip/trivia/icons/town-trivia.svg', web('site/games/road-trip/trivia/icons')],
   ['site/games/road-trip/photo/icons/photo-guess.svg', web('site/games/road-trip/photo/icons')],
+  ['site/games/road-trip/homes/icons/home-price-guess.svg', web('site/games/road-trip/homes/icons')],
   ['site/games/road-trip/categories/icons/categories.svg', web('site/games/road-trip/categories/icons')],
   ['games/yahtzee/public/icons/icon.svg', web('games/yahtzee/public/icons')],
   ['games/dots/public/icons/icon.svg', web('games/dots/public/icons')],

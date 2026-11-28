@@ -170,3 +170,16 @@
     body.screen-mode .ring span { width: 80%; height: 80%; font-size: clamp(1.8rem, 10vh, 2.8rem); }
   }
   @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+
+  /* Home Price Guess: homes for sale after each answer. */
+  .listings { display: flex; flex-direction: column; gap: 12px; margin-top: 12px; }
+  .listings:empty { display: none; }
+  .tier { display: grid; gap: 8px; }
+  .tier h3 { font-family: var(--display); font-weight: 600; font-size: 1.02rem; display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+  .tier h3 span { color: var(--muted); font-family: "DM Sans", system-ui, sans-serif; font-size: .9rem; font-weight: 600; }
+  .tier.t0 h3 { color: var(--teal); }
+  .tier.t1 h3 { color: var(--line); }
+  .tier.t2 h3 { color: #ff9e7a; }
+  .home { display: grid; gap: 2px; padding: 11px 13px; border-radius: 14px; background: var(--deep); border: 1px solid var(--border); color: var(--text); text-decoration: none; }
+  .home strong { font-size: 1.05rem; }
+  .home .addr { color: var(--teal); font-size: .88rem; }
