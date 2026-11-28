@@ -128,6 +128,8 @@ export function GameTable({
 }: GameTableProps) {
   const sortMode = useSettingsStore((s) => s.sortMode);
   const setSortMode = useSettingsStore((s) => s.setSortMode);
+  const customOrder = useSettingsStore((s) => s.customOrder);
+  const setCustomOrder = useSettingsStore((s) => s.setCustomOrder);
   const showKnockHints = useSettingsStore((s) => s.showKnockHints);
   const motion = useSettingsStore((s) => s.motion);
   const reducedMotion = useReducedMotion();
@@ -423,6 +425,8 @@ export function GameTable({
           onSelect={canAct && phase === 'discard' ? onSelect : undefined}
           sortMode={sortMode}
           onSortChange={setSortMode}
+          customOrder={customOrder}
+          onReorder={setCustomOrder}
           scale={ui}
           animate={motionOn}
           drawnCard={drawnCard}
