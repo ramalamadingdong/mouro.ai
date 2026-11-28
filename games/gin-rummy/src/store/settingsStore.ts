@@ -6,6 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import type { Difficulty } from '@/ai/cpu';
+import type { CardId } from '@/engine/types';
 // Type-only import — erased at compile time, so the store carries no React dep.
 import type { SortMode } from '@/hooks/use-hand-sort';
 
@@ -19,6 +20,8 @@ export interface LastRoom {
 interface SettingsStore {
   playerName: string;
   sortMode: SortMode;
+  /** The hand order the player dragged the cards into (the `custom` sort). */
+  customOrder: CardId[];
   lastRoom: LastRoom | null;
   /** Remembered difficulty for the offline "vs computer" mode. */
   cpuDifficulty: Difficulty;
@@ -38,6 +41,8 @@ interface SettingsStore {
   showNearby: boolean;
   setPlayerName: (name: string) => void;
   setSortMode: (mode: SortMode) => void;
+  /** Save a dragged order and switch to the `custom` sort. */
+  setCustomOrder: (order: CardId[]) => void;
   setLastRoom: (room: LastRoom | null) => void;
   setCpuDifficulty: (difficulty: Difficulty) => void;
   setMatchTarget: (target: number) => void;
@@ -52,6 +57,7 @@ export const useSettingsStore = create<SettingsStore>()(
     (set) => ({
       playerName: '',
       sortMode: 'rank',
+      customOrder: [],
       lastRoom: null,
       cpuDifficulty: 'medium',
       matchTarget: 100,
@@ -61,6 +67,7 @@ export const useSettingsStore = create<SettingsStore>()(
       showNearby: true,
       setPlayerName: (playerName) => set({ playerName }),
       setSortMode: (sortMode) => set({ sortMode }),
+      setCustomOrder: (customOrder) => set({ customOrder, sortMode: 'custom' }),
       setLastRoom: (lastRoom) => set({ lastRoom }),
       setCpuDifficulty: (cpuDifficulty) => set({ cpuDifficulty }),
       setMatchTarget: (matchTarget) => set({ matchTarget }),

@@ -8,7 +8,7 @@ import {
   suitOf,
 } from '@/engine';
 
-import { orderHand } from '../use-hand-sort';
+import { applyCustomOrder, moveCard, orderHand } from '../use-hand-sort';
 
 // An intentionally unsorted 10-card hand (mixed suits and ranks).
 const HAND = [
@@ -71,11 +71,37 @@ describe('orderHand', () => {
   });
 
   test('preserves the exact multiset of cards', () => {
-    for (const mode of ['off', 'rank', 'suit', 'meld'] as const) {
+    for (const mode of ['off', 'rank', 'suit', 'meld', 'custom'] as const) {
       const result = orderHand(HAND, mode);
       expect([...result].sort((a, b) => a - b)).toEqual(
         [...HAND].sort((a, b) => a - b),
       );
     }
+  });
+});
+
+describe('custom order', () => {
+  test('moveCard moves one card and keeps the rest in order', () => {
+    expect(moveCard([1, 2, 3, 4], 0, 2)).toEqual([2, 3, 1, 4]);
+    expect(moveCard([1, 2, 3, 4], 3, 0)).toEqual([4, 1, 2, 3]);
+    expect(moveCard([1, 2, 3, 4], 1, 99)).toEqual([1, 3, 4, 2]);
+  });
+
+  test('follows the saved order and puts new cards on the end', () => {
+    const saved = [...HAND].reverse();
+    const hand = [...HAND.slice(1), cardId(3, 0)]; // K♠ discarded, A♠ drawn
+    expect(orderHand(hand, 'custom', [], saved)).toEqual([
+      ...saved.filter((c) => c !== HAND[0]),
+      cardId(3, 0),
+    ]);
+  });
+
+  test('ignores an order left over from an earlier deal', () => {
+    const stale = [cardId(3, 12), cardId(1, 1), cardId(1, 3), cardId(1, 4)];
+    expect(applyCustomOrder(HAND, stale)).toEqual(HAND);
+  });
+
+  test('with no saved order it is draw order', () => {
+    expect(orderHand(HAND, 'custom')).toEqual(HAND);
   });
 });

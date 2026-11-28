@@ -1,17 +1,15 @@
-import { useMemo } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { useMemo, useRef, useState, type ReactNode } from 'react';
+import { PanResponder, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { meldKind, type CardId, type MatchKind, type Meld } from '@/engine';
-import {
-  SORT_LABELS,
-  SORT_MODES,
-  orderHand,
-  type SortMode,
-} from '@/hooks/use-hand-sort';
+import { SORT_LABELS, SORT_MODES, moveCard, orderHand, type SortMode } from '@/hooks/use-hand-sort';
 import { accent, felt, meldColors, peek, text } from '@/theme/colors';
 
 import { AnimatedCard } from './animated-card';
-import { type KnockHint } from './playing-card';
+import { CARD_WIDTH, type KnockHint } from './playing-card';
+
+/** How far cards overlap in the fan, in px at scale 1. */
+const OVERLAP = 22;
 
 export type HandProps = {
   /** The player's cards, in game-state (draw) order. */
@@ -24,6 +22,13 @@ export type HandProps = {
   sortMode: SortMode;
   /** Called when the player changes the sort mode via the toggle. */
   onSortChange: (mode: SortMode) => void;
+  /** The player's own dragged order, used by the `custom` sort. */
+  customOrder?: readonly CardId[];
+  /**
+   * Called with the new order when the player drags a card to a new place.
+   * Leave out to turn dragging off.
+   */
+  onReorder?: (order: CardId[]) => void;
   /** Card size multiplier (grows the whole fan on tablets / large screens). */
   scale?: number;
   /** Ease cards in on mount (deal cascade / drawn card). Off = instant. */
@@ -57,9 +62,14 @@ export type HandProps = {
 };
 
 /**
- * The player's hand: a fanned row of cards plus an "Off / Rank / Suit / Meld"
- * sort toggle. Sorting only reorders the on-screen view — selection is tracked
- * by card id, so the staged card stays staged across a sort change.
+ * The player's hand: a fanned row of cards plus an "Off / Rank / Suit / Meld /
+ * Custom" sort toggle. Sorting only reorders the on-screen view — selection is
+ * tracked by card id, so the staged card stays staged across a sort change.
+ *
+ * Drag a card sideways to move it; that saves the new order as the Custom sort.
+ * While dragging, the card follows the finger and the others slide apart to
+ * show where it will land. Nothing is re-ordered in the tree until the drop, so
+ * the dragged view never moves under the pointer.
  */
 export function Hand({
   hand,
@@ -67,6 +77,8 @@ export function Hand({
   onSelect,
   sortMode,
   onSortChange,
+  customOrder,
+  onReorder,
   scale = 1,
   animate = false,
   drawnCard = null,
@@ -83,9 +95,55 @@ export function Hand({
     [hand, drawnCard],
   );
   const ordered = useMemo(
-    () => orderHand(rest, sortMode, melds),
-    [rest, sortMode, melds],
+    () => orderHand(rest, sortMode, melds, customOrder),
+    [rest, sortMode, melds, customOrder],
   );
+
+  // Drag to reorder. `from` is the card's index in `ordered`; `dx`/`dy` how far
+  // it has moved. `step` is the distance between neighbouring cards.
+  const [drag, setDrag] = useState<{
+    from: number;
+    dx: number;
+    dy: number;
+  } | null>(null);
+  const step = (CARD_WIDTH - OVERLAP) * scale;
+  const live = useRef({ ordered, step, onReorder, onPeekEnd });
+  live.current = { ordered, step, onReorder, onPeekEnd };
+  // A drag ends with the pointer still on the card, which a browser can count
+  // as a tap; ignore taps straight after a drop so it doesn't select the card.
+  const droppedAt = useRef(0);
+  const select = onSelect
+    ? (c: CardId) => {
+        if (Date.now() - droppedAt.current > 300) onSelect(c);
+      }
+    : undefined;
+
+  const targetOf = (from: number, dx: number, n: number) =>
+    Math.max(0, Math.min(n - 1, from + Math.round(dx / live.current.step)));
+
+  const dragEvents: DragEvents = {
+    start: () => live.current.onPeekEnd?.(),
+    move: (from, dx, dy) => setDrag({ from, dx, dy }),
+    end: (from, dx) => {
+      const { ordered: o, onReorder: reorder } = live.current;
+      const to = targetOf(from, dx, o.length);
+      if (to !== from) reorder?.(moveCard(o, from, to));
+      droppedAt.current = Date.now();
+      setDrag(null);
+    },
+  };
+  const canDrag = onReorder != null && ordered.length > 1;
+
+  // Where each card sits during a drag: the dragged one follows the pointer,
+  // the ones it passes slide one place over.
+  const dragTarget = drag ? targetOf(drag.from, drag.dx, ordered.length) : -1;
+  const shiftOf = (i: number): { x: number; y: number } | null => {
+    if (!drag) return null;
+    if (i === drag.from) return { x: drag.dx, y: drag.dy };
+    if (drag.from < i && i <= dragTarget) return { x: -step, y: 0 };
+    if (dragTarget <= i && i < drag.from) return { x: step, y: 0 };
+    return null;
+  };
   const showDrawn = drawnCard != null && hand.includes(drawnCard);
 
   // Map every melded card to its group color (cycled per meld) and kind, so a
@@ -117,10 +175,23 @@ export function Hand({
         {ordered.map((c, i) => {
           const ms = meldStyleOf.get(c);
           const pk = peekStyle(c);
+          const shift = shiftOf(i);
+          const dragging = drag?.from === i;
           return (
-            <View
+            <DragSlot
               key={c}
-              style={i === 0 ? undefined : [styles.overlap, scale !== 1 && { marginLeft: -22 * scale }]}
+              index={i}
+              enabled={canDrag}
+              events={dragEvents}
+              style={[
+                i === 0
+                  ? undefined
+                  : [styles.overlap, scale !== 1 && { marginLeft: -OVERLAP * scale }],
+                shift && {
+                  transform: [{ translateX: shift.x }, { translateY: shift.y }],
+                },
+                dragging && styles.dragging,
+              ]}
             >
               <AnimatedCard
                 animate={animate}
@@ -133,11 +204,11 @@ export function Hand({
                 scale={scale}
                 matchRing={pk.matchRing}
                 dimmed={pk.dimmed}
-                onPress={onSelect}
+                onPress={select}
                 onLongPress={onPeek}
                 onPressOut={onPeekEnd}
               />
-            </View>
+            </DragSlot>
           );
         })}
         {showDrawn ? (
@@ -164,13 +235,53 @@ export function Hand({
   );
 }
 
-function SortToggle({
-  mode,
-  onChange,
+type DragEvents = {
+  start: () => void;
+  move: (from: number, dx: number, dy: number) => void;
+  end: (from: number, dx: number) => void;
+};
+
+/**
+ * One card's place in the fan, draggable sideways. Built on RN's responder
+ * system rather than gesture-handler so it can take the touch over from the
+ * card's own Pressable once the finger moves: a still tap still selects, a
+ * hold still peeks, and a sideways move becomes a drag. (A gesture-handler
+ * pan swallowed the taps on the web.)
+ */
+function DragSlot({
+  index,
+  enabled,
+  events,
+  style,
+  children,
 }: {
-  mode: SortMode;
-  onChange: (mode: SortMode) => void;
+  index: number;
+  enabled: boolean;
+  events: DragEvents;
+  style: StyleProp<ViewStyle>;
+  children: ReactNode;
 }) {
+  const latest = useRef({ index, enabled, events });
+  latest.current = { index, enabled, events };
+  const responder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponderCapture: (_, g) =>
+        latest.current.enabled && Math.abs(g.dx) > 8 && Math.abs(g.dx) > Math.abs(g.dy),
+      onPanResponderTerminationRequest: () => false,
+      onPanResponderGrant: () => latest.current.events.start(),
+      onPanResponderMove: (_, g) => latest.current.events.move(latest.current.index, g.dx, g.dy),
+      onPanResponderRelease: (_, g) => latest.current.events.end(latest.current.index, g.dx),
+      onPanResponderTerminate: () => latest.current.events.end(latest.current.index, 0),
+    }),
+  ).current;
+  return (
+    <View style={style} {...responder.panHandlers}>
+      {children}
+    </View>
+  );
+}
+
+function SortToggle({ mode, onChange }: { mode: SortMode; onChange: (mode: SortMode) => void }) {
   return (
     <View style={styles.toggle}>
       <Text style={styles.toggleLabel}>Sort</Text>
@@ -204,7 +315,11 @@ const styles = StyleSheet.create({
     paddingTop: 12, // headroom for a raised (selected) card
   },
   overlap: {
-    marginLeft: -22, // fan the cards so a 10-card hand fits on screen
+    marginLeft: -OVERLAP, // fan the cards so a 10-card hand fits on screen
+  },
+  dragging: {
+    zIndex: 10, // ride above the neighbours it passes
+    elevation: 10,
   },
   drawnWrap: {
     marginLeft: 18, // hold the just-drawn card out, apart from the fanned group
@@ -230,14 +345,14 @@ const styles = StyleSheet.create({
     color: text.muted,
     fontSize: 12,
     fontWeight: '600',
-    paddingHorizontal: 6,
+    paddingHorizontal: 4,
   },
   segment: {
     color: text.muted,
     fontSize: 13,
     fontWeight: '700',
     paddingVertical: 5,
-    paddingHorizontal: 10,
+    paddingHorizontal: 7, // five segments still fit a 320px-wide phone
     borderRadius: 999,
     overflow: 'hidden', // clip the pill background to the rounded corners
   },
