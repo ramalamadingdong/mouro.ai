@@ -131,6 +131,7 @@
   .cafe       { --a: #1f6f78; --b: #123f47; --ink: #f2b560; }
   .trivia     { --a: #2f6f86; --b: #173140; --ink: #f4c542; }
   .photo      { --a: #8a5a2e; --b: #3a2716; --ink: #f6c27a; }
+  .homes      { --a: #2f7a5c; --b: #10291f; --ink: #f4c542; }
   .categories { --a: #6a3a70; --b: #2f1832; --ink: #ffd166; }
 
   /* Mobile games / Road trip games. */
@@ -380,6 +381,15 @@
             <span class="play">Play</span>
           </div>
         </a>
+        <a class="game homes" href="/games/road-trip/homes/">
+          <img src="/games/road-trip/homes/icons/icon-192.png" alt="" width="92" height="92">
+          <h3>Home Price Guess</h3>
+          <p>In each new town, guess the typical home value, then see homes for sale there at the low, middle and high end.</p>
+          <div class="meta">
+            <div class="tags"><span>Passengers</span><span>Live GPS</span><span>Demo drive</span></div>
+            <span class="play">Play</span>
+          </div>
+        </a>
         <a class="game categories" href="/games/road-trip/categories/">
           <img src="/games/road-trip/categories/icons/icon-192.png" alt="" width="92" height="92">
           <h3>Categories</h3>
@@ -390,7 +400,7 @@
           </div>
         </a>
       </div>
-      <p class="note">Town Trivia and Photo Guess use your phone’s location. It goes only to OpenStreetMap and Wikimedia, never to mouro.ai, and nobody else can see it. Categories doesn’t use location at all. The driver keeps their eyes on the road.</p>
+      <p class="note">Town Trivia, Photo Guess and Home Price Guess use your phone’s location. It goes only to OpenStreetMap and Wikimedia, never to mouro.ai, and nobody else can see it (Home Price Guess loads its state’s home values from mouro.ai, so mouro.ai learns the state). Categories doesn’t use location at all. The driver keeps their eyes on the road.</p>
     </section>
     </div>
   </main>

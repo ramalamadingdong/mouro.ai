@@ -1,11 +1,14 @@
-// Road Trip games: the code shared by /games/road-trip/trivia/, /photo/ and
-// /categories/. Each page sets <body data-game="..."> and carries only its own
+// Road Trip games: the code shared by /games/road-trip/trivia/, /photo/,
+// /homes/ and /categories/. Each page sets <body data-game="..."> and carries only its own
 // markup; the parts for other games are simply never wired up.
 //
 // PRIVACY RULE: a player's location must never be visible to anyone else.
 // The position goes from the browser straight to OpenStreetMap (Nominatim,
 // OSRM) and Wikimedia, and is kept only in memory. Nothing about places goes
-// into localStorage (past games keep a date and a score) or to mouro.ai. The
+// into localStorage (past games keep a date and a score) or to mouro.ai.
+// Home Price Guess loads its state's file of home values from mouro.ai
+// (homes/data/values/CO.json), which tells mouro.ai the state, never the
+// position, and keeps nothing about it. The
 // only thing that uses our realtime server is Categories (car screen +
 // remotes), whose room holds the word game alone: letter, category, timer,
 // names, scores. The rules in games/road-trip/ reject any other field. Never
@@ -132,7 +135,7 @@
 
   function addScore(n) { trip.score += n; $("score").textContent = trip.score; }
 
-  // Each page is one game: <body data-game="trivia|photo|categories">.
+  // Each page is one game: <body data-game="trivia|photo|homes|categories">.
   const GAME = document.body.dataset.game;
   const has = (id) => !!document.getElementById(id);
   const DEMO_FROM = "Boulder, Colorado", DEMO_TO = "Colorado Springs, Colorado";
@@ -168,7 +171,7 @@
         demo, route, dest, destName, score: 0, startedAt: Date.now(),
         vtime: 0, speed: +$("speed").value, paused: false,
         pos: from, snap: route ? snap(route, from) : null, offCount: 0, lastReroute: 0,
-        imperial: false, trivia: GAME === "trivia", photo: GAME === "photo",
+        imperial: false, trivia: GAME === "trivia" || GAME === "homes", homes: GAME === "homes", photo: GAME === "photo", state: null,
         town: undefined, county: undefined, queue: [], showing: null, triviaTypes: [], seenPlaces: new Set(), places: 0,
         round: null, usedPhotos: new Set(), photoSearching: false, photoRetryAt: 0,
         lastPoll: 0, lastPollPos: null, polling: false, timers: [], watch: null, done: false,
@@ -351,6 +354,8 @@
       const a = r.address || {};
       const town = a.city || a.town || a.village || a.hamlet || a.municipality || null;
       const county = a.county || a.state_district || null;
+      const iso = a["ISO3166-2-lvl4"] || "";
+      if (/^US-[A-Z]{2}$/.test(iso)) trip.state = iso.slice(3);
       const townQid = SETTLEMENT.has(r.addresstype) && r.name === town ? r.extratags?.wikidata : null;
       const firstFix = trip.town === undefined;
       const newCounty = county && county !== trip.county;
@@ -363,7 +368,9 @@
         if (trip !== t) return;
         const qid = c.addresstype === "county" || c.name === county ? c.extratags?.wikidata : null;
         trip.countyQid = qid;
-        enqueue({ kind: "county", name: county, qid, firstFix });
+        // Home prices: the town is the better question (and has listings), so a
+        // county only gets one where there is no town.
+        if (!(trip.homes && town)) enqueue({ kind: "county", name: county, qid, firstFix });
       }
       if (newTown) enqueue({ kind: "town", name: town, qid: townQid, county, firstFix });
       // New county, or a quiet stretch with no new town: ask about a town
@@ -443,6 +450,7 @@
   function enqueue(item) {
     const key = `${item.kind}:${item.qid || item.name}`;
     if (trip.seenPlaces.has(key)) return;
+    item.state ??= trip.state;
     trip.seenPlaces.add(key);
     // Busy stretches of road cross a lot of boundaries: keep the newest few.
     trip.queue.push(item);
@@ -457,7 +465,7 @@
       trip.showing = item; trip.lastTried = item;
       setTriviaIdle(item.nearby != null ? `Looking up ${item.name}, nearby…` : `Crossing into ${item.name}. Looking it up…`);
       let q = null;
-      try { q = await buildTrivia(item); } catch { q = null; }
+      try { q = await (trip.homes ? buildHomes(item) : buildTrivia(item)); } catch { q = null; }
       if (trip !== t) return;
       if (q) { if (item.nearby != null) trip.nearbyMisses = 0; showTrivia(q); return; }
     }
@@ -1085,11 +1093,98 @@
     $("triviaLately").hidden = !q.lately;
     $("triviaFact").hidden = !q.fact;
     $("triviaLink").href = q.link; $("triviaLink").hidden = !q.link;
+    if (q.questionKind === "homes") renderListings(q);
     $("triviaAfter").hidden = false;
     const t = trip;
     // Leave the fact up a while, then move on to anything waiting.
-    setTimeout(() => { if (trip === t && t.showing && $("triviaAfter").hidden === false) { t.showing = null; if (t.queue.length) nextTrivia(); else $("triviaWait").textContent = "Next question when we cross into a new town or county."; } }, 15000);
+    setTimeout(() => { if (trip === t && t.showing && $("triviaAfter").hidden === false) { t.showing = null; if (t.queue.length) nextTrivia(); else $("triviaWait").textContent = "Next question when we cross into a new town or county."; } }, t.homes ? 45000 : 15000);
   }
+
+  // ── Home price guess ────────────────────────────────────────────────────
+  // The answer is Zillow's typical home value (ZHVI) for the town, or its
+  // county when Zillow has no figure for the town; that covers the whole US.
+  // After answering: homes for sale there from a dated snapshot of Zillow
+  // listings (Front Range towns only, for now). Both files are made by
+  // scripts/home-values.mjs and scripts/home-listings.mjs.
+  const HOMES_DATA = "/games/road-trip/homes/data";
+  const homeFiles = {};
+  function loadHomes(path) {
+    homeFiles[path] ??= fetch(`${HOMES_DATA}/${path}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .catch(() => { homeFiles[path] = undefined; return null; }); // offline: try again next town
+    return homeFiles[path];
+  }
+  const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  const monthName = (ym) => { const [y, m] = (ym || "").split("-"); return m ? `${MONTHS[+m - 1]} ${y}` : ""; };
+  const dateName = (ymd) => { const [y, m, d] = (ymd || "").split("-"); return d ? `${MONTHS[+m - 1]} ${+d}, ${y}` : ""; };
+  // $940K, $1.3M: short enough for a button.
+  const money = (n) => n >= 1e6 ? `$${(n / 1e6).toFixed(n >= 1e7 ? 0 : 1).replace(/\.0$/, "")}M` : `$${Math.round(n / 1000)}K`;
+  const dollars = (n) => `$${nf(n)}`;
+  const HOME_TYPE = { singleFamily: "House", townhome: "Townhome", condo: "Condo", manufactured: "Manufactured home", multiFamily: "Multi-family", apartment: "Apartment" };
+  const plainTown = (name) => name.replace(/^(City|Town|Village) of /i, "").trim();
+
+  function lookupValue(values, item) {
+    if (!values) return null;
+    const name = plainTown(item.name);
+    if (item.kind === "county") {
+      const place = values.counties[name] ? name : values.counties[`${name} County`] ? `${name} County` : null;
+      return place ? { value: values.counties[place], place } : null;
+    }
+    if (values.towns[name]) return { value: values.towns[name], place: name };
+    // No figure for a small town: use its county, and say so.
+    const county = item.county && values.counties[item.county] ? item.county : null;
+    return county ? { value: values.counties[county], place: county, fallback: true } : null;
+  }
+
+  async function buildHomes(item) {
+    const st = item.state;
+    if (!st) return null; // outside the US: Zillow has no figures there
+    const [values, listings] = await Promise.all([loadHomes(`values/${st}.json`), loadHomes("listings.json")]);
+    const hit = lookupValue(values, item);
+    if (!hit) return null;
+    if (has("zhviMonth")) $("zhviMonth").textContent = monthName(values.month);
+    if (listings && has("snapDate")) $("snapDate").textContent = dateName(listings.asOf);
+    const town = plainTown(item.name);
+    const where = hit.fallback ? `${hit.place}, where ${town} is` : hit.place;
+    const { options, answer } = numberChoices(hit.value, [0.5, 0.62, 0.75, 1.3, 1.55, 1.9, 2.4], money);
+    const snap = item.kind === "town" ? listings?.towns?.[`${town}, ${st}`] || null : null;
+    return {
+      questionKind: "homes", title: `${town}, ${st}`, nearby: item.nearby, firstFix: item.firstFix,
+      question: `What’s the typical home value in ${where}?`,
+      options, answer, snap, asOf: listings?.asOf, town, isCounty: item.kind === "county",
+      detail: `Zillow’s typical home value for ${hit.place} is ${dollars(hit.value)} (${monthName(values.month)}).`,
+      link: `https://www.zillow.com/${`${town} ${st}`.toLowerCase().replace(/[^a-z0-9]+/g, "-")}/`,
+    };
+  }
+
+  function renderListings(q) {
+    const box = $("listings"); box.textContent = "";
+    const s = q.snap;
+    const para = (text, cls) => { const el = document.createElement("p"); el.textContent = text; if (cls) el.className = cls; return el; };
+    if (!s) {
+      if (!q.isCounty) box.append(para(`No snapshot of homes for sale in ${q.town} yet. Zillow has the current listings.`, "muted small"));
+      return;
+    }
+    box.append(para(`${nf(s.forSale)} homes for sale in ${q.town} on ${dateName(q.asOf)}. The middle asking price of the ${s.sample} in my sample was ${dollars(s.median)}.`, "small"));
+    ["Low end", "Middle", "High end"].forEach((label, k) => {
+      const tier = s.tiers[k];
+      const sec = document.createElement("div"); sec.className = `tier t${k}`;
+      const h = document.createElement("h3"); h.textContent = label;
+      const range = document.createElement("span"); range.textContent = `${money(tier.from)} – ${money(tier.to)}`;
+      h.append(range); sec.append(h);
+      for (const home of tier.homes) {
+        const a = document.createElement("a"); a.className = "home"; a.href = home.u; a.target = "_blank"; a.rel = "noreferrer";
+        const price = document.createElement("strong"); price.textContent = dollars(home.p);
+        const facts = [HOME_TYPE[home.t] || "Home", home.bd != null && `${home.bd} bd`, home.ba != null && `${home.ba} ba`, home.sf && `${nf(home.sf)} sq ft`].filter(Boolean).join(" · ");
+        const addr = document.createElement("span"); addr.className = "addr"; addr.textContent = `${home.a}, ${q.town} ${home.z || ""}`.trim();
+        a.append(price, para(facts, "small"), addr);
+        sec.append(a);
+      }
+      box.append(sec);
+    });
+    box.append(para(`Listed on Zillow on ${dateName(q.asOf)}. Some may have sold since.`, "muted small"));
+  }
+
 
   // ── Photo guess ─────────────────────────────────────────────────────────
   const SKIP_TITLE = /\b(map|maps|logo|seal|flag|diagram|plan|chart|coat of arms|interior|inside|menu|document|screenshot)\b/i;
@@ -1631,7 +1726,7 @@
 
   // ── Wiring ──────────────────────────────────────────────────────────────
   function updateStartButton() { $("start").disabled = !$("passenger").checked || !!trip; }
-  if (GAME === "trivia" || GAME === "photo") {
+  if (GAME === "trivia" || GAME === "photo" || GAME === "homes") {
     $("passenger").addEventListener("change", updateStartButton);
     $("start").addEventListener("click", () => startTrip(false));
     $("demo").addEventListener("click", () => startTrip(true));
